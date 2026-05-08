@@ -35,9 +35,7 @@
 
   appId: "1:988495815243:web:0309d3a01b5d6033e4e3ce"
 
-};
-
-
+    };
 
     const app  = initializeApp(firebaseConfig);
     const auth = getAuth(app);
@@ -462,7 +460,12 @@
           Novo Ativo / Bem
         </button>
       </div>
-      <div class="kpi-grid kpi-grid-3">
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-header"><span class="kpi-label">Patrimônio Total</span><div class="kpi-icon">💎</div></div>
+          <span class="kpi-value accent" id="pat-total">R$ —</span>
+          <div class="kpi-delta" id="pat-total-sub">—</div>
+        </div>
         <div class="kpi-card">
           <div class="kpi-header"><span class="kpi-label">Investimentos</span><div class="kpi-icon">📈</div></div>
           <span class="kpi-value gold" id="pat-investimentos">R$ —</span>

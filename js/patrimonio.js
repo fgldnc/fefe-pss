@@ -2,7 +2,7 @@
  * patrimonio.js — Aba de patrimônio (investimentos, caixa, bens pessoais)
  */
 
-import { state, fmt, toast, esc } from './app.js';
+import { state, fmt, toast, esc } from './utils.js';
 import { saveAsset, deleteAsset } from './db.js';
 
 let _patrimonioInit = false;
@@ -23,9 +23,23 @@ function _renderAtivos() {
   const caixa  = ativos.filter(a => a.type === 'caixa').reduce((s, a) => s + (a.currentValue || 0), 0);
   const bens   = ativos.filter(a => a.type === 'bem_pessoal').reduce((s, a) => s + _valorDepreciado(a), 0);
 
+  const total = invest + caixa + bens;
+
   document.getElementById('pat-investimentos').textContent = fmt(invest);
   document.getElementById('pat-caixa').textContent         = fmt(caixa);
   document.getElementById('pat-bens').textContent          = fmt(bens);
+
+  // Total do patrimônio
+  const totalEl = document.getElementById('pat-total');
+  if (totalEl) totalEl.textContent = fmt(total);
+  const totalDeltaEl = document.getElementById('pat-total-sub');
+  if (totalDeltaEl) {
+    const parts = [];
+    if (invest > 0) parts.push(`Invest: ${fmt(invest)}`);
+    if (caixa  > 0) parts.push(`Caixa: ${fmt(caixa)}`);
+    if (bens   > 0) parts.push(`Bens: ${fmt(bens)}`);
+    totalDeltaEl.textContent = parts.join(' · ') || 'Nenhum ativo cadastrado';
+  }
 
   const tbody = document.getElementById('ativos-tbody');
 

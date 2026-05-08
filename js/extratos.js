@@ -3,7 +3,7 @@
  * Orquestra: seleção de banco → parse → revisão → salvar no Firestore
  */
 
-import { state, esc, fmt, toast } from './app.js';
+import { state, esc, fmt, toast } from './utils.js';
 import { detectDuplicates }        from './parsers/base-parser.js';
 import { parseOFX }                from './parsers/ofx-parser.js';
 import { parseCSV }                from './parsers/csv-parser.js';
@@ -27,9 +27,9 @@ const FORMAT_ACCEPT = {
 
 // ─── RENDER DA ABA ─────────────────────────────────────────────
 export function renderExtratos() {
-  _renderImportacoesList();
-  _renderExtratosTable();
-  _renderBancoFilters();
+  try { _renderImportacoesList(); } catch(e) { console.error('extratos list:', e); }
+  try { _renderExtratosTable();   } catch(e) { console.error('extratos table:', e); }
+  try { _renderBancoFilters();    } catch(e) { console.error('extratos filters:', e); }
 }
 
 function _renderImportacoesList() {
@@ -130,52 +130,83 @@ export function initExtratoModal() {
 
   _resetModal();
 
-  // Seleção de banco
-  document.querySelectorAll('#bank-selector .bank-card').forEach(card => {
-    card.addEventListener('click', () => {
-      document.querySelectorAll('#bank-selector .bank-card').forEach(c => c.classList.remove('selected'));
+  // ── Limpa listeners antigos clonando elementos ──────────────
+  // (evita empilhamento ao abrir o modal várias vezes)
+  function _fresh(id) {
+    const el = document.getElementById(id);
+    if (!el) return el;
+    const clone = el.cloneNode(true);
+    el.parentNode.replaceChild(clone, el);
+    return clone;
+  }
+
+  // Seleção de banco — usa delegação no container
+  const bankSelector = document.getElementById('bank-selector');
+  const freshBankSelector = bankSelector?.cloneNode(true);
+  if (bankSelector && freshBankSelector) {
+    bankSelector.parentNode.replaceChild(freshBankSelector, bankSelector);
+    freshBankSelector.addEventListener('click', e => {
+      const card = e.target.closest('.bank-card');
+      if (!card) return;
+      freshBankSelector.querySelectorAll('.bank-card').forEach(c => c.classList.remove('selected'));
       card.classList.add('selected');
       selectedBank = card.dataset.bank;
     });
-  });
+  }
 
-  // Seleção de formato
-  document.querySelectorAll('#format-tabs .format-tab').forEach(tab => {
-    tab.addEventListener('click', () => {
-      document.querySelectorAll('#format-tabs .format-tab').forEach(t => t.classList.remove('active'));
+  // Seleção de formato — delegação no container
+  const formatTabs = document.getElementById('format-tabs');
+  const freshFormatTabs = formatTabs?.cloneNode(true);
+  if (formatTabs && freshFormatTabs) {
+    formatTabs.parentNode.replaceChild(freshFormatTabs, formatTabs);
+    freshFormatTabs.addEventListener('click', e => {
+      const tab = e.target.closest('.format-tab');
+      if (!tab) return;
+      freshFormatTabs.querySelectorAll('.format-tab').forEach(t => t.classList.remove('active'));
       tab.classList.add('active');
       selectedFormat = tab.dataset.format;
       _updateFormatHint();
     });
-  });
+  }
 
-  // Drop zone
-  const dropZone = document.getElementById('extrato-drop-zone');
-  const fileInput = document.getElementById('extrato-file-input');
+  // Drop zone e file input — clona para limpar listeners
+  const dropZone  = _fresh('extrato-drop-zone');
+  const fileInput = _fresh('extrato-file-input');
 
-  dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
-  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
-  dropZone.addEventListener('drop', e => {
-    e.preventDefault();
-    dropZone.classList.remove('dragover');
-    const file = e.dataTransfer.files[0];
-    if (file) _handleFile(file);
-  });
-  fileInput.addEventListener('change', () => {
-    if (fileInput.files[0]) _handleFile(fileInput.files[0]);
-  });
-  // Clique na dropzone abre o input
-  dropZone.addEventListener('click', () => fileInput.click());
+  if (dropZone && fileInput) {
+    dropZone.addEventListener('dragover',  e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+    dropZone.addEventListener('drop', e => {
+      e.preventDefault();
+      dropZone.classList.remove('dragover');
+      const file = e.dataTransfer.files[0];
+      if (file) _handleFile(file);
+    });
+
+    // Clique na área abre file picker — mas evita acionar se clicou no label/input diretamente
+    dropZone.addEventListener('click', e => {
+      if (e.target === fileInput || e.target.tagName === 'LABEL') return;
+      fileInput.click();
+    });
+
+    // Mudança de arquivo
+    fileInput.addEventListener('change', () => {
+      if (fileInput.files[0]) _handleFile(fileInput.files[0]);
+      fileInput.value = ''; // reset para poder re-selecionar o mesmo arquivo
+    });
+  }
 
   // Checkbox "marcar todos"
-  document.getElementById('extrato-check-all')?.addEventListener('change', e => {
+  const checkAll = _fresh('extrato-check-all');
+  checkAll?.addEventListener('change', e => {
     document.querySelectorAll('#extrato-preview-tbody .row-check').forEach(cb => {
       cb.checked = e.target.checked;
     });
   });
 
   // Botão confirmar
-  document.getElementById('btn-confirmar-extrato')?.addEventListener('click', _saveExtrato);
+  const btnConfirmar = _fresh('btn-confirmar-extrato');
+  btnConfirmar?.addEventListener('click', _saveExtrato);
 }
 
 function _updateFormatHint() {

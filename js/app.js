@@ -49,7 +49,9 @@ export async function switchTab(name) {
     if (typeof render === 'function') render();
   } catch (err) {
     console.error(`Erro ao carregar aba ${name}:`, err);
-    toast(`Erro ao carregar ${name}.`, 'error');
+    // Mostra mensagem de erro mais detalhada para facilitar debug
+    const msg = err?.message ? `${name}: ${err.message}` : `Erro ao carregar ${name}.`;
+    toast(msg, 'error');
   }
 }
 
