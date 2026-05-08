@@ -1,0 +1,322 @@
+/**
+ * db.js — Firestore: leitura e escrita de todas as coleções
+ *
+ * Coleções (sob users/{uid}/):
+ *   transactions, incomes, budgets, assets, goals, categories, settings
+ */
+
+import { state } from './app.js';
+import { getUid } from './auth.js';
+
+// ─── CATEGORIAS PADRÃO ─────────────────────────────────────────────────────
+export const DEFAULT_CATEGORIES = [
+  { name: 'Alimentação',  color: '#34d399', order: 1 },
+  { name: 'Transporte',   color: '#60a5fa', order: 2 },
+  { name: 'Compras',      color: '#f472b6', order: 3 },
+  { name: 'Eletrônicos',  color: '#a78bfa', order: 4 },
+  { name: 'Educação',     color: '#fbbf24', order: 5 },
+  { name: 'Vestuário',    color: '#fb923c', order: 6 },
+  { name: 'Assinaturas',  color: '#22d3ee', order: 7 },
+  { name: 'Lazer',        color: '#f87171', order: 8 },
+  { name: 'Moradia',      color: '#6ee7b7', order: 9 },
+  { name: 'Saúde',        color: '#86efac', order: 10 },
+  { name: 'Investimento', color: '#fbbf24', order: 11 },
+  { name: 'Outros',       color: '#94a3b8', order: 12 },
+];
+
+// ─── HELPERS FIRESTORE ─────────────────────────────────────────────────────
+
+function fb() { return window._FB; }
+
+function colRef(colName) {
+  const uid = getUid();
+  const { db, collection, doc } = fb();
+  return collection(doc(collection(db, 'users'), uid), colName);
+}
+
+function docRef(colName, id) {
+  const uid = getUid();
+  const { db, collection, doc } = fb();
+  return doc(collection(doc(collection(db, 'users'), uid), colName), id);
+}
+
+/** Lê todos os documentos de uma coleção */
+async function getAll(colName) {
+  const { getDocs } = fb();
+  const snap = await getDocs(colRef(colName));
+  return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+}
+
+/** Salva (upsert) um documento com ID auto-gerado ou fornecido */
+export async function saveDoc(colName, data, id = null) {
+  const { addDoc, setDoc } = fb();
+  if (id) {
+    await setDoc(docRef(colName, id), data, { merge: true });
+    return id;
+  } else {
+    const ref = await addDoc(colRef(colName), data);
+    return ref.id;
+  }
+}
+
+/** Remove um documento */
+export async function removeDoc(colName, id) {
+  const { deleteDoc } = fb();
+  await deleteDoc(docRef(colName, id));
+}
+
+/** Atualiza campos específicos de um documento */
+export async function updateFields(colName, id, fields) {
+  const { updateDoc } = fb();
+  await updateDoc(docRef(colName, id), fields);
+}
+
+// ─── CARGA GLOBAL ──────────────────────────────────────────────────────────
+
+/** Carrega todos os dados do Firestore no state global */
+export async function loadAllData() {
+  const [transactions, incomes, budgetDocs, assets, goals, categories] = await Promise.all([
+    getAll('transactions'),
+    getAll('incomes'),
+    getAll('budgets'),
+    getAll('assets'),
+    getAll('goals'),
+    getAll('categories'),
+  ]);
+
+  state.transactions = transactions;
+  state.incomes      = incomes;
+  state.assets       = assets;
+  state.goals        = goals;
+
+  // Categorias: inicializa padrões se vazio
+  if (categories.length === 0) {
+    await seedCategories();
+    state.categories = await getAll('categories');
+  } else {
+    state.categories = categories.sort((a, b) => (a.order || 0) - (b.order || 0));
+  }
+
+  // Budgets: transforma array em { "categoria": valor }
+  state.budgets = {};
+  for (const b of budgetDocs) {
+    state.budgets[b.month] = state.budgets[b.month] || {};
+    state.budgets[b.month][b.categoryId] = b.amount;
+  }
+}
+
+/** Popula categorias padrão no Firestore */
+async function seedCategories() {
+  const { addDoc } = fb();
+  for (const cat of DEFAULT_CATEGORIES) {
+    await addDoc(colRef('categories'), cat);
+  }
+}
+
+// ─── TRANSACTIONS ──────────────────────────────────────────────────────────
+
+/** Retorna transações do mês de competência */
+export function txOfMonth(month) {
+  return state.transactions.filter(t => t.competenceMonth === month);
+}
+
+/** Retorna transações que são parcelas projetadas para meses futuros */
+export function projectedInstallments(fromMonth) {
+  return state.transactions.filter(t =>
+    t.isProjected && t.competenceMonth > fromMonth
+  );
+}
+
+/** Salva transação no Firestore e atualiza state */
+export async function saveTx(data, id = null) {
+  const savedId = await saveDoc('transactions', data, id);
+  if (id) {
+    const idx = state.transactions.findIndex(t => t.id === id);
+    if (idx >= 0) state.transactions[idx] = { id, ...data };
+  } else {
+    state.transactions.push({ id: savedId, ...data });
+  }
+  return savedId;
+}
+
+/** Remove transação */
+export async function deleteTx(id) {
+  await removeDoc('transactions', id);
+  state.transactions = state.transactions.filter(t => t.id !== id);
+}
+
+// ─── INCOMES ───────────────────────────────────────────────────────────────
+
+export function incomesOfMonth(month) {
+  return state.incomes.filter(i => i.month === month);
+}
+
+export async function saveIncome(data, id = null) {
+  const savedId = await saveDoc('incomes', data, id);
+  if (id) {
+    const idx = state.incomes.findIndex(i => i.id === id);
+    if (idx >= 0) state.incomes[idx] = { id, ...data };
+  } else {
+    state.incomes.push({ id: savedId, ...data });
+  }
+  return savedId;
+}
+
+export async function deleteIncome(id) {
+  await removeDoc('incomes', id);
+  state.incomes = state.incomes.filter(i => i.id !== id);
+}
+
+// ─── BUDGETS ───────────────────────────────────────────────────────────────
+
+/** Salva todos os orçamentos de um mês (batch) */
+export async function saveBudgets(month, budgetMap) {
+  const { getDocs, deleteDoc, addDoc } = fb();
+
+  // Remove orçamentos antigos do mês
+  const existing = await getAll('budgets');
+  const toDelete = existing.filter(b => b.month === month);
+  for (const b of toDelete) {
+    await removeDoc('budgets', b.id);
+  }
+
+  // Insere novos
+  for (const [categoryId, amount] of Object.entries(budgetMap)) {
+    if (amount > 0) {
+      await saveDoc('budgets', { month, categoryId, amount: Number(amount) });
+    }
+  }
+
+  // Atualiza state
+  state.budgets[month] = budgetMap;
+}
+
+// ─── ASSETS ────────────────────────────────────────────────────────────────
+
+export async function saveAsset(data, id = null) {
+  const savedId = await saveDoc('assets', data, id);
+  if (id) {
+    const idx = state.assets.findIndex(a => a.id === id);
+    if (idx >= 0) state.assets[idx] = { id, ...data };
+  } else {
+    state.assets.push({ id: savedId, ...data });
+  }
+  return savedId;
+}
+
+export async function deleteAsset(id) {
+  await removeDoc('assets', id);
+  state.assets = state.assets.filter(a => a.id !== id);
+}
+
+// ─── GOALS ─────────────────────────────────────────────────────────────────
+
+export async function saveGoal(data, id = null) {
+  const savedId = await saveDoc('goals', data, id);
+  if (id) {
+    const idx = state.goals.findIndex(g => g.id === id);
+    if (idx >= 0) state.goals[idx] = { id, ...data };
+  } else {
+    state.goals.push({ id: savedId, ...data });
+  }
+  return savedId;
+}
+
+export async function deleteGoal(id) {
+  await removeDoc('goals', id);
+  state.goals = state.goals.filter(g => g.id !== id);
+}
+
+// ─── CATEGORIES ────────────────────────────────────────────────────────────
+
+export async function saveCategory(data, id = null) {
+  const savedId = await saveDoc('categories', data, id);
+  if (id) {
+    const idx = state.categories.findIndex(c => c.id === id);
+    if (idx >= 0) state.categories[idx] = { id, ...data };
+  } else {
+    state.categories.push({ id: savedId, ...data });
+  }
+  return savedId;
+}
+
+export async function deleteCategory(id) {
+  await removeDoc('categories', id);
+  state.categories = state.categories.filter(c => c.id !== id);
+}
+
+// ─── BACKUP ────────────────────────────────────────────────────────────────
+
+/** Exporta todos os dados como JSON e faz download */
+export async function exportBackup(version) {
+  const [transactions, incomes, budgets, assets, goals, categories] = await Promise.all([
+    getAll('transactions'),
+    getAll('incomes'),
+    getAll('budgets'),
+    getAll('assets'),
+    getAll('goals'),
+    getAll('categories'),
+  ]);
+
+  const now = new Date();
+  const dateStr = now.toISOString().slice(0, 10); // "2025-04-30"
+  const timeStr = now.toTimeString().slice(0, 8).replace(/:/g, ''); // "143022"
+
+  const payload = {
+    meta: {
+      version:   version || '1.0.0',
+      exportedAt: now.toISOString(),
+      exportedBy: window._FB?.auth?.currentUser?.email || 'unknown',
+      app: 'Finanças Pessoais',
+    },
+    data: { transactions, incomes, budgets, assets, goals, categories },
+  };
+
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = `financas-backup-v${version || '1.0.0'}-${dateStr}-${timeStr}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+/** Importa backup JSON e restaura dados no Firestore */
+export async function importBackup(file) {
+  const text = await file.text();
+  const payload = JSON.parse(text);
+
+  // Suporta formato antigo (sem .meta) e novo
+  const data = payload.data || payload;
+
+  const { db, collection, doc, writeBatch } = fb();
+  const uid = getUid();
+
+  const colNames = ['transactions', 'incomes', 'budgets', 'assets', 'goals', 'categories'];
+
+  for (const colName of colNames) {
+    const items = data[colName] || [];
+    if (!items.length) continue;
+
+    // Batch write (max 500 por batch)
+    let batch = writeBatch(db);
+    let count = 0;
+
+    for (const item of items) {
+      const { id, ...fields } = item;
+      const ref = doc(collection(doc(collection(db, 'users'), uid), colName), id);
+      batch.set(ref, fields, { merge: true });
+      count++;
+      if (count === 490) {
+        await batch.commit();
+        batch = writeBatch(db);
+        count = 0;
+      }
+    }
+    if (count > 0) await batch.commit();
+  }
+
+  // Recarrega state
+  await loadAllData();
+  return payload.meta?.version || '?';
+}
