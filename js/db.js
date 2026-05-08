@@ -89,19 +89,29 @@ export async function loadAllData() {
   state.assets       = assets;
   state.goals        = goals;
 
-  // Categorias: inicializa padrões se vazio
+  // Categorias: semeio padrão apenas se vazio; caso contrário deduplica por nome
   if (categories.length === 0) {
     await seedCategories();
     state.categories = await getAll('categories');
   } else {
-    state.categories = categories.sort((a, b) => (a.order || 0) - (b.order || 0));
+    const seen = new Set();
+    const deduped = categories.filter(c => {
+      const key = (c.name || '').toLowerCase().trim();
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+    state.categories = deduped.sort((a, b) => (a.order || 0) - (b.order || 0));
   }
 
-  // Budgets: transforma array em { "categoria": valor }
+  // Budgets: transforma array em mapa { "YYYY-MM": { categoryId: amount } }
+  // Normaliza chave "YYYY-M" (sem zero à esquerda) → "YYYY-MM"
   state.budgets = {};
   for (const b of budgetDocs) {
-    state.budgets[b.month] = state.budgets[b.month] || {};
-    state.budgets[b.month][b.categoryId] = b.amount;
+    let month = b.month || '';
+    if (/^\d{4}-\d$/.test(month)) month = month.replace(/-(\d)$/, '-0$1');
+    state.budgets[month] = state.budgets[month] || {};
+    state.budgets[month][b.categoryId] = b.amount;
   }
 }
 

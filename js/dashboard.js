@@ -1,5 +1,13 @@
 /**
  * dashboard.js — Renderiza KPIs, gráficos e cards do dashboard
+ *
+ * Correções v1.1:
+ *  - Investimento detectado por ID ("investimento") OU nome (inclui "investiment")
+ *    para funcionar tanto com categorias padrão quanto com as importadas do backup
+ *  - Taxa de poupança: mostra quanto foi guardado (investido + saldo livre) sobre a receita
+ *  - Gráfico de categorias exclui investimentos (igual ao KPI de despesas)
+ *  - Tick do eixo Y do gráfico não divide por 1000 se os valores forem pequenos
+ *  - Gráfico de evolução agora inclui barra de Investido separada
  */
 
 import { state, fmt, monthLabel, offsetMonth } from './app.js';
@@ -8,6 +16,19 @@ import { txOfMonth, incomesOfMonth } from './db.js';
 let chartCategorias = null;
 let chartEvolucao   = null;
 
+// ─── HELPER: detecta se uma categoria é de investimento ───────────────────
+// Reconhece id="investimento" E name="Investimentos" (backup antigo)
+function getInvestCatIds() {
+  return state.categories
+    .filter(c => {
+      const id   = (c.id   || '').toLowerCase();
+      const name = (c.name || '').toLowerCase();
+      return id.includes('investiment') || name.includes('investiment');
+    })
+    .map(c => c.id);
+}
+
+// ─── RENDER PRINCIPAL ─────────────────────────────────────────────────────
 export function renderDashboard() {
   const month = state.currentMonth;
   document.getElementById('chart-cat-month').textContent = monthLabel(month);
@@ -15,35 +36,38 @@ export function renderDashboard() {
   const txs     = txOfMonth(month);
   const incomes = incomesOfMonth(month);
 
-  const totalIncome = incomes.reduce((s, i) => s + (i.amount || 0), 0);
+  const investIds     = getInvestCatIds();
+  const txExpenses    = txs.filter(t => !investIds.includes(t.categoryId));
+  const txInvestments = txs.filter(t =>  investIds.includes(t.categoryId));
 
-  // Gastos excluindo investimentos
-  const investCat = state.categories.find(c => c.name.toLowerCase() === 'investimento');
-  const txExpenses    = txs.filter(t => t.categoryId !== investCat?.id);
-  const txInvestments = txs.filter(t => t.categoryId === investCat?.id);
-
+  const totalIncome   = incomes.reduce((s, i) => s + (i.amount || 0), 0);
   const totalExpense  = txExpenses.reduce((s, t) => s + (t.amount || 0), 0);
   const totalInvested = txInvestments.reduce((s, t) => s + (t.amount || 0), 0);
-  const saldo         = totalIncome - totalExpense - totalInvested;
-  const taxa          = totalIncome > 0 ? Math.round((saldo / totalIncome) * 100) : 0;
+  const saldoLivre    = totalIncome - totalExpense - totalInvested;
 
-  // KPIs
-  document.getElementById('kpi-receitas').textContent   = fmt(totalIncome);
-  document.getElementById('kpi-despesas').textContent   = fmt(totalExpense);
-  document.getElementById('kpi-saldo').textContent      = fmt(saldo);
-  document.getElementById('kpi-investido').textContent  = fmt(totalInvested);
-  document.getElementById('kpi-taxa').textContent       = `Taxa de poupança ${taxa}%`;
+  // Taxa de poupança = quanto da renda não foi em despesas (investido + sobra)
+  const guardado = totalInvested + Math.max(0, saldoLivre);
+  const taxa     = totalIncome > 0 ? Math.round((guardado / totalIncome) * 100) : 0;
 
-  // Saldo — cor dinâmica
+  // ── KPIs ────────────────────────────────────────────────────────────────
+  document.getElementById('kpi-receitas').textContent  = fmt(totalIncome);
+  document.getElementById('kpi-despesas').textContent  = fmt(totalExpense);
+  document.getElementById('kpi-investido').textContent = fmt(totalInvested);
+
   const saldoEl = document.getElementById('kpi-saldo');
-  saldoEl.className = 'kpi-value ' + (saldo >= 0 ? 'positive' : 'negative');
+  saldoEl.textContent  = fmt(saldoLivre);
+  saldoEl.className    = 'kpi-value ' + (saldoLivre >= 0 ? 'positive' : 'negative');
 
-  // Total investimentos no patrimônio
+  const taxaEl = document.getElementById('kpi-taxa');
+  taxaEl.textContent = totalIncome === 0
+    ? 'Cadastre suas receitas para ver a taxa'
+    : `${taxa}% da renda guardada`;
+
   const totalAssetInvest = state.assets
     .filter(a => a.type === 'investimento')
     .reduce((s, a) => s + (a.currentValue || 0), 0);
   document.getElementById('kpi-investido-total').textContent =
-    `Total no patrimônio: ${fmt(totalAssetInvest)}`;
+    totalAssetInvest > 0 ? `Total no patrimônio: ${fmt(totalAssetInvest)}` : '';
 
   renderChartCategorias(txExpenses);
   renderChartEvolucao();
@@ -63,10 +87,8 @@ function renderChartCategorias(txs) {
   const sorted = Object.entries(catMap).sort((a, b) => b[1] - a[1]).slice(0, 8);
   const labels = sorted.map(([k]) => k);
   const values = sorted.map(([, v]) => v);
-  const colors = sorted.map(([k]) => {
-    const cat = state.categories.find(c => c.name === k);
-    return cat?.color || '#94a3b8';
-  });
+  const colors = sorted.map(([k]) => state.categories.find(c => c.name === k)?.color || '#94a3b8');
+  const maxVal = Math.max(...values, 1);
 
   const canvas = document.getElementById('chart-categorias');
   if (chartCategorias) chartCategorias.destroy();
@@ -87,22 +109,14 @@ function renderChartCategorias(txs) {
       responsive: true,
       plugins: {
         legend: { display: false },
-        tooltip: {
-          callbacks: {
-            label: ctx => fmt(ctx.raw),
-          },
-        },
+        tooltip: { callbacks: { label: ctx => fmt(ctx.raw) } },
       },
       scales: {
-        x: {
-          ticks: { color: '#94a3b8', font: { family: 'DM Sans', size: 11 } },
-          grid:  { color: 'rgba(148,163,184,0.06)' },
-        },
+        x: { ticks: { color: '#94a3b8', font: { family: 'DM Sans', size: 11 } }, grid: { color: 'rgba(148,163,184,0.06)' } },
         y: {
           ticks: {
-            color: '#94a3b8',
-            font: { family: 'DM Mono', size: 11 },
-            callback: v => `R$${(v/1000).toFixed(0)}k`,
+            color: '#94a3b8', font: { family: 'DM Mono', size: 11 },
+            callback: v => maxVal >= 1000 ? `R$${(v/1000).toFixed(1)}k` : `R$${v}`,
           },
           grid: { color: 'rgba(148,163,184,0.06)' },
         },
@@ -113,20 +127,15 @@ function renderChartCategorias(txs) {
 
 // ─── GRÁFICO DE EVOLUÇÃO MENSAL ─────────────────────────────────────────────
 function renderChartEvolucao() {
-  const months = [];
-  for (let i = 5; i >= 0; i--) {
-    months.push(offsetMonth(state.currentMonth, -i));
-  }
+  const months    = [];
+  for (let i = 5; i >= 0; i--) months.push(offsetMonth(state.currentMonth, -i));
+  const investIds = getInvestCatIds();
 
-  const investCat = state.categories.find(c => c.name.toLowerCase() === 'investimento');
-
-  const receitas  = months.map(m => incomesOfMonth(m).reduce((s, i) => s + (i.amount || 0), 0));
-  const despesas  = months.map(m =>
-    txOfMonth(m)
-      .filter(t => t.categoryId !== investCat?.id)
-      .reduce((s, t) => s + (t.amount || 0), 0)
-  );
-  const labels    = months.map(m => monthLabel(m).slice(0, 3));
+  const receitas  = months.map(m => incomesOfMonth(m).reduce((s, i) => s + (i.amount||0), 0));
+  const despesas  = months.map(m => txOfMonth(m).filter(t => !investIds.includes(t.categoryId)).reduce((s,t)=>s+(t.amount||0),0));
+  const investido = months.map(m => txOfMonth(m).filter(t =>  investIds.includes(t.categoryId)).reduce((s,t)=>s+(t.amount||0),0));
+  const labels    = months.map(m => monthLabel(m).slice(0,3));
+  const maxVal    = Math.max(...receitas, ...despesas, ...investido, 1);
 
   const canvas = document.getElementById('chart-evolucao');
   if (chartEvolucao) chartEvolucao.destroy();
@@ -136,47 +145,23 @@ function renderChartEvolucao() {
     data: {
       labels,
       datasets: [
-        {
-          label: 'Receitas',
-          data: receitas,
-          backgroundColor: 'rgba(52,211,153,0.25)',
-          borderColor: '#34d399',
-          borderWidth: 1.5,
-          borderRadius: 4,
-        },
-        {
-          label: 'Despesas',
-          data: despesas,
-          backgroundColor: 'rgba(248,113,113,0.22)',
-          borderColor: '#f87171',
-          borderWidth: 1.5,
-          borderRadius: 4,
-        },
+        { label: 'Receitas',  data: receitas,  backgroundColor: 'rgba(52,211,153,0.25)',  borderColor: '#34d399', borderWidth: 1.5, borderRadius: 4 },
+        { label: 'Despesas',  data: despesas,  backgroundColor: 'rgba(248,113,113,0.22)', borderColor: '#f87171', borderWidth: 1.5, borderRadius: 4 },
+        { label: 'Investido', data: investido, backgroundColor: 'rgba(251,191,36,0.20)',  borderColor: '#fbbf24', borderWidth: 1.5, borderRadius: 4 },
       ],
     },
     options: {
       responsive: true,
       plugins: {
-        legend: {
-          labels: {
-            color: '#94a3b8',
-            font: { family: 'DM Sans', size: 11 },
-            boxWidth: 10,
-            boxHeight: 10,
-          },
-        },
+        legend: { labels: { color: '#94a3b8', font: { family: 'DM Sans', size: 11 }, boxWidth: 10, boxHeight: 10 } },
         tooltip: { callbacks: { label: ctx => `${ctx.dataset.label}: ${fmt(ctx.raw)}` } },
       },
       scales: {
-        x: {
-          ticks: { color: '#94a3b8', font: { family: 'DM Sans', size: 11 } },
-          grid:  { display: false },
-        },
+        x: { ticks: { color: '#94a3b8', font: { family: 'DM Sans', size: 11 } }, grid: { display: false } },
         y: {
           ticks: {
-            color: '#94a3b8',
-            font: { family: 'DM Mono', size: 11 },
-            callback: v => `R$${(v/1000).toFixed(0)}k`,
+            color: '#94a3b8', font: { family: 'DM Mono', size: 11 },
+            callback: v => maxVal >= 1000 ? `R$${(v/1000).toFixed(1)}k` : `R$${v}`,
           },
           grid: { color: 'rgba(148,163,184,0.06)' },
         },
@@ -188,70 +173,51 @@ function renderChartEvolucao() {
 // ─── PARCELAS FUTURAS ──────────────────────────────────────────────────────
 function renderParcelasPrevisao() {
   const current = state.currentMonth;
-  const next3   = [
-    offsetMonth(current, 1),
-    offsetMonth(current, 2),
-    offsetMonth(current, 3),
-  ];
-
-  const parcelas = state.transactions.filter(t =>
-    next3.includes(t.competenceMonth) &&
-    t.installmentTotal > 1
-  );
+  const next3   = [offsetMonth(current,1), offsetMonth(current,2), offsetMonth(current,3)];
+  const parcelas = state.transactions
+    .filter(t => next3.includes(t.competenceMonth) && t.installmentTotal > 1)
+    .sort((a, b) => a.competenceMonth.localeCompare(b.competenceMonth));
 
   const list = document.getElementById('parcelas-list');
-
   if (!parcelas.length) {
     list.innerHTML = '<p class="empty-state">Nenhuma parcela prevista nos próximos 3 meses.</p>';
     return;
   }
-
-  // Ordena por mês de competência
-  parcelas.sort((a, b) => a.competenceMonth.localeCompare(b.competenceMonth));
-
-  list.innerHTML = parcelas.slice(0, 10).map(p => {
-    const mesLabel = monthLabel(p.competenceMonth).slice(0, 3).toLowerCase();
-    return `
-      <div class="parcela-item">
-        <span class="parcela-desc" title="${p.description}">${p.description}</span>
-        <div class="parcela-info">
-          <span class="parcela-num">${p.installmentCurrent}/${p.installmentTotal}</span>
-          <span class="parcela-val">${fmt(p.amount)}</span>
-          <span class="parcela-mes">${mesLabel}</span>
-        </div>
-      </div>`;
-  }).join('');
+  list.innerHTML = parcelas.slice(0,10).map(p => `
+    <div class="parcela-item">
+      <span class="parcela-desc" title="${p.description}">${p.description}</span>
+      <div class="parcela-info">
+        <span class="parcela-num">${p.installmentCurrent}/${p.installmentTotal}</span>
+        <span class="parcela-val">${fmt(p.amount)}</span>
+        <span class="parcela-mes">${monthLabel(p.competenceMonth).slice(0,3).toLowerCase()}</span>
+      </div>
+    </div>`).join('');
 }
 
 // ─── ORÇAMENTO × REAL ─────────────────────────────────────────────────────
 function renderOrcamentoDashboard(txs, month) {
   const budgetMonth = state.budgets[month] || {};
   const list = document.getElementById('orcamento-list');
-
   if (!Object.keys(budgetMonth).length) {
     list.innerHTML = '<p class="empty-state">Defina um orçamento na aba Receitas.</p>';
     return;
   }
-
-  // Agrupa gastos reais por categoria
   const realMap = {};
-  for (const tx of txs) {
-    realMap[tx.categoryId] = (realMap[tx.categoryId] || 0) + (tx.amount || 0);
-  }
+  for (const tx of txs) realMap[tx.categoryId] = (realMap[tx.categoryId]||0) + (tx.amount||0);
 
   const rows = Object.entries(budgetMonth)
-    .filter(([, v]) => v > 0)
+    .filter(([,v]) => v > 0)
     .map(([catId, target]) => {
-      const real  = realMap[catId] || 0;
-      const cat   = state.categories.find(c => c.id === catId);
-      const pct   = target > 0 ? Math.min((real / target) * 100, 100) : 0;
-      const cls   = pct > 100 ? 'progress-over' : pct > 80 ? 'progress-warn' : 'progress-ok';
+      const real = realMap[catId] || 0;
+      const cat  = state.categories.find(c => c.id === catId);
+      const pct  = target > 0 ? Math.min((real/target)*100, 100) : 0;
+      const cls  = pct > 100 ? 'progress-over' : pct > 80 ? 'progress-warn' : 'progress-ok';
       return `
         <div class="orcamento-item">
           <div class="orcamento-row">
             <span class="orcamento-cat">
-              <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${cat?.color || '#94a3b8'};margin-right:0.4rem"></span>
-              ${cat?.name || 'Categoria'}
+              <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${cat?.color||'#94a3b8'};margin-right:0.4rem"></span>
+              ${cat?.name || catId}
             </span>
             <span class="orcamento-vals">
               <span class="orcamento-real">${fmt(real)}</span>
@@ -264,6 +230,5 @@ function renderOrcamentoDashboard(txs, month) {
           </div>
         </div>`;
     });
-
   list.innerHTML = rows.join('') || '<p class="empty-state">Nenhuma categoria com orçamento definido.</p>';
 }
