@@ -13,7 +13,7 @@
  *  - Linhas com valor zerado
  */
 
-import { state, toast } from './app.js';
+import { state, toast } from './utils.js';
 import { saveTx } from './db.js';
 
 if (typeof pdfjsLib !== 'undefined') {

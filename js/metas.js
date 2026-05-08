@@ -2,7 +2,7 @@
  * metas.js — Aba de metas financeiras
  */
 
-import { state, fmt, toast, esc } from './app.js';
+import { state, fmt, toast, esc } from './utils.js';
 import { saveGoal, deleteGoal } from './db.js';
 
 let _metasInit = false;

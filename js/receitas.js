@@ -2,7 +2,7 @@
  * receitas.js — Aba de receitas e orçamento mensal
  */
 
-import { state, fmt, toast, esc } from './app.js';
+import { state, fmt, toast, esc } from './utils.js';
 import { incomesOfMonth, saveIncome, deleteIncome, saveBudgets } from './db.js';
 
 let _receitasInit = false;
