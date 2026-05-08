@@ -75,19 +75,23 @@ export async function updateFields(colName, id, fields) {
 
 /** Carrega todos os dados do Firestore no state global */
 export async function loadAllData() {
-  const [transactions, incomes, budgetDocs, assets, goals, categories] = await Promise.all([
+  const [transactions, incomes, budgetDocs, assets, goals, categories, rules] = await Promise.all([
     getAll('transactions'),
     getAll('incomes'),
     getAll('budgets'),
     getAll('assets'),
     getAll('goals'),
     getAll('categories'),
+    getAll('rules').catch(() => []),
   ]);
 
-  state.transactions = transactions;
-  state.incomes      = incomes;
-  state.assets       = assets;
-  state.goals        = goals;
+  // Separa extratos bancários das transações normais
+  state.extratoTransactions = transactions.filter(t => t.source === 'statement_import');
+  state.transactions        = transactions.filter(t => t.source !== 'statement_import');
+  state.incomes             = incomes;
+  state.assets              = assets;
+  state.goals               = goals;
+  state.importRules         = rules;
 
   // Categorias: semeio padrão apenas se vazio; caso contrário deduplica por nome
   if (categories.length === 0) {

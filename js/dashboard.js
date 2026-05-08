@@ -10,7 +10,7 @@
  *  - Gráfico de evolução agora inclui barra de Investido separada
  */
 
-import { state, fmt, monthLabel, offsetMonth, esc } from './app.js';
+import { state, fmt, monthLabel, offsetMonth, esc, renderInsights, showKpiSkeleton } from './app.js';
 import { txOfMonth, incomesOfMonth } from './db.js';
 
 let chartCategorias = null;
@@ -32,6 +32,9 @@ function getInvestCatIds() {
 export function renderDashboard() {
   const month = state.currentMonth;
   document.getElementById('chart-cat-month').textContent = monthLabel(month);
+
+  // Insights automáticos
+  renderInsights();
 
   const txs     = txOfMonth(month);
   const incomes = incomesOfMonth(month);

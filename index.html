@@ -3,47 +3,36 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Finanças Pessoais</title>
-
-  <!-- Fonts -->
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <title>Fluxo — Finanças Pessoais</title>
 
   <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-
   <!-- PDF.js -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 
   <!-- Firebase -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
-    import {
-      getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut
-    } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
-    import {
-      getFirestore, collection, doc, getDocs, setDoc, addDoc,
-      deleteDoc, updateDoc, query, where, writeBatch, onSnapshot
-    } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
+    import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut }
+      from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
+    import { getFirestore, collection, doc, getDocs, setDoc, addDoc,
+      deleteDoc, updateDoc, query, where, writeBatch }
+      from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
 
-    // ─── CONFIGURE FIREBASE ────────────────────────────────────────────────────
-    // Substitua pelos seus dados do Firebase Console
+    // ── Configure Firebase ──────────────────────────────────────
     const firebaseConfig = {
-  apiKey: "AIzaSyCZ_xc7UJsIsHI_M8GvxggtcYu2cBunqFo",
-  authDomain: "fefe-df577.firebaseapp.com",
-  databaseURL: "https://fefe-df577-default-rtdb.firebaseio.com",
-  projectId: "fefe-df577",
-  storageBucket: "fefe-df577.firebasestorage.app",
-  messagingSenderId: "988495815243",
-  appId: "1:988495815243:web:0309d3a01b5d6033e4e3ce"
-};
-
+      apiKey:            "COLE_AQUI",
+      authDomain:        "COLE_AQUI",
+      projectId:         "COLE_AQUI",
+      storageBucket:     "COLE_AQUI",
+      messagingSenderId: "COLE_AQUI",
+      appId:             "COLE_AQUI"
+    };
 
     const app  = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db   = getFirestore(app);
 
-    // Expõe para os outros módulos via window
     window._FB = { auth, db, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut,
       collection, doc, getDocs, setDoc, addDoc, deleteDoc, updateDoc, query, where, writeBatch };
   </script>
@@ -53,16 +42,14 @@
 </head>
 <body>
 
-<!-- ═══════════════════════════════════════════════════════════════
-     TELA DE LOGIN
-════════════════════════════════════════════════════════════════ -->
+<!-- ═══ LOGIN ════════════════════════════════════════════════════ -->
 <div id="login-screen" class="login-screen">
   <div class="login-card">
     <div class="login-brand">
-      <span class="brand-icon">◈</span>
-      <h1>Finanças Pessoais</h1>
+      <span class="brand-symbol">◈</span>
+      <h1>Fluxo</h1>
     </div>
-    <p class="login-sub">Controle seus gastos, receitas e patrimônio em um só lugar.</p>
+    <p class="login-sub">Controle financeiro pessoal inteligente. Importe faturas, acompanhe gastos e gerencie seu patrimônio.</p>
     <button id="btn-google-login" class="btn-login-google">
       <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
         <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" fill="#4285F4"/>
@@ -72,58 +59,91 @@
       </svg>
       Entrar com Google
     </button>
-    <p class="login-footer">Seus dados ficam vinculados à sua conta Google, acessíveis em qualquer dispositivo.</p>
+    <p class="login-footer">Seus dados são armazenados com segurança e vinculados à sua conta Google.</p>
   </div>
 </div>
 
-<!-- ═══════════════════════════════════════════════════════════════
-     APP PRINCIPAL
-════════════════════════════════════════════════════════════════ -->
+<!-- ═══ APP ══════════════════════════════════════════════════════ -->
 <div id="app" class="app hidden">
 
-  <!-- Sidebar -->
+  <!-- ── SIDEBAR ─────────────────────────────────────────────── -->
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-header">
-      <span class="brand-icon sm">◈</span>
-      <span class="sidebar-brand">Finanças</span>
+      <span class="sidebar-logo-icon">◈</span>
+      <span class="sidebar-logo">Fluxo</span>
     </div>
 
     <nav class="sidebar-nav">
-      <a href="#" class="nav-link active" data-tab="dashboard">
-        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-        Dashboard
-      </a>
-      <a href="#" class="nav-link" data-tab="gastos">
-        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
-        Gastos
-      </a>
-      <a href="#" class="nav-link" data-tab="receitas">
-        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M12 2v20M17 7H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-        Receitas
-      </a>
-      <a href="#" class="nav-link" data-tab="patrimonio">
-        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M3 21h18M5 21V7l7-4 7 4v14"/><path d="M9 21v-6h6v6"/></svg>
-        Patrimônio
-      </a>
-      <a href="#" class="nav-link" data-tab="metas">
-        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
-        Metas
-      </a>
+      <!-- Visão geral -->
+      <div class="nav-group">
+        <div class="nav-group-label">Visão Geral</div>
+        <a class="nav-link active" data-tab="dashboard">
+          <svg class="nav-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+          Dashboard
+        </a>
+      </div>
+
+      <!-- Movimentações -->
+      <div class="nav-group">
+        <div class="nav-group-label">Movimentações</div>
+        <a class="nav-link" data-tab="gastos">
+          <svg class="nav-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
+          Gastos
+        </a>
+        <a class="nav-link" data-tab="extratos">
+          <svg class="nav-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+          Extratos
+          <span class="nav-badge">Novo</span>
+        </a>
+        <a class="nav-link" data-tab="receitas">
+          <svg class="nav-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2v20M17 7H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+          Receitas
+        </a>
+        <a class="nav-link" data-tab="orcamento">
+          <svg class="nav-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+          Orçamento
+        </a>
+      </div>
+
+      <!-- Planejamento -->
+      <div class="nav-group">
+        <div class="nav-group-label">Planejamento</div>
+        <a class="nav-link" data-tab="patrimonio">
+          <svg class="nav-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 21h18M5 21V7l7-4 7 4v14"/><path d="M9 21v-6h6v6"/></svg>
+          Patrimônio
+        </a>
+        <a class="nav-link" data-tab="metas">
+          <svg class="nav-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+          Metas
+        </a>
+      </div>
+
+      <!-- Sistema -->
+      <div class="nav-group">
+        <div class="nav-group-label">Sistema</div>
+        <a class="nav-link" data-tab="configuracoes">
+          <svg class="nav-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2m-3.05-7.95-1.41 1.41M6.46 17.54l-1.41 1.41m14.9 0-1.41-1.41M6.46 6.46 5.05 5.05"/></svg>
+          Configurações
+        </a>
+      </div>
     </nav>
 
     <div class="sidebar-footer">
-      <a href="#" class="nav-link" data-tab="configuracoes">
-        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2"/></svg>
-        Configurações
-      </a>
+      <div class="sidebar-user">
+        <div class="sidebar-user-avatar" id="sidebar-avatar">?</div>
+        <div class="sidebar-user-info">
+          <div class="sidebar-user-name" id="sidebar-name">—</div>
+          <div class="sidebar-user-role">Conta pessoal</div>
+        </div>
+      </div>
       <button class="btn-logout" id="btn-logout">
-        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-        Sair
+        <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        Sair da conta
       </button>
     </div>
   </aside>
 
-  <!-- Conteúdo principal -->
+  <!-- ── MAIN ────────────────────────────────────────────────── -->
   <main class="main-content">
 
     <!-- Topbar -->
@@ -138,293 +158,349 @@
         <button class="btn-icon" id="btn-next-month">›</button>
       </div>
 
+      <div class="topbar-search">
+        <button class="search-trigger" id="btn-search">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          Buscar transações, metas…
+          <kbd>Ctrl K</kbd>
+        </button>
+      </div>
+
       <div class="topbar-actions">
         <span class="user-name" id="user-name">—</span>
         <div class="user-avatar" id="user-avatar">?</div>
       </div>
     </header>
 
-    <!-- ── DASHBOARD ──────────────────────────────────────────────── -->
+    <!-- ════ DASHBOARD ════════════════════════════════════════ -->
     <section id="tab-dashboard" class="tab-content active">
       <div class="page-header">
-        <h2 class="page-title">Dashboard</h2>
+        <div class="page-header-text">
+          <h2 class="page-title">Dashboard</h2>
+          <p class="page-subtitle">Visão geral das suas finanças</p>
+        </div>
+        <div class="page-actions">
+          <button class="btn btn-ghost btn-sm" id="btn-import-pdf-dash">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            Importar Fatura
+          </button>
+        </div>
+      </div>
+
+      <!-- Insights strip -->
+      <div class="insights-strip" id="insights-strip">
+        <div class="insight-chip info">
+          <span>💡</span> Carregando insights…
+        </div>
       </div>
 
       <!-- KPIs -->
       <div class="kpi-grid" id="kpi-grid">
-        <div class="kpi-card">
-          <span class="kpi-label">Receitas</span>
-          <span class="kpi-value positive" id="kpi-receitas">R$ —</span>
-          <span class="kpi-delta" id="kpi-receitas-delta"></span>
-        </div>
-        <div class="kpi-card">
-          <span class="kpi-label">Despesas</span>
-          <span class="kpi-value negative" id="kpi-despesas">R$ —</span>
-          <span class="kpi-delta" id="kpi-despesas-delta"></span>
-        </div>
-        <div class="kpi-card">
-          <span class="kpi-label">Saldo do Mês</span>
-          <span class="kpi-value" id="kpi-saldo">R$ —</span>
-          <span class="kpi-delta" id="kpi-taxa">Taxa de poupança —</span>
-        </div>
-        <div class="kpi-card">
-          <span class="kpi-label">Investido no Mês</span>
-          <span class="kpi-value gold" id="kpi-investido">R$ —</span>
-          <span class="kpi-delta" id="kpi-investido-total"></span>
-        </div>
+        <!-- Skeleton inicial -->
+        <div class="kpi-skeleton"><div class="skeleton sk-title"></div><div class="skeleton sk-value"></div><div class="skeleton sk-text" style="width:60%"></div></div>
+        <div class="kpi-skeleton"><div class="skeleton sk-title"></div><div class="skeleton sk-value"></div><div class="skeleton sk-text" style="width:60%"></div></div>
+        <div class="kpi-skeleton"><div class="skeleton sk-title"></div><div class="skeleton sk-value"></div><div class="skeleton sk-text" style="width:60%"></div></div>
+        <div class="kpi-skeleton"><div class="skeleton sk-title"></div><div class="skeleton sk-value"></div><div class="skeleton sk-text" style="width:60%"></div></div>
       </div>
 
-      <!-- Gráficos + Cards secundários -->
+      <!-- Gráficos -->
       <div class="dashboard-grid">
-        <div class="card card-tall">
+        <div class="card">
           <div class="card-header">
             <span class="card-title">Gastos por categoria</span>
             <span class="card-month" id="chart-cat-month"></span>
           </div>
-          <canvas id="chart-categorias" height="260"></canvas>
+          <canvas id="chart-categorias" height="250"></canvas>
         </div>
-
-        <div class="card card-tall">
-          <div class="card-header">
-            <span class="card-title">Evolução mensal</span>
-          </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">Evolução mensal</span></div>
           <canvas id="chart-evolucao" height="220"></canvas>
         </div>
+      </div>
 
+      <div class="dashboard-row">
         <div class="card">
-          <div class="card-header">
-            <span class="card-title">Parcelas previstas — próximos 3 meses</span>
-          </div>
+          <div class="card-header"><span class="card-title">Parcelas previstas — próximos 3 meses</span></div>
           <div id="parcelas-list" class="parcelas-list">
-            <p class="empty-state">Nenhuma parcela futura encontrada.</p>
+            <div class="empty-state">
+              <div class="empty-state-icon">📅</div>
+              <div class="empty-state-title">Sem parcelas futuras</div>
+              <div class="empty-state-text">Nenhuma parcela detectada nos próximos meses.</div>
+            </div>
           </div>
         </div>
-
         <div class="card">
-          <div class="card-header">
-            <span class="card-title">Orçamento × Real</span>
-          </div>
+          <div class="card-header"><span class="card-title">Orçamento × Real</span></div>
           <div id="orcamento-list" class="orcamento-list">
-            <p class="empty-state">Defina um orçamento na aba Receitas.</p>
+            <div class="empty-state">
+              <div class="empty-state-icon">🎯</div>
+              <div class="empty-state-title">Sem orçamento definido</div>
+              <div class="empty-state-text">Defina limites por categoria na aba Orçamento.</div>
+            </div>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- ── GASTOS ──────────────────────────────────────────────────── -->
+    <!-- ════ GASTOS ═══════════════════════════════════════════ -->
     <section id="tab-gastos" class="tab-content hidden">
       <div class="page-header">
-        <h2 class="page-title">Gastos</h2>
+        <div class="page-header-text">
+          <h2 class="page-title">Gastos</h2>
+          <p class="page-subtitle">Lançamentos do mês selecionado</p>
+        </div>
         <div class="page-actions">
-          <button class="btn btn-secondary" id="btn-import-pdf">
-            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          <button class="btn btn-ghost btn-sm" id="btn-import-pdf">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
             Importar Fatura PDF
           </button>
-          <button class="btn btn-primary" id="btn-novo-gasto">
-            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          <button class="btn btn-primary btn-sm" id="btn-novo-gasto">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             Novo Lançamento
           </button>
         </div>
       </div>
 
-      <!-- Filtros -->
       <div class="filter-bar">
-        <select id="filter-categoria" class="filter-select">
-          <option value="">Todas as categorias</option>
-        </select>
+        <select id="filter-categoria" class="filter-select"><option value="">Todas as categorias</option></select>
         <select id="filter-tipo-gasto" class="filter-select">
           <option value="">Todos os tipos</option>
-          <option value="cartao">Cartão de crédito</option>
+          <option value="cartao">Cartão</option>
           <option value="pix">Pix</option>
           <option value="debito">Débito</option>
+          <option value="ted">TED</option>
           <option value="dinheiro">Dinheiro</option>
           <option value="outro">Outro</option>
         </select>
-        <input type="text" id="filter-busca" class="filter-input" placeholder="Buscar descrição..." />
+        <input type="text" id="filter-busca" class="filter-input" placeholder="Buscar descrição…" />
+        <div class="filter-chips" id="filter-chips"></div>
       </div>
 
-      <!-- Tabela de gastos -->
-      <div class="table-wrapper">
-        <table class="data-table" id="tabela-gastos">
-          <thead>
-            <tr>
-              <th>Data</th>
-              <th>Descrição</th>
-              <th>Categoria</th>
-              <th>Tipo</th>
-              <th>Parcela</th>
-              <th class="col-value">Valor</th>
-              <th class="col-actions"></th>
-            </tr>
-          </thead>
-          <tbody id="gastos-tbody">
-            <tr><td colspan="7" class="empty-row">Nenhum gasto registrado neste mês.</td></tr>
-          </tbody>
-        </table>
-      </div>
-      <div class="table-footer">
-        <span id="gastos-total-label" class="table-total">Total: <strong id="gastos-total">R$ 0,00</strong></span>
-      </div>
-    </section>
-
-    <!-- ── RECEITAS ────────────────────────────────────────────────── -->
-    <section id="tab-receitas" class="tab-content hidden">
-      <div class="page-header">
-        <h2 class="page-title">Receitas</h2>
-        <button class="btn btn-primary" id="btn-nova-receita">
-          <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          Nova Receita
-        </button>
-      </div>
-
-      <div class="receitas-grid">
-        <!-- Receitas do mês -->
-        <div class="card">
-          <div class="card-header"><span class="card-title">Receitas do mês</span></div>
-          <div class="table-wrapper">
-            <table class="data-table">
-              <thead>
-                <tr><th>Tipo</th><th>Descrição</th><th class="col-value">Valor</th><th class="col-actions"></th></tr>
-              </thead>
-              <tbody id="receitas-tbody">
-                <tr><td colspan="4" class="empty-row">Nenhuma receita registrada.</td></tr>
-              </tbody>
-            </table>
-          </div>
-          <div class="table-footer">
-            Total: <strong id="receitas-total" class="positive">R$ 0,00</strong>
-          </div>
-        </div>
-
-        <!-- Orçamento mensal -->
-        <div class="card">
-          <div class="card-header">
-            <span class="card-title">Orçamento mensal por categoria</span>
-            <button class="btn btn-xs btn-secondary" id="btn-salvar-orcamento">Salvar</button>
-          </div>
-          <div id="orcamento-editor" class="orcamento-editor">
-            <p class="empty-state">Carregando categorias…</p>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- ── PATRIMÔNIO ──────────────────────────────────────────────── -->
-    <section id="tab-patrimonio" class="tab-content hidden">
-      <div class="page-header">
-        <h2 class="page-title">Patrimônio</h2>
-        <button class="btn btn-primary" id="btn-novo-ativo">
-          <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          Novo Ativo / Bem
-        </button>
-      </div>
-
-      <div class="kpi-grid kpi-grid-3">
-        <div class="kpi-card">
-          <span class="kpi-label">Investimentos</span>
-          <span class="kpi-value gold" id="pat-investimentos">R$ —</span>
-        </div>
-        <div class="kpi-card">
-          <span class="kpi-label">Caixa / Conta</span>
-          <span class="kpi-value positive" id="pat-caixa">R$ —</span>
-        </div>
-        <div class="kpi-card">
-          <span class="kpi-label">Bens Pessoais</span>
-          <span class="kpi-value" id="pat-bens">R$ —</span>
-        </div>
-      </div>
-
-      <div class="card" style="margin-top:1.5rem">
-        <div class="card-header"><span class="card-title">Ativos e Bens</span></div>
+      <div class="card">
         <div class="table-wrapper">
-          <table class="data-table" id="tabela-ativos">
+          <table class="data-table">
             <thead>
-              <tr>
-                <th>Nome</th>
-                <th>Tipo</th>
-                <th>Valor Inicial</th>
-                <th>Valor Atual</th>
-                <th>Aquisição</th>
-                <th>Obs.</th>
-                <th class="col-actions"></th>
-              </tr>
+              <tr><th>Data</th><th>Descrição</th><th>Categoria</th><th>Tipo</th><th>Parcela</th><th class="col-value">Valor</th><th class="col-actions"></th></tr>
             </thead>
-            <tbody id="ativos-tbody">
-              <tr><td colspan="7" class="empty-row">Nenhum ativo cadastrado.</td></tr>
+            <tbody id="gastos-tbody">
+              <tr><td colspan="7" class="empty-row">Carregando…</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="table-footer">
+          Total: <strong id="gastos-total" class="val-mono">R$ 0,00</strong>
+        </div>
+      </div>
+    </section>
+
+    <!-- ════ EXTRATOS ═════════════════════════════════════════ -->
+    <section id="tab-extratos" class="tab-content hidden">
+      <div class="page-header">
+        <div class="page-header-text">
+          <h2 class="page-title">Extratos Bancários</h2>
+          <p class="page-subtitle">Importe extratos em PDF, OFX ou CSV</p>
+        </div>
+        <div class="page-actions">
+          <button class="btn btn-primary btn-sm" id="btn-novo-extrato">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Importar Extrato
+          </button>
+        </div>
+      </div>
+
+      <!-- Histórico de importações -->
+      <div class="extratos-grid">
+        <div class="card">
+          <div class="card-header"><span class="card-title">Importações recentes</span></div>
+          <div id="importacoes-list">
+            <div class="empty-state">
+              <div class="empty-state-icon">🏦</div>
+              <div class="empty-state-title">Nenhum extrato importado</div>
+              <div class="empty-state-text">Importe extratos do Itaú, Nubank, Inter, Santander ou Bradesco em PDF, OFX ou CSV.</div>
+              <button class="btn btn-primary btn-sm" onclick="document.getElementById('btn-novo-extrato').click()">Importar agora</button>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">Bancos suportados</span></div>
+          <div style="padding:1.25rem">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.6rem">
+              <div style="background:var(--bg-card-raised);border:1px solid var(--border-soft);border-radius:var(--radius-md);padding:0.75rem;font-size:0.82rem;color:var(--text-secondary)">🟠 Itaú — PDF, OFX, CSV</div>
+              <div style="background:var(--bg-card-raised);border:1px solid var(--border-soft);border-radius:var(--radius-md);padding:0.75rem;font-size:0.82rem;color:var(--text-secondary)">🟣 Nubank — PDF, CSV</div>
+              <div style="background:var(--bg-card-raised);border:1px solid var(--border-soft);border-radius:var(--radius-md);padding:0.75rem;font-size:0.82rem;color:var(--text-secondary)">🟢 Inter — PDF, OFX, CSV</div>
+              <div style="background:var(--bg-card-raised);border:1px solid var(--border-soft);border-radius:var(--radius-md);padding:0.75rem;font-size:0.82rem;color:var(--text-secondary)">🔴 Santander — OFX, CSV</div>
+              <div style="background:var(--bg-card-raised);border:1px solid var(--border-soft);border-radius:var(--radius-md);padding:0.75rem;font-size:0.82rem;color:var(--text-secondary)">🔵 Bradesco — OFX, CSV</div>
+              <div style="background:var(--bg-card-raised);border:1px solid var(--border-soft);border-radius:var(--radius-md);padding:0.75rem;font-size:0.82rem;color:var(--text-muted)">+ Genérico OFX/CSV</div>
+            </div>
+            <p style="font-size:0.75rem;color:var(--text-muted);margin-top:0.75rem;line-height:1.5">OFX tem prioridade sobre CSV e PDF. Os dados são processados apenas no seu navegador — nenhum arquivo é enviado para servidores externos.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Transações do extrato -->
+      <div class="card" style="margin-top:1rem">
+        <div class="card-header">
+          <span class="card-title">Transações importadas</span>
+          <div style="display:flex;gap:0.5rem">
+            <select id="filter-extrato-banco" class="filter-select" style="min-width:120px"><option value="">Todos os bancos</option></select>
+            <select id="filter-extrato-tipo" class="filter-select" style="min-width:110px"><option value="">Todos os tipos</option><option value="income">Receitas</option><option value="expense">Despesas</option></select>
+          </div>
+        </div>
+        <div class="table-wrapper">
+          <table class="data-table">
+            <thead>
+              <tr><th>Data</th><th>Banco</th><th>Descrição</th><th>Tipo</th><th>Categoria</th><th class="col-value">Valor</th></tr>
+            </thead>
+            <tbody id="extratos-tbody">
+              <tr><td colspan="6" class="empty-row">Nenhuma transação de extrato ainda.</td></tr>
             </tbody>
           </table>
         </div>
       </div>
     </section>
 
-    <!-- ── METAS ───────────────────────────────────────────────────── -->
+    <!-- ════ RECEITAS ═════════════════════════════════════════ -->
+    <section id="tab-receitas" class="tab-content hidden">
+      <div class="page-header">
+        <div class="page-header-text"><h2 class="page-title">Receitas</h2><p class="page-subtitle">Entradas do mês</p></div>
+        <button class="btn btn-primary btn-sm" id="btn-nova-receita">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Nova Receita
+        </button>
+      </div>
+      <div class="receitas-grid">
+        <div class="card">
+          <div class="card-header"><span class="card-title">Receitas do mês</span></div>
+          <div class="table-wrapper">
+            <table class="data-table">
+              <thead><tr><th>Tipo</th><th>Descrição</th><th class="col-value">Valor</th><th class="col-actions"></th></tr></thead>
+              <tbody id="receitas-tbody"><tr><td colspan="4" class="empty-row">Nenhuma receita registrada.</td></tr></tbody>
+            </table>
+          </div>
+          <div class="table-footer">Total: <strong id="receitas-total" class="val-mono val-positive">R$ 0,00</strong></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">Distribuição</span></div>
+          <canvas id="chart-receitas" height="200"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- ════ ORÇAMENTO ════════════════════════════════════════ -->
+    <section id="tab-orcamento" class="tab-content hidden">
+      <div class="page-header">
+        <div class="page-header-text"><h2 class="page-title">Orçamento</h2><p class="page-subtitle">Limites mensais por categoria</p></div>
+        <button class="btn btn-primary btn-sm" id="btn-salvar-orcamento">Salvar orçamento</button>
+      </div>
+      <div class="card">
+        <div class="card-header"><span class="card-title">Orçamento mensal por categoria</span></div>
+        <div id="orcamento-editor" class="orcamento-editor"><p style="color:var(--text-muted);font-size:0.83rem;padding:1rem">Carregando categorias…</p></div>
+      </div>
+    </section>
+
+    <!-- ════ PATRIMÔNIO ═══════════════════════════════════════ -->
+    <section id="tab-patrimonio" class="tab-content hidden">
+      <div class="page-header">
+        <div class="page-header-text"><h2 class="page-title">Patrimônio</h2><p class="page-subtitle">Ativos e bens pessoais</p></div>
+        <button class="btn btn-primary btn-sm" id="btn-novo-ativo">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Novo Ativo / Bem
+        </button>
+      </div>
+      <div class="kpi-grid kpi-grid-3">
+        <div class="kpi-card">
+          <div class="kpi-header"><span class="kpi-label">Investimentos</span><div class="kpi-icon">📈</div></div>
+          <span class="kpi-value gold" id="pat-investimentos">R$ —</span>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-header"><span class="kpi-label">Caixa / Conta</span><div class="kpi-icon">🏦</div></div>
+          <span class="kpi-value positive" id="pat-caixa">R$ —</span>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-header"><span class="kpi-label">Bens Pessoais</span><div class="kpi-icon">🏠</div></div>
+          <span class="kpi-value" id="pat-bens">R$ —</span>
+        </div>
+      </div>
+      <div class="card" style="margin-top:1rem">
+        <div class="card-header"><span class="card-title">Todos os ativos e bens</span></div>
+        <div class="table-wrapper">
+          <table class="data-table">
+            <thead><tr><th>Nome</th><th>Tipo</th><th>Valor Inicial</th><th>Valor Atual</th><th>Aquisição</th><th>Obs.</th><th class="col-actions"></th></tr></thead>
+            <tbody id="ativos-tbody"><tr><td colspan="7" class="empty-row">Nenhum ativo cadastrado.</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ════ METAS ════════════════════════════════════════════ -->
     <section id="tab-metas" class="tab-content hidden">
       <div class="page-header">
-        <h2 class="page-title">Metas</h2>
-        <button class="btn btn-primary" id="btn-nova-meta">
-          <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        <div class="page-header-text"><h2 class="page-title">Metas</h2><p class="page-subtitle">Seus objetivos financeiros</p></div>
+        <button class="btn btn-primary btn-sm" id="btn-nova-meta">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
           Nova Meta
         </button>
       </div>
       <div id="metas-grid" class="metas-grid">
-        <p class="empty-state">Nenhuma meta criada ainda.</p>
+        <div class="empty-state" style="grid-column:1/-1">
+          <div class="empty-state-icon">🎯</div>
+          <div class="empty-state-title">Nenhuma meta criada</div>
+          <div class="empty-state-text">Defina objetivos financeiros e acompanhe seu progresso.</div>
+          <button class="btn btn-primary btn-sm" onclick="document.getElementById('btn-nova-meta').click()">Criar primeira meta</button>
+        </div>
       </div>
     </section>
 
-    <!-- ── CONFIGURAÇÕES ───────────────────────────────────────────── -->
+    <!-- ════ CONFIGURAÇÕES ════════════════════════════════════ -->
     <section id="tab-configuracoes" class="tab-content hidden">
       <div class="page-header">
-        <h2 class="page-title">Configurações</h2>
+        <div class="page-header-text"><h2 class="page-title">Configurações</h2><p class="page-subtitle">Personalize o Fluxo</p></div>
       </div>
-
       <div class="config-grid">
-        <!-- Categorias -->
         <div class="card">
           <div class="card-header">
             <span class="card-title">Categorias de Gastos</span>
             <button class="btn btn-xs btn-primary" id="btn-nova-categoria">+ Nova</button>
           </div>
-          <div id="categorias-list" class="categorias-list">
-            <p class="empty-state">Carregando…</p>
-          </div>
+          <div id="categorias-list" class="categorias-list"><p style="color:var(--text-muted);font-size:0.83rem;padding:1.5rem;text-align:center">Carregando…</p></div>
         </div>
-
-        <!-- Backup -->
         <div class="card">
           <div class="card-header"><span class="card-title">Backup dos Dados</span></div>
           <div class="backup-section">
             <div class="backup-info">
-              <p>Exporte todos os seus dados em formato JSON. O arquivo terá o número de versão e a data para facilitar o controle.</p>
+              <p>Exporte todos os seus dados em JSON com versão e data. Para restaurar, importe o arquivo gerado.</p>
               <div class="backup-version-row">
-                <label class="form-label">Versão do backup</label>
+                <label class="form-label">Versão</label>
                 <input type="text" id="backup-version" class="form-input sm" value="1.0.0" placeholder="ex: 1.2.0" />
               </div>
             </div>
             <div class="backup-actions">
-              <button class="btn btn-primary" id="btn-export-backup">
-                <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                Exportar Backup
+              <button class="btn btn-primary btn-sm" id="btn-export-backup">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                Exportar
               </button>
-              <label class="btn btn-secondary" style="cursor:pointer">
-                <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-                Importar Backup
+              <label class="btn btn-ghost btn-sm" style="cursor:pointer">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                Importar
                 <input type="file" id="input-import-backup" accept=".json" style="display:none" />
               </label>
             </div>
           </div>
         </div>
-
-        <!-- Configurações gerais -->
         <div class="card">
           <div class="card-header"><span class="card-title">Preferências</span></div>
           <div class="prefs-section">
             <div class="form-row">
               <label class="form-label">Offset de competência da fatura</label>
               <select id="billing-offset" class="form-select">
-                <option value="-1" selected>Vencimento em mês X → competência mês X-1</option>
+                <option value="-1" selected>Vencimento em mês X → competência X-1</option>
                 <option value="0">Sem offset (mesmo mês do vencimento)</option>
               </select>
-              <span class="form-hint">Define como as faturas importadas são alocadas nos meses.</span>
+              <span class="form-hint">Define como faturas importadas são alocadas nos meses.</span>
+            </div>
+            <div class="form-row" style="margin-top:0.85rem">
+              <label class="form-label">Regras de categorização automática</label>
+              <div id="rules-list" style="font-size:0.82rem;color:var(--text-muted);padding:0.5rem 0">Carregando regras…</div>
             </div>
           </div>
         </div>
@@ -434,317 +510,247 @@
   </main>
 </div>
 
-<!-- ═══════════════════════════════════════════════════════════════
-     MODAIS
-════════════════════════════════════════════════════════════════ -->
+<!-- ═══ MODAIS ════════════════════════════════════════════════════ -->
 
-<!-- Modal Novo Gasto / Editar Gasto -->
+<!-- Modal: Novo Gasto -->
 <div id="modal-gasto" class="modal-overlay hidden">
   <div class="modal">
-    <div class="modal-header">
-      <h3 id="modal-gasto-title">Novo Lançamento</h3>
-      <button class="modal-close" data-modal="modal-gasto">✕</button>
-    </div>
+    <div class="modal-header"><h3 id="modal-gasto-title">Novo Lançamento</h3><button class="modal-close" data-modal="modal-gasto">✕</button></div>
     <div class="modal-body">
       <input type="hidden" id="gasto-id" />
-      <div class="form-row">
-        <label class="form-label">Data *</label>
-        <input type="date" id="gasto-data" class="form-input" required />
-      </div>
-      <div class="form-row">
-        <label class="form-label">Descrição *</label>
-        <input type="text" id="gasto-desc" class="form-input" placeholder="Ex: Supermercado Extra" required />
-      </div>
-      <div class="form-row">
-        <label class="form-label">Valor *</label>
-        <input type="number" id="gasto-valor" class="form-input" placeholder="0,00" step="0.01" min="0" required />
-      </div>
-      <div class="form-row">
-        <label class="form-label">Categoria *</label>
-        <select id="gasto-categoria" class="form-select" required>
-          <option value="">Selecione…</option>
-        </select>
-      </div>
-      <div class="form-row">
-        <label class="form-label">Tipo de pagamento</label>
+      <div class="form-row"><label class="form-label">Data *</label><input type="date" id="gasto-data" class="form-input" required /></div>
+      <div class="form-row"><label class="form-label">Descrição *</label><input type="text" id="gasto-desc" class="form-input" placeholder="Ex: Supermercado Extra" required /></div>
+      <div class="form-row"><label class="form-label">Valor *</label><input type="number" id="gasto-valor" class="form-input" placeholder="0,00" step="0.01" min="0" required /></div>
+      <div class="form-row"><label class="form-label">Categoria *</label><select id="gasto-categoria" class="form-select" required><option value="">Selecione…</option></select></div>
+      <div class="form-row"><label class="form-label">Tipo de pagamento</label>
         <select id="gasto-tipo" class="form-select">
           <option value="cartao">Cartão de crédito</option>
           <option value="pix">Pix</option>
           <option value="debito">Débito</option>
+          <option value="ted">TED</option>
           <option value="dinheiro">Dinheiro</option>
           <option value="outro">Outro</option>
         </select>
       </div>
-      <div class="form-row form-row-2">
-        <div>
-          <label class="form-label">Parcela atual</label>
-          <input type="number" id="gasto-parcela-atual" class="form-input" placeholder="1" min="1" />
-        </div>
-        <div>
-          <label class="form-label">Total de parcelas</label>
-          <input type="number" id="gasto-parcela-total" class="form-input" placeholder="1" min="1" />
-        </div>
+      <div class="form-row-2">
+        <div class="form-row"><label class="form-label">Parcela atual</label><input type="number" id="gasto-parcela-atual" class="form-input" placeholder="1" min="1" /></div>
+        <div class="form-row"><label class="form-label">Total parcelas</label><input type="number" id="gasto-parcela-total" class="form-input" placeholder="1" min="1" /></div>
       </div>
-      <div class="form-row">
-        <label class="form-label">Mês de competência</label>
-        <input type="month" id="gasto-mes" class="form-input" />
-        <span class="form-hint">Deixe em branco para usar o mês atual selecionado.</span>
-      </div>
-      <div class="form-row">
-        <label class="form-label">Observação</label>
-        <textarea id="gasto-obs" class="form-textarea" placeholder="Opcional…" rows="2"></textarea>
-      </div>
+      <div class="form-row"><label class="form-label">Mês de competência</label><input type="month" id="gasto-mes" class="form-input" /><span class="form-hint">Deixe em branco para usar o mês selecionado.</span></div>
+      <div class="form-row"><label class="form-label">Observação</label><textarea id="gasto-obs" class="form-textarea" placeholder="Opcional…" rows="2"></textarea></div>
     </div>
-    <div class="modal-footer">
-      <button class="btn btn-secondary" data-modal="modal-gasto">Cancelar</button>
-      <button class="btn btn-primary" id="btn-salvar-gasto">Salvar</button>
-    </div>
+    <div class="modal-footer"><button class="btn btn-ghost" data-modal="modal-gasto">Cancelar</button><button class="btn btn-primary" id="btn-salvar-gasto">Salvar</button></div>
   </div>
 </div>
 
-<!-- Modal Importar PDF -->
+<!-- Modal: Importar Fatura PDF -->
 <div id="modal-pdf" class="modal-overlay hidden">
   <div class="modal modal-lg">
-    <div class="modal-header">
-      <h3>Importar Fatura PDF</h3>
-      <button class="modal-close" data-modal="modal-pdf">✕</button>
-    </div>
+    <div class="modal-header"><h3>Importar Fatura PDF</h3><button class="modal-close" data-modal="modal-pdf">✕</button></div>
     <div class="modal-body">
       <div id="pdf-step-1">
         <div class="pdf-drop-zone" id="pdf-drop-zone">
           <svg width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-          <p>Arraste o PDF da fatura aqui ou <label for="pdf-file-input" class="pdf-browse-link">selecione o arquivo</label></p>
+          <p>Arraste o PDF ou <label for="pdf-file-input" class="pdf-browse-link">selecione o arquivo</label></p>
           <input type="file" id="pdf-file-input" accept=".pdf" style="display:none" />
-          <span class="pdf-hint">Suporte para Nubank, Santander e outros bancos</span>
+          <span class="pdf-hint">Suporte para Itaú, Nubank, Santander e outros. Máx. 20 MB.</span>
         </div>
-        <div id="pdf-processing" class="hidden pdf-processing">
-          <div class="spinner"></div>
-          <span>Lendo fatura…</span>
-        </div>
+        <div id="pdf-processing" class="hidden pdf-processing"><div class="spinner"></div><span>Lendo fatura…</span></div>
       </div>
-
       <div id="pdf-step-2" class="hidden">
         <div class="pdf-review-header">
           <p class="pdf-info-text" id="pdf-info-text"></p>
-          <p class="form-hint">Revise os lançamentos antes de salvar. Você pode editar categoria, valor e descrição.</p>
+          <p class="form-hint">Revise e edite antes de salvar. Marque/desmarque para excluir lançamentos.</p>
         </div>
         <div class="table-wrapper">
           <table class="data-table" id="tabela-pdf-preview">
-            <thead>
-              <tr>
-                <th><input type="checkbox" id="pdf-check-all" checked /></th>
-                <th>Data</th>
-                <th>Descrição</th>
-                <th>Categoria</th>
-                <th class="col-value">Valor</th>
-                <th>Parcela</th>
-              </tr>
-            </thead>
+            <thead><tr><th><input type="checkbox" id="pdf-check-all" checked /></th><th>Data</th><th>Descrição</th><th>Categoria</th><th class="col-value">Valor</th><th>Parcela</th></tr></thead>
             <tbody id="pdf-preview-tbody"></tbody>
           </table>
         </div>
       </div>
     </div>
-    <div class="modal-footer">
-      <button class="btn btn-secondary" data-modal="modal-pdf">Cancelar</button>
-      <button class="btn btn-primary hidden" id="btn-confirmar-pdf">Confirmar e Salvar</button>
-    </div>
+    <div class="modal-footer"><button class="btn btn-ghost" data-modal="modal-pdf">Cancelar</button><button class="btn btn-primary hidden" id="btn-confirmar-pdf">Confirmar e Salvar</button></div>
   </div>
 </div>
 
-<!-- Modal Nova Receita -->
+<!-- Modal: Importar Extrato -->
+<div id="modal-extrato" class="modal-overlay hidden">
+  <div class="modal modal-lg">
+    <div class="modal-header"><h3>Importar Extrato Bancário</h3><button class="modal-close" data-modal="modal-extrato">✕</button></div>
+    <div class="modal-body">
+      <div id="extrato-step-1">
+        <!-- Seleção de banco -->
+        <div class="form-row" style="margin-bottom:0.5rem"><label class="form-label">Banco</label></div>
+        <div class="bank-selector" id="bank-selector">
+          <div class="bank-card" data-bank="itau"><div class="bank-card-logo">🟠</div><div class="bank-card-name">Itaú</div></div>
+          <div class="bank-card" data-bank="nubank"><div class="bank-card-logo">🟣</div><div class="bank-card-name">Nubank</div></div>
+          <div class="bank-card" data-bank="inter"><div class="bank-card-logo">🟢</div><div class="bank-card-name">Inter</div></div>
+          <div class="bank-card" data-bank="santander"><div class="bank-card-logo">🔴</div><div class="bank-card-name">Santander</div></div>
+          <div class="bank-card" data-bank="bradesco"><div class="bank-card-logo">🔵</div><div class="bank-card-name">Bradesco</div></div>
+          <div class="bank-card" data-bank="generico"><div class="bank-card-logo">🏦</div><div class="bank-card-name">Outro</div></div>
+        </div>
+
+        <!-- Formato -->
+        <div class="form-row" style="margin-bottom:0.5rem;margin-top:0.25rem"><label class="form-label">Formato do arquivo</label></div>
+        <div class="import-format-tabs" id="format-tabs">
+          <button class="format-tab active" data-format="ofx">OFX (recomendado)</button>
+          <button class="format-tab" data-format="csv">CSV</button>
+          <button class="format-tab" data-format="pdf">PDF</button>
+        </div>
+
+        <div class="pdf-drop-zone" id="extrato-drop-zone">
+          <svg width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          <p>Arraste o arquivo ou <label for="extrato-file-input" class="pdf-browse-link">selecione</label></p>
+          <input type="file" id="extrato-file-input" accept=".ofx,.csv,.pdf" style="display:none" />
+          <span class="pdf-hint" id="extrato-format-hint">OFX, CSV ou PDF — máx. 20 MB. Processado apenas no seu navegador.</span>
+        </div>
+        <div id="extrato-processing" class="hidden pdf-processing"><div class="spinner"></div><span>Processando extrato…</span></div>
+      </div>
+
+      <!-- Step 2: revisão -->
+      <div id="extrato-step-2" class="hidden">
+        <div id="extrato-batch-header" class="import-batch-header"></div>
+        <p class="form-hint" style="margin-bottom:0.75rem">Revise as transações. Duplicatas identificadas aparecem em destaque.</p>
+        <div class="table-wrapper">
+          <table class="data-table">
+            <thead><tr><th><input type="checkbox" id="extrato-check-all" checked /></th><th>Data</th><th>Descrição</th><th>Tipo</th><th>Categoria</th><th class="col-value">Valor</th><th>Status</th></tr></thead>
+            <tbody id="extrato-preview-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-ghost" data-modal="modal-extrato">Cancelar</button><button class="btn btn-primary hidden" id="btn-confirmar-extrato">Confirmar e Salvar</button></div>
+  </div>
+</div>
+
+<!-- Modal: Nova Receita -->
 <div id="modal-receita" class="modal-overlay hidden">
   <div class="modal">
-    <div class="modal-header">
-      <h3 id="modal-receita-title">Nova Receita</h3>
-      <button class="modal-close" data-modal="modal-receita">✕</button>
-    </div>
+    <div class="modal-header"><h3 id="modal-receita-title">Nova Receita</h3><button class="modal-close" data-modal="modal-receita">✕</button></div>
     <div class="modal-body">
       <input type="hidden" id="receita-id" />
-      <div class="form-row">
-        <label class="form-label">Tipo</label>
+      <div class="form-row"><label class="form-label">Tipo</label>
         <select id="receita-tipo" class="form-select">
-          <option value="salario">Salário</option>
-          <option value="vale_alimentacao">Vale Alimentação</option>
-          <option value="vale_transporte">Vale Transporte</option>
-          <option value="reembolso">Reembolso de Despesa</option>
-          <option value="presente">Presente</option>
-          <option value="outro">Outra Receita</option>
+          <option value="salario">Salário</option><option value="vale_alimentacao">Vale Alimentação</option>
+          <option value="vale_transporte">Vale Transporte</option><option value="reembolso">Reembolso</option>
+          <option value="presente">Presente</option><option value="outro">Outra Receita</option>
         </select>
       </div>
-      <div class="form-row">
-        <label class="form-label">Descrição</label>
-        <input type="text" id="receita-desc" class="form-input" placeholder="Ex: Salário novembro" />
-      </div>
-      <div class="form-row">
-        <label class="form-label">Valor *</label>
-        <input type="number" id="receita-valor" class="form-input" placeholder="0,00" step="0.01" min="0" required />
-      </div>
-      <div class="form-row">
-        <label class="form-label">Data</label>
-        <input type="date" id="receita-data" class="form-input" />
-      </div>
+      <div class="form-row"><label class="form-label">Descrição</label><input type="text" id="receita-desc" class="form-input" placeholder="Ex: Salário novembro" /></div>
+      <div class="form-row"><label class="form-label">Valor *</label><input type="number" id="receita-valor" class="form-input" placeholder="0,00" step="0.01" min="0" required /></div>
+      <div class="form-row"><label class="form-label">Data</label><input type="date" id="receita-data" class="form-input" /></div>
     </div>
-    <div class="modal-footer">
-      <button class="btn btn-secondary" data-modal="modal-receita">Cancelar</button>
-      <button class="btn btn-primary" id="btn-salvar-receita">Salvar</button>
-    </div>
+    <div class="modal-footer"><button class="btn btn-ghost" data-modal="modal-receita">Cancelar</button><button class="btn btn-primary" id="btn-salvar-receita">Salvar</button></div>
   </div>
 </div>
 
-<!-- Modal Novo Ativo -->
+<!-- Modal: Novo Ativo -->
 <div id="modal-ativo" class="modal-overlay hidden">
   <div class="modal">
-    <div class="modal-header">
-      <h3 id="modal-ativo-title">Novo Ativo / Bem</h3>
-      <button class="modal-close" data-modal="modal-ativo">✕</button>
-    </div>
+    <div class="modal-header"><h3 id="modal-ativo-title">Novo Ativo / Bem</h3><button class="modal-close" data-modal="modal-ativo">✕</button></div>
     <div class="modal-body">
       <input type="hidden" id="ativo-id" />
-      <div class="form-row">
-        <label class="form-label">Nome *</label>
-        <input type="text" id="ativo-nome" class="form-input" placeholder="Ex: Tesouro Direto" required />
-      </div>
-      <div class="form-row">
-        <label class="form-label">Tipo</label>
+      <div class="form-row"><label class="form-label">Nome *</label><input type="text" id="ativo-nome" class="form-input" placeholder="Ex: Tesouro Direto" required /></div>
+      <div class="form-row"><label class="form-label">Tipo</label>
         <select id="ativo-tipo" class="form-select">
-          <option value="investimento">Investimento</option>
-          <option value="caixa">Caixa / Conta</option>
-          <option value="bem_pessoal">Bem Pessoal</option>
+          <option value="investimento">Investimento</option><option value="caixa">Caixa / Conta</option><option value="bem_pessoal">Bem Pessoal</option>
         </select>
       </div>
-      <div class="form-row form-row-2">
-        <div>
-          <label class="form-label">Valor inicial</label>
-          <input type="number" id="ativo-valor-inicial" class="form-input" placeholder="0,00" step="0.01" min="0" />
-        </div>
-        <div>
-          <label class="form-label">Valor atual *</label>
-          <input type="number" id="ativo-valor-atual" class="form-input" placeholder="0,00" step="0.01" min="0" required />
-        </div>
+      <div class="form-row-2">
+        <div class="form-row"><label class="form-label">Valor inicial</label><input type="number" id="ativo-valor-inicial" class="form-input" placeholder="0,00" step="0.01" min="0" /></div>
+        <div class="form-row"><label class="form-label">Valor atual *</label><input type="number" id="ativo-valor-atual" class="form-input" placeholder="0,00" step="0.01" min="0" required /></div>
       </div>
-      <div class="form-row">
-        <label class="form-label">Data de aquisição</label>
-        <input type="date" id="ativo-data" class="form-input" />
-      </div>
-      <div class="form-row" id="deprec-row">
-        <label class="form-label">Taxa de depreciação anual (%)</label>
-        <input type="number" id="ativo-deprec" class="form-input" placeholder="Ex: 20" step="0.1" min="0" max="100" />
-        <span class="form-hint">Apenas para bens pessoais. Deixe vazio para não calcular.</span>
-      </div>
-      <div class="form-row">
-        <label class="form-label">Observações</label>
-        <textarea id="ativo-obs" class="form-textarea" rows="2" placeholder="Opcional…"></textarea>
-      </div>
+      <div class="form-row"><label class="form-label">Data de aquisição</label><input type="date" id="ativo-data" class="form-input" /></div>
+      <div class="form-row" id="deprec-row"><label class="form-label">Depreciação anual (%)</label><input type="number" id="ativo-deprec" class="form-input" placeholder="Ex: 20" step="0.1" min="0" max="100" /><span class="form-hint">Apenas para bens pessoais.</span></div>
+      <div class="form-row"><label class="form-label">Observações</label><textarea id="ativo-obs" class="form-textarea" rows="2" placeholder="Opcional…"></textarea></div>
     </div>
-    <div class="modal-footer">
-      <button class="btn btn-secondary" data-modal="modal-ativo">Cancelar</button>
-      <button class="btn btn-primary" id="btn-salvar-ativo">Salvar</button>
-    </div>
+    <div class="modal-footer"><button class="btn btn-ghost" data-modal="modal-ativo">Cancelar</button><button class="btn btn-primary" id="btn-salvar-ativo">Salvar</button></div>
   </div>
 </div>
 
-<!-- Modal Nova Meta -->
+<!-- Modal: Nova Meta -->
 <div id="modal-meta" class="modal-overlay hidden">
   <div class="modal">
-    <div class="modal-header">
-      <h3 id="modal-meta-title">Nova Meta</h3>
-      <button class="modal-close" data-modal="modal-meta">✕</button>
-    </div>
+    <div class="modal-header"><h3 id="modal-meta-title">Nova Meta</h3><button class="modal-close" data-modal="modal-meta">✕</button></div>
     <div class="modal-body">
       <input type="hidden" id="meta-id" />
-      <div class="form-row">
-        <label class="form-label">Nome da meta *</label>
-        <input type="text" id="meta-nome" class="form-input" placeholder="Ex: Reserva de emergência" required />
-      </div>
-      <div class="form-row">
-        <label class="form-label">Tipo</label>
+      <div class="form-row"><label class="form-label">Nome *</label><input type="text" id="meta-nome" class="form-input" placeholder="Ex: Reserva de emergência" required /></div>
+      <div class="form-row"><label class="form-label">Tipo</label>
         <select id="meta-tipo" class="form-select">
-          <option value="reserva_emergencia">Reserva de emergência</option>
-          <option value="aposentadoria">Aposentadoria</option>
-          <option value="viagem">Viagem</option>
-          <option value="compra">Compra de bem</option>
-          <option value="outro">Outro objetivo</option>
+          <option value="reserva_emergencia">Reserva de emergência</option><option value="aposentadoria">Aposentadoria</option>
+          <option value="viagem">Viagem</option><option value="compra">Compra de bem</option><option value="outro">Outro</option>
         </select>
       </div>
-      <div class="form-row form-row-2">
-        <div>
-          <label class="form-label">Valor alvo *</label>
-          <input type="number" id="meta-alvo" class="form-input" placeholder="0,00" step="0.01" min="0" required />
-        </div>
-        <div>
-          <label class="form-label">Valor atual</label>
-          <input type="number" id="meta-atual" class="form-input" placeholder="0,00" step="0.01" min="0" />
-        </div>
+      <div class="form-row-2">
+        <div class="form-row"><label class="form-label">Valor alvo *</label><input type="number" id="meta-alvo" class="form-input" placeholder="0,00" step="0.01" min="0" required /></div>
+        <div class="form-row"><label class="form-label">Valor atual</label><input type="number" id="meta-atual" class="form-input" placeholder="0,00" step="0.01" min="0" /></div>
       </div>
-      <div class="form-row">
-        <label class="form-label">Prazo</label>
-        <input type="date" id="meta-prazo" class="form-input" />
-      </div>
+      <div class="form-row"><label class="form-label">Prazo</label><input type="date" id="meta-prazo" class="form-input" /></div>
     </div>
-    <div class="modal-footer">
-      <button class="btn btn-secondary" data-modal="modal-meta">Cancelar</button>
-      <button class="btn btn-primary" id="btn-salvar-meta">Salvar</button>
-    </div>
+    <div class="modal-footer"><button class="btn btn-ghost" data-modal="modal-meta">Cancelar</button><button class="btn btn-primary" id="btn-salvar-meta">Salvar</button></div>
   </div>
 </div>
 
-<!-- Modal Aporte em Meta -->
+<!-- Modal: Aporte em Meta -->
 <div id="modal-aporte" class="modal-overlay hidden">
-  <div class="modal">
-    <div class="modal-header">
-      <h3>Registrar Aporte</h3>
-      <button class="modal-close" data-modal="modal-aporte">✕</button>
-    </div>
+  <div class="modal modal-sm">
+    <div class="modal-header"><h3>Registrar Aporte</h3><button class="modal-close" data-modal="modal-aporte">✕</button></div>
     <div class="modal-body">
       <input type="hidden" id="aporte-meta-id" />
-      <div class="form-row">
-        <label class="form-label">Valor do aporte *</label>
-        <input type="number" id="aporte-valor" class="form-input" placeholder="0,00" step="0.01" min="0" required />
-      </div>
-      <div class="form-row">
-        <label class="form-label">Data</label>
-        <input type="date" id="aporte-data" class="form-input" />
-      </div>
-      <div class="form-row">
-        <label class="form-label">Observação</label>
-        <input type="text" id="aporte-obs" class="form-input" placeholder="Opcional…" />
-      </div>
+      <div class="form-row"><label class="form-label">Valor *</label><input type="number" id="aporte-valor" class="form-input" placeholder="0,00" step="0.01" min="0" required /></div>
+      <div class="form-row"><label class="form-label">Data</label><input type="date" id="aporte-data" class="form-input" /></div>
+      <div class="form-row"><label class="form-label">Observação</label><input type="text" id="aporte-obs" class="form-input" placeholder="Opcional…" /></div>
     </div>
-    <div class="modal-footer">
-      <button class="btn btn-secondary" data-modal="modal-aporte">Cancelar</button>
-      <button class="btn btn-primary" id="btn-salvar-aporte">Salvar Aporte</button>
-    </div>
+    <div class="modal-footer"><button class="btn btn-ghost" data-modal="modal-aporte">Cancelar</button><button class="btn btn-primary" id="btn-salvar-aporte">Salvar Aporte</button></div>
   </div>
 </div>
 
-<!-- Modal Nova Categoria -->
+<!-- Modal: Nova Categoria -->
 <div id="modal-categoria" class="modal-overlay hidden">
   <div class="modal modal-sm">
-    <div class="modal-header">
-      <h3>Nova Categoria</h3>
-      <button class="modal-close" data-modal="modal-categoria">✕</button>
-    </div>
+    <div class="modal-header"><h3>Categoria</h3><button class="modal-close" data-modal="modal-categoria">✕</button></div>
     <div class="modal-body">
       <input type="hidden" id="cat-id" />
-      <div class="form-row">
-        <label class="form-label">Nome *</label>
-        <input type="text" id="cat-nome" class="form-input" placeholder="Ex: Saúde" required />
-      </div>
-      <div class="form-row">
-        <label class="form-label">Cor</label>
-        <input type="color" id="cat-cor" class="form-input-color" value="#6ee7b7" />
-      </div>
+      <div class="form-row"><label class="form-label">Nome *</label><input type="text" id="cat-nome" class="form-input" placeholder="Ex: Saúde" required /></div>
+      <div class="form-row"><label class="form-label">Cor</label><input type="color" id="cat-cor" class="form-input-color" value="#910A67" /></div>
     </div>
-    <div class="modal-footer">
-      <button class="btn btn-secondary" data-modal="modal-categoria">Cancelar</button>
-      <button class="btn btn-primary" id="btn-salvar-categoria">Salvar</button>
+    <div class="modal-footer"><button class="btn btn-ghost" data-modal="modal-categoria">Cancelar</button><button class="btn btn-primary" id="btn-salvar-categoria">Salvar</button></div>
+  </div>
+</div>
+
+<!-- Command Palette -->
+<div id="cmd-overlay" class="cmd-overlay hidden">
+  <div class="cmd-palette">
+    <div class="cmd-input-wrap">
+      <svg class="cmd-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input id="cmd-input" class="cmd-input" placeholder="Buscar transações, metas, categorias…" autocomplete="off" />
+    </div>
+    <div class="cmd-results" id="cmd-results">
+      <div class="cmd-empty">Digite para buscar…</div>
+    </div>
+    <div class="cmd-footer">
+      <span><kbd>↑↓</kbd> navegar</span>
+      <span><kbd>Enter</kbd> selecionar</span>
+      <span><kbd>Esc</kbd> fechar</span>
     </div>
   </div>
 </div>
 
-<!-- Toast de notificação -->
-<div id="toast" class="toast hidden"></div>
+<!-- Onboarding -->
+<div id="onboarding-overlay" class="onboarding-overlay hidden">
+  <div class="onboarding-card">
+    <div class="onboarding-step-dots" id="onboarding-dots"></div>
+    <div id="onboarding-content"></div>
+    <div class="onboarding-footer">
+      <button class="btn btn-ghost btn-sm" id="btn-onboarding-skip">Pular</button>
+      <button class="btn btn-primary btn-sm" id="btn-onboarding-next">Próximo →</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast Container -->
+<div id="toast-container"></div>
 
 <script type="module" src="js/app.js"></script>
 </body>

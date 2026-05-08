@@ -1,0 +1,387 @@
+/**
+ * extratos.js — Módulo de importação de extratos bancários
+ * Orquestra: seleção de banco → parse → revisão → salvar no Firestore
+ */
+
+import { state, esc, fmt, toast } from './app.js';
+import { detectDuplicates }        from './parsers/base-parser.js';
+import { parseOFX }                from './parsers/ofx-parser.js';
+import { parseCSV }                from './parsers/csv-parser.js';
+import { parsePDFStatement }       from './parsers/pdf-statement-parser.js';
+
+// ─── ESTADO LOCAL ──────────────────────────────────────────────
+let selectedBank   = '';
+let selectedFormat = 'ofx';
+let parsedItems    = [];
+
+const BANK_NAMES = {
+  itau: 'Itaú', nubank: 'Nubank', inter: 'Inter',
+  santander: 'Santander', bradesco: 'Bradesco', generico: 'Genérico',
+};
+
+const FORMAT_ACCEPT = {
+  ofx: '.ofx',
+  csv: '.csv,.txt',
+  pdf: '.pdf',
+};
+
+// ─── RENDER DA ABA ─────────────────────────────────────────────
+export function renderExtratos() {
+  _renderImportacoesList();
+  _renderExtratosTable();
+  _renderBancoFilters();
+}
+
+function _renderImportacoesList() {
+  const container = document.getElementById('importacoes-list');
+  if (!container) return;
+
+  // Agrupa transações de extrato por importBatchId
+  const batches = {};
+  for (const tx of state.extratoTransactions || []) {
+    const id = tx.importBatchId || 'sem-lote';
+    if (!batches[id]) batches[id] = { bankName: tx.bankName, fileType: tx.fileType, items: [], date: tx.importedAt };
+    batches[id].items.push(tx);
+  }
+
+  const batchList = Object.entries(batches);
+
+  if (!batchList.length) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-state-icon">🏦</div>
+        <div class="empty-state-title">Nenhum extrato importado</div>
+        <div class="empty-state-text">Importe extratos do Itaú, Nubank, Inter, Santander ou Bradesco em PDF, OFX ou CSV.</div>
+        <button class="btn btn-primary btn-sm" onclick="document.getElementById('btn-novo-extrato').click()">Importar agora</button>
+      </div>`;
+    return;
+  }
+
+  container.innerHTML = batchList.map(([batchId, batch]) => {
+    const inc = batch.items.filter(t => t.type === 'income').reduce((s,t) => s+t.amount, 0);
+    const exp = batch.items.filter(t => t.type === 'expense').reduce((s,t) => s+t.amount, 0);
+    const date = batch.date ? new Date(batch.date).toLocaleDateString('pt-BR') : '—';
+    return `
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:0.7rem 1.25rem;border-bottom:1px solid var(--border-soft);font-size:0.83rem;gap:1rem">
+        <div>
+          <div style="font-weight:600;color:var(--text-primary)">${esc(BANK_NAMES[batch.bankName] || batch.bankName)} <span style="color:var(--text-muted);font-size:0.72rem;font-weight:400">.${esc(batch.fileType)}</span></div>
+          <div style="color:var(--text-muted);font-size:0.75rem">${esc(date)} · ${batch.items.length} transações</div>
+        </div>
+        <div style="display:flex;gap:0.75rem;font-family:var(--font-mono);font-size:0.78rem">
+          <span style="color:var(--success)">+${fmt(inc)}</span>
+          <span style="color:var(--danger)">-${fmt(exp)}</span>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function _renderExtratosTable() {
+  const tbody    = document.getElementById('extratos-tbody');
+  const bancoSel = document.getElementById('filter-extrato-banco')?.value || '';
+  const tipoSel  = document.getElementById('filter-extrato-tipo')?.value  || '';
+
+  if (!tbody) return;
+
+  let txs = [...(state.extratoTransactions || [])];
+  if (bancoSel) txs = txs.filter(t => t.bankName === bancoSel);
+  if (tipoSel)  txs = txs.filter(t => t.type    === tipoSel);
+
+  if (!txs.length) {
+    tbody.innerHTML = `<tr><td colspan="6" class="empty-row">Nenhuma transação de extrato.</td></tr>`;
+    return;
+  }
+
+  // Ordena por data desc
+  txs.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+
+  tbody.innerHTML = txs.map(tx => {
+    const cat = state.categories.find(c => c.id === tx.category) || { name: tx.category || '—', color: '#888' };
+    const valClass = tx.type === 'income' ? 'val-positive' : 'val-negative';
+    const signal   = tx.type === 'income' ? '+' : '-';
+    return `<tr>
+      <td>${esc(tx.date || '—')}</td>
+      <td><span style="font-size:0.72rem;color:var(--text-muted)">${esc(BANK_NAMES[tx.bankName] || tx.bankName || '—')}</span></td>
+      <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(tx.description || '—')}</td>
+      <td><span class="tag-tipo tag-${esc(tx.type === 'income' ? 'pix' : 'outro')}">${esc(tx.type === 'income' ? 'Entrada' : 'Saída')}</span></td>
+      <td><span class="cat-dot" style="background:${esc(cat.color || '#888')}"></span>${esc(cat.name)}</td>
+      <td class="col-value val-mono ${valClass}">${signal}${fmt(tx.amount)}</td>
+    </tr>`;
+  }).join('');
+}
+
+function _renderBancoFilters() {
+  const sel = document.getElementById('filter-extrato-banco');
+  if (!sel || sel.children.length > 1) return;
+  const banks = [...new Set((state.extratoTransactions || []).map(t => t.bankName))];
+  banks.forEach(b => {
+    const opt = document.createElement('option');
+    opt.value = b; opt.textContent = BANK_NAMES[b] || b;
+    sel.appendChild(opt);
+  });
+  sel.addEventListener('change', _renderExtratosTable);
+  document.getElementById('filter-extrato-tipo')?.addEventListener('change', _renderExtratosTable);
+}
+
+// ─── MODAL DE IMPORTAÇÃO ───────────────────────────────────────
+export function initExtratoModal() {
+  selectedBank   = '';
+  selectedFormat = 'ofx';
+  parsedItems    = [];
+
+  _resetModal();
+
+  // Seleção de banco
+  document.querySelectorAll('#bank-selector .bank-card').forEach(card => {
+    card.addEventListener('click', () => {
+      document.querySelectorAll('#bank-selector .bank-card').forEach(c => c.classList.remove('selected'));
+      card.classList.add('selected');
+      selectedBank = card.dataset.bank;
+    });
+  });
+
+  // Seleção de formato
+  document.querySelectorAll('#format-tabs .format-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('#format-tabs .format-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      selectedFormat = tab.dataset.format;
+      _updateFormatHint();
+    });
+  });
+
+  // Drop zone
+  const dropZone = document.getElementById('extrato-drop-zone');
+  const fileInput = document.getElementById('extrato-file-input');
+
+  dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+  dropZone.addEventListener('drop', e => {
+    e.preventDefault();
+    dropZone.classList.remove('dragover');
+    const file = e.dataTransfer.files[0];
+    if (file) _handleFile(file);
+  });
+  fileInput.addEventListener('change', () => {
+    if (fileInput.files[0]) _handleFile(fileInput.files[0]);
+  });
+  // Clique na dropzone abre o input
+  dropZone.addEventListener('click', () => fileInput.click());
+
+  // Checkbox "marcar todos"
+  document.getElementById('extrato-check-all')?.addEventListener('change', e => {
+    document.querySelectorAll('#extrato-preview-tbody .row-check').forEach(cb => {
+      cb.checked = e.target.checked;
+    });
+  });
+
+  // Botão confirmar
+  document.getElementById('btn-confirmar-extrato')?.addEventListener('click', _saveExtrato);
+}
+
+function _updateFormatHint() {
+  const hints = {
+    ofx: 'OFX — formato recomendado, disponível no internet banking',
+    csv: 'CSV — exportado pelo app ou internet banking',
+    pdf: 'PDF — extrato em PDF (resultados podem variar)',
+  };
+  const el = document.getElementById('extrato-format-hint');
+  if (el) el.textContent = hints[selectedFormat] || '';
+
+  const input = document.getElementById('extrato-file-input');
+  if (input) input.accept = FORMAT_ACCEPT[selectedFormat] || '*';
+}
+
+function _resetModal() {
+  document.getElementById('extrato-step-1')?.classList.remove('hidden');
+  document.getElementById('extrato-step-2')?.classList.add('hidden');
+  document.getElementById('btn-confirmar-extrato')?.classList.add('hidden');
+  document.getElementById('extrato-processing')?.classList.add('hidden');
+  document.getElementById('extrato-preview-tbody')  && (document.getElementById('extrato-preview-tbody').innerHTML = '');
+}
+
+// ─── PROCESSAR ARQUIVO ────────────────────────────────────────
+async function _handleFile(file) {
+  // Validação básica
+  const ext = file.name.split('.').pop().toLowerCase();
+  if (file.size > 20 * 1024 * 1024) { toast('Arquivo muito grande (máx. 20 MB).', 'error'); return; }
+
+  // Detecta formato pelo arquivo se não selecionado explicitamente
+  const autoFormat = ext === 'ofx' ? 'ofx' : ext === 'csv' ? 'csv' : ext === 'pdf' ? 'pdf' : selectedFormat;
+  selectedFormat = autoFormat;
+
+  // Detecta banco se não selecionado
+  const bank = selectedBank || _detectBankFromFile(file.name);
+
+  // Mostra spinner
+  document.getElementById('extrato-drop-zone').classList.add('hidden');
+  document.getElementById('extrato-processing').classList.remove('hidden');
+
+  try {
+    let items = [];
+
+    if (autoFormat === 'ofx') {
+      const text = await file.text();
+      items = parseOFX(text, bank, state.importRules || []);
+    } else if (autoFormat === 'csv') {
+      const text = await _readFileAsText(file);
+      items = parseCSV(text, bank, state.importRules || []);
+    } else if (autoFormat === 'pdf') {
+      items = await parsePDFStatement(file, bank, state.importRules || []);
+    }
+
+    if (!items.length) {
+      toast('Nenhuma transação encontrada no arquivo. Verifique o banco e formato.', 'warning');
+      _resetModal();
+      document.getElementById('extrato-drop-zone').classList.remove('hidden');
+      return;
+    }
+
+    // Anti-duplicidade
+    parsedItems = detectDuplicates(items, [...state.transactions, ...(state.extratoTransactions || [])]);
+
+    _showReview(parsedItems, bank, autoFormat);
+
+  } catch (err) {
+    console.error('Erro ao processar extrato:', err);
+    toast(`Erro ao processar arquivo: ${err.message}`, 'error');
+    _resetModal();
+    document.getElementById('extrato-drop-zone').classList.remove('hidden');
+  } finally {
+    document.getElementById('extrato-processing').classList.add('hidden');
+  }
+}
+
+function _detectBankFromFile(filename) {
+  const f = filename.toLowerCase();
+  if (f.includes('itau') || f.includes('itaú'))      return 'itau';
+  if (f.includes('nubank'))                           return 'nubank';
+  if (f.includes('inter'))                            return 'inter';
+  if (f.includes('santander'))                        return 'santander';
+  if (f.includes('bradesco'))                         return 'bradesco';
+  return 'generico';
+}
+
+function _readFileAsText(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload  = e => resolve(e.target.result);
+    reader.onerror = () => reject(new Error('Falha ao ler arquivo.'));
+    // Tenta detectar encoding
+    reader.readAsText(file, 'UTF-8');
+  });
+}
+
+// ─── REVISÃO ─────────────────────────────────────────────────
+function _showReview(items, bank, format) {
+  document.getElementById('extrato-step-1').classList.add('hidden');
+  document.getElementById('extrato-step-2').classList.remove('hidden');
+  document.getElementById('btn-confirmar-extrato').classList.remove('hidden');
+
+  const dupCount  = items.filter(t => t.isDuplicate).length;
+  const incCount  = items.filter(t => t.type === 'income').length;
+  const expCount  = items.filter(t => t.type === 'expense').length;
+  const totalIn   = items.filter(t => t.type === 'income').reduce((s,t) => s+t.amount, 0);
+  const totalOut  = items.filter(t => t.type === 'expense').reduce((s,t) => s+t.amount, 0);
+
+  document.getElementById('extrato-batch-header').innerHTML = `
+    <div class="batch-meta">
+      <strong>${esc(BANK_NAMES[bank] || bank)}</strong> — <span style="text-transform:uppercase;font-size:0.75rem">${esc(format)}</span>
+      · ${items.length} transações${dupCount ? ` · <span style="color:var(--warning)">${dupCount} possível(is) duplicata(s)</span>` : ''}
+    </div>
+    <div class="batch-stats">
+      <span class="batch-stat-in">↑ ${incCount} entradas ${fmt(totalIn)}</span>
+      <span class="batch-stat-out">↓ ${expCount} saídas ${fmt(totalOut)}</span>
+    </div>`;
+
+  const tbody = document.getElementById('extrato-preview-tbody');
+  const cats  = state.categories;
+
+  tbody.innerHTML = items.map((tx, idx) => {
+    const catOptions = cats.map(c =>
+      `<option value="${esc(c.id)}" ${c.id === tx.category ? 'selected' : ''}>${esc(c.name)}</option>`
+    ).join('');
+
+    const typeOptions = `
+      <option value="expense" ${tx.type === 'expense' ? 'selected' : ''}>Saída</option>
+      <option value="income"  ${tx.type === 'income'  ? 'selected' : ''}>Entrada</option>
+      <option value="transfer" ${tx.type === 'transfer' ? 'selected' : ''}>Transferência</option>`;
+
+    const dupBadge = tx.isDuplicate
+      ? `<span class="tag-duplicata">Possível duplicata</span>` : '';
+
+    return `<tr class="${tx.isDuplicate ? 'row-dup' : ''}">
+      <td><input type="checkbox" class="row-check" data-idx="${idx}" ${tx.isDuplicate ? '' : 'checked'} /></td>
+      <td style="font-size:0.8rem;white-space:nowrap">${esc(tx.date)}</td>
+      <td style="max-width:180px">
+        <input type="text" class="form-input" style="padding:0.25rem 0.5rem;font-size:0.78rem;width:100%"
+          data-field="description" data-idx="${idx}" value="${esc(tx.description)}" />
+      </td>
+      <td><select class="select-inline" data-field="type" data-idx="${idx}">${typeOptions}</select></td>
+      <td><select class="select-inline" data-field="category" data-idx="${idx}"><option value="">—</option>${catOptions}</select></td>
+      <td class="col-value val-mono" style="white-space:nowrap;color:${tx.type === 'income' ? 'var(--success)' : 'var(--danger)'}">${fmt(tx.amount)}</td>
+      <td>${dupBadge}</td>
+    </tr>`;
+  }).join('');
+
+  // Edição inline
+  tbody.querySelectorAll('[data-field]').forEach(el => {
+    el.addEventListener('change', () => {
+      const idx   = parseInt(el.dataset.idx);
+      const field = el.dataset.field;
+      parsedItems[idx][field] = el.value;
+    });
+  });
+}
+
+// ─── SALVAR ───────────────────────────────────────────────────
+async function _saveExtrato() {
+  const { db, collection, addDoc } = window._FB;
+  const uid = window._FB.auth.currentUser?.uid;
+  if (!uid) { toast('Não autenticado.', 'error'); return; }
+
+  // Itens selecionados
+  const checks    = document.querySelectorAll('#extrato-preview-tbody .row-check');
+  const selected  = parsedItems.filter((_, i) => checks[i]?.checked);
+
+  if (!selected.length) { toast('Nenhuma transação selecionada.', 'warning'); return; }
+
+  const btn = document.getElementById('btn-confirmar-extrato');
+  btn.disabled    = true;
+  btn.textContent = 'Salvando…';
+
+  try {
+    const now = new Date().toISOString();
+    const ref = collection(db, `users/${uid}/transactions`);
+
+    for (const tx of selected) {
+      await addDoc(ref, {
+        ...tx,
+        isReviewed:  true,
+        importedAt:  now,
+        updatedAt:   now,
+        createdAt:   now,
+      });
+    }
+
+    // Atualiza state local
+    if (!state.extratoTransactions) state.extratoTransactions = [];
+    state.extratoTransactions.push(...selected.map(tx => ({ ...tx, isReviewed: true, importedAt: now })));
+
+    const dupSkipped = parsedItems.length - selected.length;
+    toast(
+      `${selected.length} transação(ões) salva(s).${dupSkipped ? ` ${dupSkipped} ignorada(s).` : ''}`,
+      'success',
+      'Extrato importado!'
+    );
+
+    document.getElementById('modal-extrato').classList.add('hidden');
+    renderExtratos();
+
+  } catch (err) {
+    console.error('Erro ao salvar extrato:', err);
+    toast(`Erro ao salvar: ${err.message}`, 'error');
+  } finally {
+    btn.disabled    = false;
+    btn.textContent = 'Confirmar e Salvar';
+  }
+}
