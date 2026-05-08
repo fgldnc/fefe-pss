@@ -6,25 +6,29 @@
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 
 :root {
-  --bg-main:          #030637;
-  --bg-card:          #3C0753;
-  --bg-card-raised:   #4a0868;
-  --bg-hover:         #52097a;
-  --bg-active:        #5d0a8a;
+  /* Fundo: mais escuro que a cor da imagem */
+  --bg-main:          #0a0929;
+  /* Cards, sidebar, headers: #0f0e39 (cor da imagem enviada) */
+  --bg-card:          #0f0e39;
+  --bg-card-raised:   #161560;
+  --bg-hover:         #1c1b70;
+  --bg-active:        #222180;
+  /* Acentos magenta/rosa — para botões, destaques, elementos ativos */
   --accent-secondary: #720455;
   --accent-primary:   #910A67;
   --accent-bright:    #c01888;
-  --accent-dim:       rgba(145, 10, 103, 0.15);
-  --accent-glow:      rgba(145, 10, 103, 0.28);
+  --accent-dim:       rgba(145, 10, 103, 0.13);
+  --accent-glow:      rgba(145, 10, 103, 0.22);
 
-  --text-primary:   #f0e6f8;
-  --text-secondary: #c4a0d8;
-  --text-muted:     #7a5090;
-  --text-inverse:   #030637;
+  --text-primary:   #e8e6ff;
+  --text-secondary: #9d9bc8;
+  --text-muted:     #5a587a;
+  --text-inverse:   #0a0929;
 
-  --border-soft:   rgba(145, 10, 103, 0.20);
-  --border-md:     rgba(145, 10, 103, 0.35);
-  --border-strong: rgba(145, 10, 103, 0.55);
+  /* Bordas neutras com alpha — não competem com o magenta */
+  --border-soft:   rgba(255, 255, 255, 0.06);
+  --border-md:     rgba(255, 255, 255, 0.11);
+  --border-strong: rgba(145, 10, 103, 0.45);
 
   --success:      #34d399;
   --success-dim:  rgba(52, 211, 153, 0.14);
@@ -46,8 +50,8 @@
   --radius-xl:  20px;
   --radius-2xl: 28px;
 
-  --shadow:      0 4px 24px rgba(3, 6, 55, 0.7);
-  --shadow-card: 0 2px 16px rgba(3, 6, 55, 0.5), 0 0 0 1px var(--border-soft);
+  --shadow:      0 4px 24px rgba(5, 4, 20, 0.85);
+  --shadow-card: 0 2px 16px rgba(5, 4, 20, 0.65), 0 0 0 1px var(--border-soft);
   --shadow-glow: 0 0 40px var(--accent-glow);
 
   --sidebar-w:        230px;
@@ -67,7 +71,7 @@ html {
 
 body {
   font-family: var(--font-sans);
-  background: var(--bg-main);
+  background: #0a0929;
   color: var(--text-primary);
   min-height: 100vh;
   line-height: 1.6;
@@ -87,7 +91,7 @@ body {
   background:
     radial-gradient(ellipse 70% 60% at 20% 80%, rgba(114, 4, 85, 0.3) 0%, transparent 55%),
     radial-gradient(ellipse 50% 40% at 80% 20%, rgba(145, 10, 103, 0.22) 0%, transparent 55%),
-    var(--bg-main);
+    #0a0929;
   padding: 1.5rem;
 }
 
@@ -248,7 +252,7 @@ body {
 
 .topbar {
   height: var(--topbar-h);
-  background: rgba(60, 7, 83, 0.80);
+  background: rgba(15, 14, 57, 0.88);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border-bottom: 1px solid var(--border-soft);

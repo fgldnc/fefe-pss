@@ -5,8 +5,6 @@
 import { state, toast, esc } from './utils.js';
 import { saveCategory, deleteCategory, exportBackup, importBackup } from './db.js';
 
-let _init = false;
-
 export function renderConfiguracoes() {
   const section = document.getElementById('tab-configuracoes');
   if (!section) return;
@@ -145,7 +143,7 @@ export function renderConfiguracoes() {
     if (e('cfg-user-email')) e('cfg-user-email').textContent = user.email || '—';
   }
 
-  if (!_init) { _initEvents(); _init = true; }
+  _initEvents();
 }
 
 function _renderCategorias() {

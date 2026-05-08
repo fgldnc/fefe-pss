@@ -10,7 +10,7 @@
  *  - Gráfico de evolução agora inclui barra de Investido separada
  */
 
-import { state, fmt, monthLabel, offsetMonth, esc, renderInsights, showKpiSkeleton } from './app.js';
+import { state, fmt, monthLabel, offsetMonth, esc, renderInsights, showKpiSkeleton } from './utils.js';
 import { txOfMonth, incomesOfMonth } from './db.js';
 
 let chartCategorias = null;
@@ -31,10 +31,6 @@ function getInvestCatIds() {
 // ─── RENDER PRINCIPAL ─────────────────────────────────────────────────────
 export function renderDashboard() {
   const month = state.currentMonth;
-  document.getElementById('chart-cat-month').textContent = monthLabel(month);
-
-  // Insights automáticos
-  renderInsights();
 
   const txs     = txOfMonth(month);
   const incomes = incomesOfMonth(month);
@@ -47,30 +43,56 @@ export function renderDashboard() {
   const totalExpense  = txExpenses.reduce((s, t) => s + (t.amount || 0), 0);
   const totalInvested = txInvestments.reduce((s, t) => s + (t.amount || 0), 0);
   const saldoLivre    = totalIncome - totalExpense - totalInvested;
-
-  // Taxa de poupança = quanto da renda não foi em despesas (investido + sobra)
-  const guardado = totalInvested + Math.max(0, saldoLivre);
-  const taxa     = totalIncome > 0 ? Math.round((guardado / totalIncome) * 100) : 0;
-
-  // ── KPIs ────────────────────────────────────────────────────────────────
-  document.getElementById('kpi-receitas').textContent  = fmt(totalIncome);
-  document.getElementById('kpi-despesas').textContent  = fmt(totalExpense);
-  document.getElementById('kpi-investido').textContent = fmt(totalInvested);
-
-  const saldoEl = document.getElementById('kpi-saldo');
-  saldoEl.textContent  = fmt(saldoLivre);
-  saldoEl.className    = 'kpi-value ' + (saldoLivre >= 0 ? 'positive' : 'negative');
-
-  const taxaEl = document.getElementById('kpi-taxa');
-  taxaEl.textContent = totalIncome === 0
-    ? 'Cadastre suas receitas para ver a taxa'
-    : `${taxa}% da renda guardada`;
+  const guardado      = totalInvested + Math.max(0, saldoLivre);
+  const taxa          = totalIncome > 0 ? Math.round((guardado / totalIncome) * 100) : 0;
+  const saldoCls      = saldoLivre >= 0 ? 'positive' : 'negative';
 
   const totalAssetInvest = state.assets
     .filter(a => a.type === 'investimento')
     .reduce((s, a) => s + (a.currentValue || 0), 0);
-  document.getElementById('kpi-investido-total').textContent =
-    totalAssetInvest > 0 ? `Total no patrimônio: ${fmt(totalAssetInvest)}` : '';
+
+  // ── Renderiza HTML dos KPIs (substitui skeleton) ─────────────────────
+  const kpiGrid = document.getElementById('kpi-grid');
+  if (kpiGrid) {
+    kpiGrid.innerHTML = `
+      <div class="kpi-card">
+        <div class="kpi-header">
+          <span class="kpi-label">Receitas</span>
+          <div class="kpi-icon">💰</div>
+        </div>
+        <span class="kpi-value positive" id="kpi-receitas">${fmt(totalIncome)}</span>
+        <div class="kpi-delta">mês ${esc(monthLabel(month))}</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-header">
+          <span class="kpi-label">Despesas</span>
+          <div class="kpi-icon">💳</div>
+        </div>
+        <span class="kpi-value negative" id="kpi-despesas">${fmt(totalExpense)}</span>
+        <div class="kpi-delta">excluindo investimentos</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-header">
+          <span class="kpi-label">Saldo livre</span>
+          <div class="kpi-icon">📊</div>
+        </div>
+        <span class="kpi-value ${saldoCls}" id="kpi-saldo">${fmt(saldoLivre)}</span>
+        <div class="kpi-delta" id="kpi-taxa">${totalIncome === 0 ? 'Cadastre suas receitas' : taxa + '% da renda guardada'}</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-header">
+          <span class="kpi-label">Investido</span>
+          <div class="kpi-icon">📈</div>
+        </div>
+        <span class="kpi-value gold" id="kpi-investido">${fmt(totalInvested)}</span>
+        <div class="kpi-delta" id="kpi-investido-total">${totalAssetInvest > 0 ? 'Total patrimônio: ' + fmt(totalAssetInvest) : 'no mês'}</div>
+      </div>`;
+  }
+
+  document.getElementById('chart-cat-month') && (document.getElementById('chart-cat-month').textContent = monthLabel(month));
+
+  // Insights automáticos
+  renderInsights();
 
   renderChartCategorias(txExpenses);
   renderChartEvolucao();

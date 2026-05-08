@@ -2,12 +2,13 @@
  * orcamento.js — Aba de orçamento mensal
  */
 
-import { state, esc, fmt, toast } from './app.js';
+import { state, esc, fmt, toast } from './utils.js';
 import { saveBudgets }             from './db.js';
 
 export function renderOrcamento() {
   const editor = document.getElementById('orcamento-editor');
   if (!editor) return;
+  _initOrcamentoEvents();
 
   const month   = state.currentMonth;
   const budgets = state.budgets[month] || {};
@@ -58,7 +59,10 @@ export function renderOrcamento() {
 }
 
 // Salvar orçamento
-document.addEventListener('DOMContentLoaded', () => {
+let _orcInit = false;
+function _initOrcamentoEvents() {
+  if (_orcInit) return;
+  _orcInit = true;
   document.getElementById('btn-salvar-orcamento')?.addEventListener('click', async () => {
     const inputs  = document.querySelectorAll('.budget-input');
     const budgetMap = {};
