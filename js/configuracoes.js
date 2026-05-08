@@ -2,7 +2,7 @@
  * configuracoes.js — Aba de configurações: categorias, backup, preferências
  */
 
-import { state, toast } from './app.js';
+import { state, toast, esc } from './app.js';
 import { saveCategory, deleteCategory } from './db.js';
 import { exportBackup, importBackup } from './db.js';
 
@@ -30,7 +30,7 @@ function _renderCategorias() {
     .map(c => `
       <div class="categoria-item">
         <span class="categoria-dot" style="background:${c.color}"></span>
-        <span class="categoria-nome">${c.name}</span>
+        <span class="categoria-nome">${esc(c.name)}</span>
         <button class="btn-icon-only" style="margin-left:auto" data-action="edit-cat" data-id="${c.id}">✎</button>
         <button class="btn-icon-only danger" data-action="delete-cat" data-id="${c.id}">✕</button>
       </div>`).join('');

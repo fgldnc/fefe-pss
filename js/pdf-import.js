@@ -74,9 +74,20 @@ function _attachEvents() {
 }
 
 // ─── LEITURA DO PDF ────────────────────────────────────────────────────────
+const PDF_MAX_BYTES = 20 * 1024 * 1024; // 20 MB
+
 async function _processPdf(file) {
   if (typeof pdfjsLib === 'undefined') {
     toast('PDF.js não carregou. Verifique a conexão.', 'error');
+    return;
+  }
+  // Valida MIME type e tamanho máximo
+  if (file.type !== 'application/pdf') {
+    toast('O arquivo precisa ser um PDF válido.', 'error');
+    return;
+  }
+  if (file.size > PDF_MAX_BYTES) {
+    toast('O PDF excede o limite de 20 MB.', 'error');
     return;
   }
   document.getElementById('pdf-processing').classList.remove('hidden');

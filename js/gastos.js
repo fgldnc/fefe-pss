@@ -2,7 +2,7 @@
  * gastos.js — Aba de gastos: tabela, lançamento manual, importação PDF
  */
 
-import { state, fmt, toast } from './app.js';
+import { state, fmt, toast, esc } from './app.js';
 import { txOfMonth, saveTx, deleteTx } from './db.js';
 import { initPdfImport } from './pdf-import.js';
 
@@ -46,7 +46,7 @@ function _renderTable() {
   tbody.innerHTML = txs.map(tx => {
     const cat   = state.categories.find(c => c.id === tx.categoryId);
     const catDot = cat
-      ? `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${cat.color};margin-right:0.4rem"></span>${cat.name}`
+      ? `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${esc(cat.color)};margin-right:0.4rem"></span>${esc(cat.name)}`
       : '—';
 
     const tipoTag = _tipoTag(tx.paymentType);
@@ -64,7 +64,7 @@ function _renderTable() {
     return `
       <tr>
         <td>${dataFmt}</td>
-        <td title="${tx.notes || ''}">${tx.description || '—'}</td>
+        <td title="${esc(tx.notes || '')}">${esc(tx.description) || '—'}</td>
         <td>${catDot}</td>
         <td>${tipoTag}</td>
         <td>${parcTag} ${projTag}</td>
@@ -92,7 +92,7 @@ function _tipoTag(tipo) {
 // ─── SELECTS DE CATEGORIA ──────────────────────────────────────────────────
 function _populateCategorySelects() {
   const opts = state.categories.map(c =>
-    `<option value="${c.id}">${c.name}</option>`
+    `<option value="${esc(c.id)}">${esc(c.name)}</option>`
   ).join('');
 
   // Filtro

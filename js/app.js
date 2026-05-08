@@ -26,6 +26,18 @@ import { renderConfiguracoes }  from './configuracoes.js';
 
 // ─── UTILITÁRIOS GLOBAIS ───────────────────────────────────────────────────
 
+/** Escapa caracteres HTML para prevenir XSS em innerHTML */
+export function esc(str) {
+  if (str === null || str === undefined) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#x27;')
+    .replace(/\//g, '&#x2F;');
+}
+
 /** Formata número como moeda BRL */
 export function fmt(val) {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val || 0);

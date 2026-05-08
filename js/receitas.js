@@ -2,7 +2,7 @@
  * receitas.js — Aba de receitas e orçamento mensal
  */
 
-import { state, fmt, toast } from './app.js';
+import { state, fmt, toast, esc } from './app.js';
 import { incomesOfMonth, saveIncome, deleteIncome, saveBudgets } from './db.js';
 
 let _receitasInit = false;
@@ -36,8 +36,8 @@ function _renderReceitasTable() {
 
   tbody.innerHTML = items.map(i => `
     <tr>
-      <td>${tipoLabel[i.type] || i.type}</td>
-      <td>${i.description || '—'}</td>
+      <td>${esc(tipoLabel[i.type] || i.type)}</td>
+      <td>${esc(i.description) || '—'}</td>
       <td class="col-value"><span class="val-mono val-positive">${fmt(i.amount)}</span></td>
       <td class="col-actions">
         <button class="btn-icon-only" data-action="edit-income" data-id="${i.id}">✎</button>
@@ -62,7 +62,7 @@ function _renderOrcamentoEditor() {
       <div class="orcamento-input-row">
         <span class="orcamento-input-label">
           <span class="cat-dot" style="background:${cat.color}"></span>
-          ${cat.name}
+          ${esc(cat.name)}
         </span>
         <input type="number" class="form-input sm orcamento-cat-input"
           data-cat-id="${cat.id}" value="${val}" placeholder="0,00" step="0.01" min="0"

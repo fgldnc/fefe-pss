@@ -2,7 +2,7 @@
  * patrimonio.js — Aba de patrimônio (investimentos, caixa, bens pessoais)
  */
 
-import { state, fmt, toast } from './app.js';
+import { state, fmt, toast, esc } from './app.js';
 import { saveAsset, deleteAsset } from './db.js';
 
 let _patrimonioInit = false;
@@ -45,12 +45,12 @@ function _renderAtivos() {
 
     return `
       <tr>
-        <td>${a.name}</td>
+        <td>${esc(a.name)}</td>
         <td><span style="color:${tipoColor[a.type] || 'var(--text-secondary)'};">${tipoLabel[a.type] || a.type}</span></td>
         <td class="col-value"><span class="val-mono">${fmt(a.initialValue || 0)}</span></td>
         <td class="col-value"><span class="val-mono val-positive">${fmt(valorAtual)}</span></td>
         <td>${dateFmt}</td>
-        <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${a.notes || ''}">${a.notes || '—'}</td>
+        <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(a.notes || '')}">${esc(a.notes) || '—'}</td>
         <td class="col-actions">
           <button class="btn-icon-only" data-action="edit-asset" data-id="${a.id}">✎</button>
           <button class="btn-icon-only danger" data-action="delete-asset" data-id="${a.id}">✕</button>

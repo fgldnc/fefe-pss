@@ -10,7 +10,7 @@
  *  - Gráfico de evolução agora inclui barra de Investido separada
  */
 
-import { state, fmt, monthLabel, offsetMonth } from './app.js';
+import { state, fmt, monthLabel, offsetMonth, esc } from './app.js';
 import { txOfMonth, incomesOfMonth } from './db.js';
 
 let chartCategorias = null;
@@ -185,7 +185,7 @@ function renderParcelasPrevisao() {
   }
   list.innerHTML = parcelas.slice(0,10).map(p => `
     <div class="parcela-item">
-      <span class="parcela-desc" title="${p.description}">${p.description}</span>
+      <span class="parcela-desc" title="${esc(p.description)}">${esc(p.description)}</span>
       <div class="parcela-info">
         <span class="parcela-num">${p.installmentCurrent}/${p.installmentTotal}</span>
         <span class="parcela-val">${fmt(p.amount)}</span>
@@ -217,7 +217,7 @@ function renderOrcamentoDashboard(txs, month) {
           <div class="orcamento-row">
             <span class="orcamento-cat">
               <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${cat?.color||'#94a3b8'};margin-right:0.4rem"></span>
-              ${cat?.name || catId}
+              ${esc(cat?.name || catId)}
             </span>
             <span class="orcamento-vals">
               <span class="orcamento-real">${fmt(real)}</span>

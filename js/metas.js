@@ -2,7 +2,7 @@
  * metas.js — Aba de metas financeiras
  */
 
-import { state, fmt, toast } from './app.js';
+import { state, fmt, toast, esc } from './app.js';
 import { saveGoal, deleteGoal } from './db.js';
 
 let _metasInit = false;
@@ -42,8 +42,8 @@ function _renderMetasGrid() {
     return `
       <div class="meta-card">
         <div class="meta-card-header">
-          <span class="meta-nome">${g.name}</span>
-          <span class="meta-tipo-tag">${tipoLabel[g.type] || g.type}</span>
+          <span class="meta-nome">${esc(g.name)}</span>
+          <span class="meta-tipo-tag">${esc(tipoLabel[g.type] || g.type)}</span>
         </div>
         <div class="meta-values">
           <span class="meta-atual-val">${fmt(g.currentAmount || 0)}</span>

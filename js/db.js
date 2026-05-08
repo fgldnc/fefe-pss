@@ -291,29 +291,81 @@ export async function exportBackup(version) {
   URL.revokeObjectURL(url);
 }
 
+// ─── VALIDAÇÃO DO BACKUP ──────────────────────────────────────────────────
+const BACKUP_MAX_BYTES  = 50 * 1024 * 1024; // 50 MB
+const ALLOWED_COL_NAMES = ['transactions','incomes','budgets','assets','goals','categories'];
+const ALLOWED_TX_FIELDS = new Set([
+  'id','date','description','amount','categoryId','paymentType',
+  'installmentCurrent','installmentTotal','competenceMonth','notes',
+  'isProjected','importedFrom'
+]);
+
+function _validateBackupPayload(payload) {
+  if (!payload || typeof payload !== 'object') throw new Error('Arquivo inválido.');
+  const data = payload.data || payload;
+  if (!data || typeof data !== 'object')        throw new Error('Estrutura de backup não reconhecida.');
+
+  // Bloqueia prototype pollution
+  if ('__proto__' in payload || 'constructor' in payload || 'prototype' in payload)
+    throw new Error('Payload suspeito bloqueado.');
+
+  for (const col of ALLOWED_COL_NAMES) {
+    const items = data[col];
+    if (items === undefined) continue;
+    if (!Array.isArray(items)) throw new Error(`Campo "${col}" deve ser um array.`);
+    if (items.length > 50000) throw new Error(`Array "${col}" excede o limite permitido.`);
+    for (const item of items) {
+      if (typeof item !== 'object' || item === null) throw new Error(`Item inválido em "${col}".`);
+      if ('__proto__' in item || 'constructor' in item) throw new Error('Item suspeito bloqueado.');
+      // Valida campos de transação
+      if (col === 'transactions') {
+        if (typeof item.amount !== 'number' || item.amount < 0 || item.amount > 10_000_000)
+          throw new Error('Valor de transação fora do intervalo permitido.');
+        if (item.description && typeof item.description !== 'string')
+          throw new Error('Descrição inválida.');
+        if (item.description && item.description.length > 500)
+          throw new Error('Descrição muito longa.');
+      }
+    }
+  }
+  return data;
+}
+
 /** Importa backup JSON e restaura dados no Firestore */
 export async function importBackup(file) {
-  const text = await file.text();
-  const payload = JSON.parse(text);
+  // Valida tamanho do arquivo
+  if (file.size > BACKUP_MAX_BYTES)
+    throw new Error('Arquivo de backup muito grande (máx. 50 MB).');
+  if (file.type && file.type !== 'application/json' && !file.name?.endsWith('.json'))
+    throw new Error('O arquivo precisa ser um JSON.');
 
-  // Suporta formato antigo (sem .meta) e novo
-  const data = payload.data || payload;
+  const text = await file.text();
+
+  let payload;
+  try {
+    payload = JSON.parse(text);
+  } catch {
+    throw new Error('JSON inválido ou corrompido.');
+  }
+
+  // Valida estrutura e bloqueia prototype pollution
+  const data = _validateBackupPayload(payload);
 
   const { db, collection, doc, writeBatch } = fb();
   const uid = getUid();
 
-  const colNames = ['transactions', 'incomes', 'budgets', 'assets', 'goals', 'categories'];
-
-  for (const colName of colNames) {
+  for (const colName of ALLOWED_COL_NAMES) {
     const items = data[colName] || [];
     if (!items.length) continue;
 
-    // Batch write (max 500 por batch)
+    // Batch write (max 490 por batch, limite Firestore é 500)
     let batch = writeBatch(db);
     let count = 0;
 
     for (const item of items) {
       const { id, ...fields } = item;
+      // Só escreve se o id for uma string simples (sem path traversal)
+      if (!id || typeof id !== 'string' || id.includes('/') || id.length > 200) continue;
       const ref = doc(collection(doc(collection(db, 'users'), uid), colName), id);
       batch.set(ref, fields, { merge: true });
       count++;
