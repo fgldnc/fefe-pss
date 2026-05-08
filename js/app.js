@@ -25,6 +25,9 @@ const TAB_MODULES = {
   patrimonio:    () => import('./patrimonio.js').then(m => m.renderPatrimonio),
   metas:         () => import('./metas.js').then(m => m.renderMetas),
   configuracoes: () => import('./configuracoes.js').then(m => m.renderConfiguracoes),
+  relatorios:    () => import('./relatorios.js').then(m => m.renderRelatorios),
+  calendario:    () => import('./calendario.js').then(m => m.renderCalendario),
+  timeline:      () => import('./timeline.js').then(m => m.renderTimeline),
 };
 
 export async function switchTab(name) {

@@ -2,7 +2,7 @@
  * gastos.js — Aba de gastos: tabela, lançamento manual, importação PDF
  */
 
-import { state, fmt, toast, esc } from './app.js';
+import { state, fmt, toast, esc } from './utils.js';
 import { txOfMonth, saveTx, deleteTx } from './db.js';
 import { initPdfImport } from './pdf-import.js';
 
@@ -11,6 +11,7 @@ let _initialized = false;
 export function renderGastos() {
   if (!_initialized) {
     _initGastosEvents();
+    _initAdvancedFilterEvents();
     _initialized = true;
   }
   _populateCategorySelects();
@@ -22,14 +23,29 @@ function _renderTable() {
   const month  = state.currentMonth;
   let txs      = txOfMonth(month);
 
-  // Filtros
-  const filterCat  = document.getElementById('filter-categoria').value;
-  const filterTipo = document.getElementById('filter-tipo-gasto').value;
-  const filterBusca = document.getElementById('filter-busca').value.toLowerCase().trim();
+  // Filtros básicos
+  const filterCat   = document.getElementById('filter-categoria')?.value || '';
+  const filterTipo  = document.getElementById('filter-tipo-gasto')?.value || '';
+  const filterBusca = (document.getElementById('filter-busca')?.value || '').toLowerCase().trim();
 
   if (filterCat)   txs = txs.filter(t => t.categoryId === filterCat);
   if (filterTipo)  txs = txs.filter(t => t.paymentType === filterTipo);
   if (filterBusca) txs = txs.filter(t => t.description?.toLowerCase().includes(filterBusca));
+
+  // Filtros avançados
+  const valMin   = parseFloat(document.getElementById('filter-valor-min')?.value || '');
+  const valMax   = parseFloat(document.getElementById('filter-valor-max')?.value || '');
+  const dtInicio = document.getElementById('filter-data-inicio')?.value || '';
+  const dtFim    = document.getElementById('filter-data-fim')?.value || '';
+  const apenasProj = document.getElementById('filter-apenas-projetadas')?.checked;
+  const apenasParcelas = document.getElementById('filter-apenas-parcelas')?.checked;
+
+  if (!isNaN(valMin) && valMin > 0) txs = txs.filter(t => (t.amount || 0) >= valMin);
+  if (!isNaN(valMax) && valMax > 0) txs = txs.filter(t => (t.amount || 0) <= valMax);
+  if (dtInicio) txs = txs.filter(t => (t.date || '') >= dtInicio);
+  if (dtFim)    txs = txs.filter(t => (t.date || '') <= dtFim);
+  if (apenasProj)     txs = txs.filter(t => t.isProjected);
+  if (apenasParcelas) txs = txs.filter(t => t.installmentTotal > 1);
 
   txs.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
 
@@ -242,4 +258,46 @@ function _offsetMonth(ym, delta) {
 
 function _today() {
   return new Date().toISOString().slice(0, 10);
+}
+
+
+// ─── FILTROS AVANÇADOS ─────────────────────────────────────────
+function _initAdvancedFilterEvents() {
+  const btn = document.getElementById('btn-filtros-avancados');
+  const panel = document.getElementById('advanced-filter-panel');
+  if (!btn || !panel) return;
+
+  btn.addEventListener('click', () => {
+    const visible = !panel.classList.contains('hidden');
+    panel.classList.toggle('hidden', visible);
+    btn.textContent = visible ? 'Filtros avançados ▾' : 'Filtros avançados ▴';
+  });
+
+  // Valor mín/máx
+  ['filter-valor-min', 'filter-valor-max'].forEach(id => {
+    document.getElementById(id)?.addEventListener('input', _renderTable);
+  });
+
+  // Data início/fim
+  ['filter-data-inicio', 'filter-data-fim'].forEach(id => {
+    document.getElementById(id)?.addEventListener('change', _renderTable);
+  });
+
+  // Checkboxes
+  ['filter-apenas-projetadas', 'filter-apenas-parcelas'].forEach(id => {
+    document.getElementById(id)?.addEventListener('change', _renderTable);
+  });
+
+  // Limpar filtros avançados
+  document.getElementById('btn-limpar-filtros')?.addEventListener('click', () => {
+    ['filter-valor-min','filter-valor-max','filter-data-inicio','filter-data-fim'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.value = '';
+    });
+    ['filter-apenas-projetadas','filter-apenas-parcelas'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.checked = false;
+    });
+    _renderTable();
+  });
 }
