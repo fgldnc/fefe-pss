@@ -5,7 +5,7 @@
  *   transactions, incomes, budgets, assets, goals, categories, settings
  */
 
-import { state } from './app.js';
+import { state } from './utils.js';
 import { getUid } from './auth.js';
 
 // ─── CATEGORIAS PADRÃO ─────────────────────────────────────────────────────
