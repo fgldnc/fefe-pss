@@ -230,6 +230,43 @@ function _resetModal() {
   document.getElementById('extrato-preview-tbody')  && (document.getElementById('extrato-preview-tbody').innerHTML = '');
 }
 
+
+// ─── EXCLUIR LOTE DE IMPORTAÇÃO ───────────────────────────────
+async function _deleteBatch(batchId, items) {
+  const { db, doc, deleteDoc, collection, query, where, getDocs } = window._FB;
+  const uid = window._FB.auth.currentUser?.uid;
+  if (!uid) { toast('Não autenticado.', 'error'); return; }
+
+  const btn = document.querySelector(`[data-batch="${batchId}"]`);
+  if (btn) { btn.disabled = true; btn.textContent = 'Excluindo…'; }
+
+  try {
+    // Deleta de transactions
+    const txRef = collection(db, `users/${uid}/transactions`);
+    const q     = query(txRef, where('importBatchId', '==', batchId));
+    const snap  = await getDocs(q);
+    for (const d of snap.docs) await deleteDoc(d.ref);
+
+    // Deleta de incomes (entradas que foram espelhadas)
+    const incRef = collection(db, `users/${uid}/incomes`);
+    const qInc   = query(incRef, where('importBatchId', '==', batchId));
+    const snapInc = await getDocs(qInc).catch(() => ({ docs: [] }));
+    for (const d of snapInc.docs) await deleteDoc(d.ref);
+
+    // Atualiza state
+    state.extratoTransactions = (state.extratoTransactions || []).filter(t => t.importBatchId !== batchId);
+    state.incomes = (state.incomes || []).filter(i => i.importBatchId !== batchId);
+
+    toast(`Importação excluída — ${snap.docs.length} transações removidas.`, 'success');
+    renderExtratos();
+
+  } catch (err) {
+    console.error('Erro ao excluir batch:', err);
+    toast(`Erro ao excluir: ${err.message}`, 'error');
+    if (btn) { btn.disabled = false; btn.textContent = '🗑 Excluir'; }
+  }
+}
+
 // ─── PROCESSAR ARQUIVO ────────────────────────────────────────
 async function _handleFile(file) {
   // Validação básica
@@ -365,6 +402,19 @@ function _showReview(items, bank, format) {
 }
 
 // ─── SALVAR ───────────────────────────────────────────────────
+
+// Classifica tipo de receita pela descrição
+function _classifyIncomeType(desc) {
+  const d = (desc || '').toLowerCase();
+  if (/salário|salario|folha|holerite/.test(d))          return 'salario';
+  if (/vale.aliment/.test(d))                            return 'vale_alimentacao';
+  if (/vale.transp/.test(d))                             return 'vale_transporte';
+  if (/reembolso|ressarcimento|estorno|devolu/.test(d))  return 'reembolso';
+  if (/resgate|rendimento|rend|cdb|lci|lca|aplica/.test(d)) return 'investimento';
+  if (/ted|pix|transfere|transf/.test(d))                return 'transferencia';
+  return 'outro';
+}
+
 async function _saveExtrato() {
   const { db, collection, addDoc } = window._FB;
   const uid = window._FB.auth.currentUser?.uid;
@@ -382,16 +432,32 @@ async function _saveExtrato() {
 
   try {
     const now = new Date().toISOString();
-    const ref = collection(db, `users/${uid}/transactions`);
+    const txRef  = collection(db, `users/${uid}/transactions`);
+    const incRef = collection(db, `users/${uid}/incomes`);
 
     for (const tx of selected) {
-      await addDoc(ref, {
-        ...tx,
-        isReviewed:  true,
-        importedAt:  now,
-        updatedAt:   now,
-        createdAt:   now,
-      });
+      const base = { ...tx, isReviewed: true, importedAt: now, updatedAt: now, createdAt: now };
+
+      // Salva em transactions (sempre)
+      await addDoc(txRef, base);
+
+      // Entradas também salvam em incomes para aparecer no dashboard de receitas
+      if (tx.type === 'income' && tx.amount > 0) {
+        const incomeData = {
+          type:        _classifyIncomeType(tx.description),
+          description: tx.description,
+          amount:      tx.amount,
+          date:        tx.date,
+          month:       tx.date ? tx.date.slice(0, 7) : now.slice(0, 7),
+          source:      'statement_import',
+          bankName:    tx.bankName,
+          importedAt:  now,
+          createdAt:   now,
+        };
+        await addDoc(incRef, incomeData);
+        state.incomes = state.incomes || [];
+        state.incomes.push(incomeData);
+      }
     }
 
     // Atualiza state local
