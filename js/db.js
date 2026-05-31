@@ -306,12 +306,20 @@ const ALLOWED_TX_FIELDS = new Set([
 
 function _validateBackupPayload(payload) {
   if (!payload || typeof payload !== 'object') throw new Error('Arquivo inválido.');
-  const data = payload.data || payload;
-  if (!data || typeof data !== 'object')        throw new Error('Estrutura de backup não reconhecida.');
 
-  // Bloqueia prototype pollution
-  if ('__proto__' in payload || 'constructor' in payload || 'prototype' in payload)
+  // Bloqueia prototype pollution de forma correta:
+  // usa hasOwnProperty para checar APENAS propriedades próprias, não herdadas
+  // (todo objeto JS tem 'constructor' herdado do prototype — não é sinal de ataque)
+  if (Object.prototype.hasOwnProperty.call(payload, '__proto__') ||
+      Object.prototype.hasOwnProperty.call(payload, 'prototype'))
     throw new Error('Payload suspeito bloqueado.');
+
+  // Aceita formato { meta, transactions, incomes, ... } OU { data: { ... } }
+  const data = (payload.transactions || payload.incomes || payload.categories)
+    ? payload
+    : (payload.data || payload);
+
+  if (!data || typeof data !== 'object') throw new Error('Estrutura de backup não reconhecida.');
 
   for (const col of ALLOWED_COL_NAMES) {
     const items = data[col];
@@ -320,7 +328,7 @@ function _validateBackupPayload(payload) {
     if (items.length > 50000) throw new Error(`Array "${col}" excede o limite permitido.`);
     for (const item of items) {
       if (typeof item !== 'object' || item === null) throw new Error(`Item inválido em "${col}".`);
-      if ('__proto__' in item || 'constructor' in item) throw new Error('Item suspeito bloqueado.');
+      if (Object.prototype.hasOwnProperty.call(item, '__proto__')) throw new Error('Item suspeito bloqueado.');
       // Valida campos de transação
       if (col === 'transactions') {
         if (typeof item.amount !== 'number' || item.amount < 0 || item.amount > 10_000_000)
