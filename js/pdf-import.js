@@ -421,11 +421,17 @@ async function _confirmarImportacao() {
   btn.disabled = true; btn.textContent = 'Salvando…';
 
   try {
-    // Calcula mês de competência = mês da fatura - 1 (offset padrão)
+    // Calcula mês de competência com base na preferência do usuário
     const refDate = selected[0].date || '';
     const [refY, refM] = (refDate || `${new Date().getFullYear()}-${new Date().getMonth()+1}`).split('-').map(Number);
-    const compM  = refM === 1 ? 12 : refM - 1;
-    const compY  = refM === 1 ? refY - 1 : refY;
+
+    // Lê offset da preferência: -1 (padrão) ou 0 (sem offset)
+    const offsetEl = document.getElementById('billing-offset');
+    const offset   = offsetEl ? parseInt(offsetEl.value) : -1;
+
+    let compY = refY, compM = refM + offset;
+    if (compM < 1)  { compM += 12; compY -= 1; }
+    if (compM > 12) { compM -= 12; compY += 1; }
     const competenceMonth = `${compY}-${String(compM).padStart(2,'0')}`;
 
     let saved = 0;
