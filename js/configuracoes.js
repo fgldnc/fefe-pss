@@ -294,6 +294,17 @@ function _initEvents() {
     e.target.value = '';
   });
 
+  // Salva offset no localStorage ao mudar
+  document.getElementById('billing-offset')?.addEventListener('change', e => {
+    localStorage.setItem('fluxo_billing_offset', e.target.value);
+    toast('Preferência salva!', 'success');
+  });
+
+  // Carrega valor salvo ao abrir configurações
+  const savedOffset = localStorage.getItem('fluxo_billing_offset') ?? '-1';
+  const offsetSel = document.getElementById('billing-offset');
+  if (offsetSel) offsetSel.value = savedOffset;
+
   document.getElementById('btn-cfg-logout')?.addEventListener('click', async () => {
     const { auth, signOut } = window._FB;
     await signOut(auth);

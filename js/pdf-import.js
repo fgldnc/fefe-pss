@@ -425,9 +425,8 @@ async function _confirmarImportacao() {
     const refDate = selected[0].date || '';
     const [refY, refM] = (refDate || `${new Date().getFullYear()}-${new Date().getMonth()+1}`).split('-').map(Number);
 
-    // Lê offset da preferência: -1 (padrão) ou 0 (sem offset)
-    const offsetEl = document.getElementById('billing-offset');
-    const offset   = offsetEl ? parseInt(offsetEl.value) : -1;
+    // Lê offset da preferência salva (localStorage), padrão -1
+    const offset = parseInt(localStorage.getItem('fluxo_billing_offset') ?? '-1');
 
     let compY = refY, compM = refM + offset;
     if (compM < 1)  { compM += 12; compY -= 1; }
