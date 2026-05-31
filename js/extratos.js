@@ -376,18 +376,52 @@ function _showReview(items, bank, format) {
   const tbody = document.getElementById('extrato-preview-tbody');
   const cats  = state.categories;
 
+  // Cabeçalho da tabela — mostra coluna extra "Tipo de receita" se houver entradas
+  const hasIncomes = items.some(t => t.type === 'income');
+  const theadEl = document.querySelector('#extrato-preview-tbody')?.closest('table')?.querySelector('thead tr');
+  if (theadEl && hasIncomes) {
+    theadEl.innerHTML = '<th><input type="checkbox" id="extrato-check-all" checked /></th><th>Data</th><th>Descrição</th><th>Tipo</th><th>Categoria / Tipo receita</th><th class="col-value">Valor</th><th>Status</th>';
+  }
+
+  const INCOME_TYPES = [
+    ['salario',        'Salário'],
+    ['vale_alimentacao','Vale Alimentação'],
+    ['vale_transporte', 'Vale Transporte'],
+    ['reembolso',      'Reembolso / Estorno'],
+    ['investimento',   'Resgate Investimento'],
+    ['transferencia',  'Transferência recebida'],
+    ['outro',          'Outra receita'],
+  ];
+
   tbody.innerHTML = items.map((tx, idx) => {
+    const isIncome = tx.type === 'income';
+
     const catOptions = cats.map(c =>
       `<option value="${esc(c.id)}" ${c.id === tx.category ? 'selected' : ''}>${esc(c.name)}</option>`
     ).join('');
 
+    const incomeTypeOptions = INCOME_TYPES.map(([val, label]) =>
+      `<option value="${val}" ${(tx.incomeType || _classifyIncomeType(tx.description)) === val ? 'selected' : ''}>${label}</option>`
+    ).join('');
+
     const typeOptions = `
-      <option value="expense" ${tx.type === 'expense' ? 'selected' : ''}>Saída</option>
-      <option value="income"  ${tx.type === 'income'  ? 'selected' : ''}>Entrada</option>
+      <option value="expense"  ${tx.type === 'expense'  ? 'selected' : ''}>Saída</option>
+      <option value="income"   ${tx.type === 'income'   ? 'selected' : ''}>Entrada</option>
       <option value="transfer" ${tx.type === 'transfer' ? 'selected' : ''}>Transferência</option>`;
 
     const dupBadge = tx.isDuplicate
       ? `<span class="tag-duplicata">Possível duplicata</span>` : '';
+
+    // Coluna 5: categoria (saída) ou tipo de receita (entrada)
+    const col5 = isIncome
+      ? `<select class="select-inline" data-field="incomeType" data-idx="${idx}" style="max-width:180px">
+           ${incomeTypeOptions}
+         </select>`
+      : `<select class="select-inline" data-field="category" data-idx="${idx}">
+           <option value="">—</option>${catOptions}
+         </select>`;
+
+    const valColor = tx.type === 'income' ? 'var(--success)' : 'var(--danger)';
 
     return `<tr class="${tx.isDuplicate ? 'row-dup' : ''}">
       <td><input type="checkbox" class="row-check" data-idx="${idx}" ${tx.isDuplicate ? '' : 'checked'} /></td>
@@ -397,18 +431,24 @@ function _showReview(items, bank, format) {
           data-field="description" data-idx="${idx}" value="${esc(tx.description)}" />
       </td>
       <td><select class="select-inline" data-field="type" data-idx="${idx}">${typeOptions}</select></td>
-      <td><select class="select-inline" data-field="category" data-idx="${idx}"><option value="">—</option>${catOptions}</select></td>
-      <td class="col-value val-mono" style="white-space:nowrap;color:${tx.type === 'income' ? 'var(--success)' : 'var(--danger)'}">${fmt(tx.amount)}</td>
+      <td>${col5}</td>
+      <td class="col-value val-mono" style="white-space:nowrap;color:${valColor}">${fmt(tx.amount)}</td>
       <td>${dupBadge}</td>
     </tr>`;
   }).join('');
 
-  // Edição inline
+  // Edição inline — inclui incomeType
   tbody.querySelectorAll('[data-field]').forEach(el => {
     el.addEventListener('change', () => {
       const idx   = parseInt(el.dataset.idx);
       const field = el.dataset.field;
       parsedItems[idx][field] = el.value;
+      // Ao mudar tipo de entrada/saída, atualiza a cor do valor
+      if (field === 'type') {
+        const row = el.closest('tr');
+        const valCell = row?.querySelector('.val-mono');
+        if (valCell) valCell.style.color = el.value === 'income' ? 'var(--success)' : 'var(--danger)';
+      }
     });
   });
 }
@@ -456,7 +496,7 @@ async function _saveExtrato() {
       // Entradas também salvam em incomes para aparecer no dashboard de receitas
       if (tx.type === 'income' && tx.amount > 0) {
         const incomeData = {
-          type:        _classifyIncomeType(tx.description),
+          type:        tx.incomeType || _classifyIncomeType(tx.description),
           description: tx.description,
           amount:      tx.amount,
           date:        tx.date,
