@@ -331,7 +331,8 @@ function _validateBackupPayload(payload) {
       if (Object.prototype.hasOwnProperty.call(item, '__proto__')) throw new Error('Item suspeito bloqueado.');
       // Valida campos de transação
       if (col === 'transactions') {
-        if (typeof item.amount !== 'number' || item.amount < 0 || item.amount > 10_000_000)
+        // Aceita negativos — estornos e cancelamentos têm amount < 0
+        if (typeof item.amount !== 'number' || Math.abs(item.amount) > 10_000_000)
           throw new Error('Valor de transação fora do intervalo permitido.');
         if (item.description && typeof item.description !== 'string')
           throw new Error('Descrição inválida.');
