@@ -36,7 +36,6 @@ function _renderImportacoesList() {
   const container = document.getElementById('importacoes-list');
   if (!container) return;
 
-  // Agrupa transações de extrato por importBatchId
   const batches = {};
   for (const tx of state.extratoTransactions || []) {
     const id = tx.importBatchId || 'sem-lote';
@@ -57,24 +56,37 @@ function _renderImportacoesList() {
     return;
   }
 
-  container.innerHTML = batchList.map(([batchId, batch]) => {
-    const inc = batch.items.filter(t => t.type === 'income').reduce((s,t) => s+t.amount, 0);
-    const exp = batch.items.filter(t => t.type === 'expense').reduce((s,t) => s+t.amount, 0);
+  const rows = batchList.map(([batchId, batch]) => {
+    const inc  = batch.items.filter(t => t.type === 'income').reduce((s,t) => s+t.amount, 0);
+    const exp  = batch.items.filter(t => t.type === 'expense').reduce((s,t) => s+t.amount, 0);
     const date = batch.date ? new Date(batch.date).toLocaleDateString('pt-BR') : '—';
-    return `
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:0.7rem 1.25rem;border-bottom:1px solid var(--border-soft);font-size:0.83rem;gap:1rem">
-        <div>
-          <div style="font-weight:600;color:var(--text-primary)">${esc(BANK_NAMES[batch.bankName] || batch.bankName)} <span style="color:var(--text-muted);font-size:0.72rem;font-weight:400">.${esc(batch.fileType)}</span></div>
-          <div style="color:var(--text-muted);font-size:0.75rem">${esc(date)} · ${batch.items.length} transações</div>
-        </div>
-        <div style="display:flex;gap:0.75rem;font-family:var(--font-mono);font-size:0.78rem">
-          <span style="color:var(--success)">+${fmt(inc)}</span>
-          <span style="color:var(--danger)">-${fmt(exp)}</span>
-        </div>
-      </div>`;
+    const safeId = batchId.replace(/"/g, '');
+    return '<div style="display:flex;align-items:center;justify-content:space-between;padding:0.7rem 1.25rem;border-bottom:1px solid var(--border-soft);font-size:0.83rem;gap:1rem">'
+      + '<div style="flex:1;min-width:0">'
+      +   '<div style="font-weight:600;color:var(--text-primary)">' + esc(BANK_NAMES[batch.bankName] || batch.bankName)
+      +   ' <span style="color:var(--text-muted);font-size:0.72rem;font-weight:400">.' + esc(batch.fileType || '') + '</span></div>'
+      +   '<div style="color:var(--text-muted);font-size:0.75rem">' + esc(date) + ' · ' + batch.items.length + ' transações</div>'
+      + '</div>'
+      + '<div style="display:flex;align-items:center;gap:0.75rem">'
+      +   '<span style="font-family:var(--font-mono);font-size:0.78rem;color:var(--success)">+' + fmt(inc) + '</span>'
+      +   '<span style="font-family:var(--font-mono);font-size:0.78rem;color:var(--danger)">-' + fmt(exp) + '</span>'
+      +   '<button class="btn btn-danger btn-xs btn-del-batch" data-batchid="' + safeId + '" style="font-family:var(--font-sans);cursor:pointer">🗑 Excluir</button>'
+      + '</div>'
+      + '</div>';
   }).join('');
-}
 
+  container.innerHTML = rows;
+
+  container.querySelectorAll('.btn-del-batch').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const bid   = btn.dataset.batchid;
+      const batch = batches[bid];
+      if (!batch) return;
+      if (!confirm('Excluir esta importação? Remove ' + batch.items.length + ' transação(ões) do Firestore.')) return;
+      await _deleteBatch(bid, batch.items);
+    });
+  });
+}
 function _renderExtratosTable() {
   const tbody    = document.getElementById('extratos-tbody');
   const bancoSel = document.getElementById('filter-extrato-banco')?.value || '';
