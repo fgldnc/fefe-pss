@@ -9,11 +9,7 @@ export function renderTimeline() {
   if (!container) return;
 
   container.innerHTML = `
-    <div class="page-header">
-      <div class="page-header-text">
-        <h2 class="page-title">Timeline</h2>
-        <p class="page-subtitle">Histórico de atividades financeiras</p>
-      </div>
+    <div class="page-header" style="justify-content:flex-end">
       <div class="page-actions">
         <select id="timeline-filter" class="filter-select">
           <option value="all">Todos os eventos</option>

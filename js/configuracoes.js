@@ -10,13 +10,6 @@ export function renderConfiguracoes() {
   if (!section) return;
 
   section.innerHTML = `
-    <div class="page-header">
-      <div class="page-header-text">
-        <h2 class="page-title">Configurações</h2>
-        <p class="page-subtitle">Personalize o Fluxo</p>
-      </div>
-    </div>
-
     <div class="config-tabs" id="config-tabs">
       <button class="config-tab active" data-section="categorias">Categorias</button>
       <button class="config-tab" data-section="regras">Regras</button>
@@ -146,7 +139,7 @@ export function renderConfiguracoes() {
           Dados vinculados à sua conta Google e armazenados no Firebase. Nenhum arquivo de extrato é enviado para servidores externos.
         </p>
         <button class="btn btn-danger btn-sm" id="btn-cfg-logout">Sair da conta</button>
-        <div style="margin-top:1.25rem;padding-top:1rem;border-top:1px solid var(--border-soft);font-size:0.76rem;color:var(--text-muted)">Fluxo v2.1 — Fase 2</div>
+        <div style="margin-top:1.25rem;padding-top:1rem;border-top:1px solid var(--border-soft);font-size:0.76rem;color:var(--text-muted)">Radar v1.0</div>
       </div>
     </div>`;
 
@@ -239,7 +232,7 @@ function _initEvents() {
   document.getElementById('btn-nova-categoria')?.addEventListener('click', () => {
     document.getElementById('cat-id').value   = '';
     document.getElementById('cat-nome').value = '';
-    document.getElementById('cat-cor').value  = '#910A67';
+    document.getElementById('cat-cor').value  = '#3982f7';
     document.getElementById('modal-categoria').classList.remove('hidden');
   });
 
@@ -264,7 +257,7 @@ function _initEvents() {
       if (!c) return;
       document.getElementById('cat-id').value   = c.id;
       document.getElementById('cat-nome').value = c.name;
-      document.getElementById('cat-cor').value  = c.color || '#910A67';
+      document.getElementById('cat-cor').value  = c.color || '#3982f7';
       document.getElementById('modal-categoria').classList.remove('hidden');
     }
     if (btn.dataset.action === 'delete-cat') {

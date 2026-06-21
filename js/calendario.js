@@ -12,11 +12,7 @@ export function renderCalendario() {
   const [y, m] = month.split('-').map(Number);
 
   container.innerHTML = `
-    <div class="page-header">
-      <div class="page-header-text">
-        <h2 class="page-title">Calendário Financeiro</h2>
-        <p class="page-subtitle">${monthLabel(month)}</p>
-      </div>
+    <div class="page-header" style="justify-content:flex-end">
       <div class="page-actions" style="font-size:0.78rem;color:var(--text-muted);display:flex;gap:1rem;align-items:center">
         <span style="display:flex;align-items:center;gap:0.3rem"><span style="width:8px;height:8px;border-radius:50%;background:var(--danger);display:inline-block"></span>Gasto</span>
         <span style="display:flex;align-items:center;gap:0.3rem"><span style="width:8px;height:8px;border-radius:50%;background:var(--success);display:inline-block"></span>Receita</span>

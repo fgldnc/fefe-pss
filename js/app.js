@@ -157,7 +157,7 @@ function renderCmdResults(q) {
 
 // ─── ONBOARDING ────────────────────────────────────────────────
 const OB_STEPS = [
-  { title: '👋 Bem-vindo ao Fluxo!', sub: 'Seu controle financeiro pessoal. Vamos configurar rapidinho.', content: '' },
+  { title: '👋 Bem-vindo ao Radar!', sub: 'Seu controle financeiro pessoal. Vamos configurar rapidinho.', content: '' },
   {
     title: '🏦 Qual é seu banco principal?', sub: 'Ajuda a reconhecer seus extratos automaticamente.',
     content: `<div class="bank-selector" style="grid-template-columns:repeat(3,1fr)">
@@ -229,7 +229,7 @@ async function finishOnboarding() {
   localStorage.setItem('fluxo_onboarding_done', '1');
   await loadAllData();
   switchTab('dashboard');
-  toast('Tudo pronto! Bem-vindo ao Fluxo.', 'success');
+  toast('Tudo pronto! Bem-vindo ao Radar.', 'success');
 }
 
 // ─── INIT ──────────────────────────────────────────────────────

@@ -449,3 +449,9 @@
   .cal-day-num  { font-size: 0.7rem; width: 18px; height: 18px; }
   .cal-day-total{ display: none; }
 }
+
+/* ── DASHBOARD REDESIGN v3 ──────────────────────────────────────── */
+#chart-evolucao { max-height: 130px; }
+.card > #chart-evolucao { padding: 1rem 1.25rem; }
+
+#chart-categorias { max-width: 100%; }

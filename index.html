@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>fefes finanças</title>
+  <title>Radar Financeiro</title>
 
   <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
@@ -21,20 +21,12 @@
 
     // ── Configure Firebase ──────────────────────────────────────
     const firebaseConfig = {
-  apiKey: "AIzaSyCZ_xc7UJsIsHI_M8GvxggtcYu2cBunqFo",
-
-  authDomain: "fefe-df577.firebaseapp.com",
-
-  databaseURL: "https://fefe-df577-default-rtdb.firebaseio.com",
-
-  projectId: "fefe-df577",
-
-  storageBucket: "fefe-df577.firebasestorage.app",
-
-  messagingSenderId: "988495815243",
-
-  appId: "1:988495815243:web:0309d3a01b5d6033e4e3ce"
-
+      apiKey:            "COLE_AQUI",
+      authDomain:        "COLE_AQUI",
+      projectId:         "COLE_AQUI",
+      storageBucket:     "COLE_AQUI",
+      messagingSenderId: "COLE_AQUI",
+      appId:             "COLE_AQUI"
     };
 
     const app  = initializeApp(firebaseConfig);
@@ -55,7 +47,7 @@
   <div class="login-card">
     <div class="login-brand">
       <span class="brand-symbol">◈</span>
-      <h1>Fluxo</h1>
+      <h1>Radar</h1>
     </div>
     <p class="login-sub">Controle financeiro pessoal inteligente. Importe faturas, acompanhe gastos e gerencie seu patrimônio.</p>
     <button id="btn-google-login" class="btn-login-google">
@@ -78,47 +70,50 @@
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-header">
       <span class="sidebar-logo-icon">◈</span>
-      <span class="sidebar-logo">Fluxo</span>
+      <span class="sidebar-logo">Radar</span>
     </div>
 
     <nav class="sidebar-nav">
-      <!-- Visão geral -->
+      <!-- Visão Geral -->
       <div class="nav-group">
         <div class="nav-group-label">Visão Geral</div>
         <a class="nav-link active" data-tab="dashboard">
           <svg class="nav-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
           Dashboard
         </a>
+        <a class="nav-link" data-tab="calendario">
+          <svg class="nav-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+          Fluxo de Caixa
+        </a>
+        <a class="nav-link" data-tab="patrimonio">
+          <svg class="nav-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 21h18M5 21V7l7-4 7 4v14"/><path d="M9 21v-6h6v6"/></svg>
+          Patrimônio
+        </a>
       </div>
 
-      <!-- Movimentações -->
+      <!-- Lançamentos -->
       <div class="nav-group">
-        <div class="nav-group-label">Movimentações</div>
+        <div class="nav-group-label">Lançamentos</div>
+        <a class="nav-link" data-tab="extratos">
+          <svg class="nav-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+          Extratos
+        </a>
         <a class="nav-link" data-tab="gastos">
           <svg class="nav-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
           Gastos
         </a>
-        <a class="nav-link" data-tab="extratos">
-          <svg class="nav-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-          Extratos
-          <span class="nav-badge">Novo</span>
-        </a>
         <a class="nav-link" data-tab="receitas">
           <svg class="nav-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2v20M17 7H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
           Receitas
-        </a>
-        <a class="nav-link" data-tab="orcamento">
-          <svg class="nav-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-          Orçamento
         </a>
       </div>
 
       <!-- Planejamento -->
       <div class="nav-group">
         <div class="nav-group-label">Planejamento</div>
-        <a class="nav-link" data-tab="patrimonio">
-          <svg class="nav-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 21h18M5 21V7l7-4 7 4v14"/><path d="M9 21v-6h6v6"/></svg>
-          Patrimônio
+        <a class="nav-link" data-tab="orcamento">
+          <svg class="nav-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+          Orçamento
         </a>
         <a class="nav-link" data-tab="metas">
           <svg class="nav-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
@@ -132,13 +127,6 @@
         <a class="nav-link" data-tab="configuracoes">
           <svg class="nav-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2m-3.05-7.95-1.41 1.41M6.46 17.54l-1.41 1.41m14.9 0-1.41-1.41M6.46 6.46 5.05 5.05"/></svg>
           Configurações
-        </a>
-      </div>
-      <div class="nav-group">
-        <div class="nav-group-label">Análise</div>
-        <a class="nav-link" data-tab="calendario">
-          <svg class="nav-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-          Saldos
         </a>
         <a class="nav-link" data-tab="timeline">
           <svg class="nav-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="2" x2="12" y2="22"/><polyline points="17 7 12 2 7 7"/><path d="M20 12H4"/></svg>
@@ -197,11 +185,7 @@
 
     <!-- ════ DASHBOARD ════════════════════════════════════════ -->
     <section id="tab-dashboard" class="tab-content active">
-      <div class="page-header">
-        <div class="page-header-text">
-          <h2 class="page-title">Dashboard</h2>
-          <p class="page-subtitle">Visão geral das suas finanças</p>
-        </div>
+      <div class="page-header" style="justify-content:flex-end">
         <div class="page-actions">
           <button class="btn btn-ghost btn-sm" id="btn-import-pdf-dash">
             <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
@@ -226,19 +210,21 @@
         <div class="kpi-skeleton"><div class="skeleton sk-title"></div><div class="skeleton sk-value"></div><div class="skeleton sk-text" style="width:60%"></div></div>
       </div>
 
-      <!-- Gráficos -->
-      <div class="dashboard-grid">
-        <div class="card">
-          <div class="card-header">
-            <span class="card-title">Gastos por categoria</span>
-            <span class="card-month" id="chart-cat-month"></span>
+      <!-- Evolução mensal — sozinho na linha, compacto -->
+      <div class="card" style="margin-bottom:1rem">
+        <canvas id="chart-evolucao" height="90"></canvas>
+      </div>
+
+      <!-- Distribuição dos gastos (pizza com total no centro) -->
+      <div class="card" style="margin-bottom:1rem">
+        <div style="position:relative;max-width:340px;margin:0 auto;padding:1.25rem 0">
+          <canvas id="chart-categorias"></canvas>
+          <div id="pizza-total-center" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;pointer-events:none">
+            <div style="font-size:0.68rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px">Total</div>
+            <div style="font-size:1.25rem;font-weight:700;color:var(--text-primary);font-family:var(--font-mono)" id="pizza-total-value">R$ 0</div>
           </div>
-          <canvas id="chart-categorias" height="250"></canvas>
         </div>
-        <div class="card">
-          <div class="card-header"><span class="card-title">Evolução mensal</span></div>
-          <canvas id="chart-evolucao" height="220"></canvas>
-        </div>
+        <div id="pizza-legend" style="padding:0 1.25rem 1.25rem"></div>
       </div>
 
       <div class="dashboard-row">
@@ -264,14 +250,93 @@
         </div>
       </div>
     </section>
+    <!-- ════ CALENDÁRIO ══════════════════════════════════════ -->
+    <section id="tab-calendario" class="tab-content hidden"></section>
+    <!-- ════ PATRIMÔNIO ═══════════════════════════════════════ -->
+    <section id="tab-patrimonio" class="tab-content hidden">
+      <div class="page-header" style="justify-content:flex-end">
+        <button class="btn btn-primary btn-sm" id="btn-novo-ativo">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Novo Ativo / Bem
+        </button>
+      </div>
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-header"><span class="kpi-label">Patrimônio Total</span><div class="kpi-icon">💎</div></div>
+          <span class="kpi-value accent" id="pat-total">R$ —</span>
+          <div class="kpi-delta" id="pat-total-sub">—</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-header"><span class="kpi-label">Investimentos</span><div class="kpi-icon">📈</div></div>
+          <span class="kpi-value gold" id="pat-investimentos">R$ —</span>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-header"><span class="kpi-label">Caixa / Conta</span><div class="kpi-icon">🏦</div></div>
+          <span class="kpi-value positive" id="pat-caixa">R$ —</span>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-header"><span class="kpi-label">Bens Pessoais</span><div class="kpi-icon">🏠</div></div>
+          <span class="kpi-value" id="pat-bens">R$ —</span>
+        </div>
+      </div>
+      <div class="card" style="margin-top:1rem">
+        <div class="card-header"><span class="card-title">Todos os ativos e bens</span></div>
+        <div class="table-wrapper">
+          <table class="data-table">
+            <thead><tr><th>Nome</th><th>Tipo</th><th>Valor Inicial</th><th>Valor Atual</th><th>Aquisição</th><th>Obs.</th><th class="col-actions"></th></tr></thead>
+            <tbody id="ativos-tbody"><tr><td colspan="7" class="empty-row">Nenhum ativo cadastrado.</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+    <!-- ════ EXTRATOS ═════════════════════════════════════════ -->
+    <section id="tab-extratos" class="tab-content hidden">
+      <div class="page-header" style="justify-content:flex-end">
+        <div class="page-actions">
+          <button class="btn btn-primary btn-sm" id="btn-novo-extrato">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Importar Extrato
+          </button>
+        </div>
+      </div>
 
+      <!-- Histórico de importações -->
+      <div class="card">
+        <div class="card-header"><span class="card-title">Importações recentes</span></div>
+        <div id="importacoes-list">
+          <div class="empty-state">
+            <div class="empty-state-icon">🏦</div>
+            <div class="empty-state-title">Nenhum extrato importado</div>
+            <div class="empty-state-text">Importe extratos do seu banco em PDF, OFX ou CSV.</div>
+            <button class="btn btn-primary btn-sm" onclick="document.getElementById('btn-novo-extrato').click()">Importar agora</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Transações do extrato -->
+      <div class="card" style="margin-top:1rem">
+        <div class="card-header">
+          <span class="card-title">Transações importadas</span>
+          <div style="display:flex;gap:0.5rem">
+            <select id="filter-extrato-banco" class="filter-select" style="min-width:120px"><option value="">Todos os bancos</option></select>
+            <select id="filter-extrato-tipo" class="filter-select" style="min-width:110px"><option value="">Todos os tipos</option><option value="income">Receitas</option><option value="expense">Despesas</option></select>
+          </div>
+        </div>
+        <div class="table-wrapper">
+          <table class="data-table">
+            <thead>
+              <tr><th>Data</th><th>Banco</th><th>Descrição</th><th>Tipo</th><th>Categoria</th><th class="col-value">Valor</th></tr>
+            </thead>
+            <tbody id="extratos-tbody">
+              <tr><td colspan="6" class="empty-row">Nenhuma transação de extrato ainda.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
     <!-- ════ GASTOS ═══════════════════════════════════════════ -->
     <section id="tab-gastos" class="tab-content hidden">
-      <div class="page-header">
-        <div class="page-header-text">
-          <h2 class="page-title">Gastos</h2>
-          <p class="page-subtitle">Lançamentos do mês selecionado</p>
-        </div>
+      <div class="page-header" style="justify-content:flex-end">
         <div class="page-actions">
           <button class="btn btn-ghost btn-sm" id="btn-import-pdf">
             <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
@@ -345,104 +410,28 @@
         </div>
       </div>
     </section>
-
-    <!-- ════ EXTRATOS ═════════════════════════════════════════ -->
-    <section id="tab-extratos" class="tab-content hidden">
-      <div class="page-header">
-        <div class="page-header-text">
-          <h2 class="page-title">Extratos Bancários</h2>
-          <p class="page-subtitle">Importe extratos em PDF, OFX ou CSV</p>
-        </div>
-        <div class="page-actions">
-          <button class="btn btn-primary btn-sm" id="btn-novo-extrato">
-            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            Importar Extrato
-          </button>
-        </div>
-      </div>
-
-      <!-- Histórico de importações -->
-      <div class="extratos-grid">
-        <div class="card">
-          <div class="card-header"><span class="card-title">Importações recentes</span></div>
-          <div id="importacoes-list">
-            <div class="empty-state">
-              <div class="empty-state-icon">🏦</div>
-              <div class="empty-state-title">Nenhum extrato importado</div>
-              <div class="empty-state-text">Importe extratos do Itaú, Nubank, Inter, Santander ou Bradesco em PDF, OFX ou CSV.</div>
-              <button class="btn btn-primary btn-sm" onclick="document.getElementById('btn-novo-extrato').click()">Importar agora</button>
-            </div>
-          </div>
-        </div>
-        <div class="card">
-          <div class="card-header"><span class="card-title">Bancos suportados</span></div>
-          <div style="padding:1.25rem">
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.6rem">
-              <div style="background:var(--bg-card-raised);border:1px solid var(--border-soft);border-radius:var(--radius-md);padding:0.75rem;font-size:0.82rem;color:var(--text-secondary)">🟠 Itaú — PDF, OFX, CSV</div>
-              <div style="background:var(--bg-card-raised);border:1px solid var(--border-soft);border-radius:var(--radius-md);padding:0.75rem;font-size:0.82rem;color:var(--text-secondary)">🟣 Nubank — PDF, CSV</div>
-              <div style="background:var(--bg-card-raised);border:1px solid var(--border-soft);border-radius:var(--radius-md);padding:0.75rem;font-size:0.82rem;color:var(--text-secondary)">🟢 Inter — PDF, OFX, CSV</div>
-              <div style="background:var(--bg-card-raised);border:1px solid var(--border-soft);border-radius:var(--radius-md);padding:0.75rem;font-size:0.82rem;color:var(--text-secondary)">🔴 Santander — OFX, CSV</div>
-              <div style="background:var(--bg-card-raised);border:1px solid var(--border-soft);border-radius:var(--radius-md);padding:0.75rem;font-size:0.82rem;color:var(--text-secondary)">🔵 Bradesco — OFX, CSV</div>
-              <div style="background:var(--bg-card-raised);border:1px solid var(--border-soft);border-radius:var(--radius-md);padding:0.75rem;font-size:0.82rem;color:var(--text-muted)">+ Genérico OFX/CSV</div>
-            </div>
-            <p style="font-size:0.75rem;color:var(--text-muted);margin-top:0.75rem;line-height:1.5">OFX tem prioridade sobre CSV e PDF. Os dados são processados apenas no seu navegador — nenhum arquivo é enviado para servidores externos.</p>
-          </div>
-        </div>
-      </div>
-
-      <!-- Transações do extrato -->
-      <div class="card" style="margin-top:1rem">
-        <div class="card-header">
-          <span class="card-title">Transações importadas</span>
-          <div style="display:flex;gap:0.5rem">
-            <select id="filter-extrato-banco" class="filter-select" style="min-width:120px"><option value="">Todos os bancos</option></select>
-            <select id="filter-extrato-tipo" class="filter-select" style="min-width:110px"><option value="">Todos os tipos</option><option value="income">Receitas</option><option value="expense">Despesas</option></select>
-          </div>
-        </div>
-        <div class="table-wrapper">
-          <table class="data-table">
-            <thead>
-              <tr><th>Data</th><th>Banco</th><th>Descrição</th><th>Tipo</th><th>Categoria</th><th class="col-value">Valor</th></tr>
-            </thead>
-            <tbody id="extratos-tbody">
-              <tr><td colspan="6" class="empty-row">Nenhuma transação de extrato ainda.</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </section>
-
     <!-- ════ RECEITAS ═════════════════════════════════════════ -->
     <section id="tab-receitas" class="tab-content hidden">
-      <div class="page-header">
-        <div class="page-header-text"><h2 class="page-title">Receitas</h2><p class="page-subtitle">Entradas do mês</p></div>
+      <div class="page-header" style="justify-content:flex-end">
         <button class="btn btn-primary btn-sm" id="btn-nova-receita">
           <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
           Nova Receita
         </button>
       </div>
-      <div class="receitas-grid">
-        <div class="card">
-          <div class="card-header"><span class="card-title">Receitas do mês</span></div>
-          <div class="table-wrapper">
-            <table class="data-table">
-              <thead><tr><th>Tipo</th><th>Descrição</th><th class="col-value">Valor</th><th class="col-actions"></th></tr></thead>
-              <tbody id="receitas-tbody"><tr><td colspan="4" class="empty-row">Nenhuma receita registrada.</td></tr></tbody>
-            </table>
-          </div>
-          <div class="table-footer">Total: <strong id="receitas-total" class="val-mono val-positive">R$ 0,00</strong></div>
+      <div class="card">
+        <div class="card-header"><span class="card-title">💰 Receitas do mês</span></div>
+        <div class="table-wrapper">
+          <table class="data-table">
+            <thead><tr><th>Tipo</th><th>Descrição</th><th class="col-value">Valor</th><th class="col-actions"></th></tr></thead>
+            <tbody id="receitas-tbody"><tr><td colspan="4" class="empty-row">Nenhuma receita registrada.</td></tr></tbody>
+          </table>
         </div>
-        <div class="card">
-          <div class="card-header"><span class="card-title">Distribuição</span></div>
-          <canvas id="chart-receitas" height="200"></canvas>
-        </div>
+        <div class="table-footer">Total: <strong id="receitas-total" class="val-mono val-positive">R$ 0,00</strong></div>
       </div>
     </section>
-
     <!-- ════ ORÇAMENTO ════════════════════════════════════════ -->
     <section id="tab-orcamento" class="tab-content hidden">
-      <div class="page-header">
-        <div class="page-header-text"><h2 class="page-title">Orçamento</h2><p class="page-subtitle">Limites mensais por categoria</p></div>
+      <div class="page-header" style="justify-content:flex-end">
         <button class="btn btn-primary btn-sm" id="btn-salvar-orcamento">Salvar orçamento</button>
       </div>
       <div class="card">
@@ -450,50 +439,9 @@
         <div id="orcamento-editor" class="orcamento-editor"><p style="color:var(--text-muted);font-size:0.83rem;padding:1rem">Carregando categorias…</p></div>
       </div>
     </section>
-
-    <!-- ════ PATRIMÔNIO ═══════════════════════════════════════ -->
-    <section id="tab-patrimonio" class="tab-content hidden">
-      <div class="page-header">
-        <div class="page-header-text"><h2 class="page-title">Patrimônio</h2><p class="page-subtitle">Ativos e bens pessoais</p></div>
-        <button class="btn btn-primary btn-sm" id="btn-novo-ativo">
-          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          Novo Ativo / Bem
-        </button>
-      </div>
-      <div class="kpi-grid">
-        <div class="kpi-card">
-          <div class="kpi-header"><span class="kpi-label">Patrimônio Total</span><div class="kpi-icon">💎</div></div>
-          <span class="kpi-value accent" id="pat-total">R$ —</span>
-          <div class="kpi-delta" id="pat-total-sub">—</div>
-        </div>
-        <div class="kpi-card">
-          <div class="kpi-header"><span class="kpi-label">Investimentos</span><div class="kpi-icon">📈</div></div>
-          <span class="kpi-value gold" id="pat-investimentos">R$ —</span>
-        </div>
-        <div class="kpi-card">
-          <div class="kpi-header"><span class="kpi-label">Caixa / Conta</span><div class="kpi-icon">🏦</div></div>
-          <span class="kpi-value positive" id="pat-caixa">R$ —</span>
-        </div>
-        <div class="kpi-card">
-          <div class="kpi-header"><span class="kpi-label">Bens Pessoais</span><div class="kpi-icon">🏠</div></div>
-          <span class="kpi-value" id="pat-bens">R$ —</span>
-        </div>
-      </div>
-      <div class="card" style="margin-top:1rem">
-        <div class="card-header"><span class="card-title">Todos os ativos e bens</span></div>
-        <div class="table-wrapper">
-          <table class="data-table">
-            <thead><tr><th>Nome</th><th>Tipo</th><th>Valor Inicial</th><th>Valor Atual</th><th>Aquisição</th><th>Obs.</th><th class="col-actions"></th></tr></thead>
-            <tbody id="ativos-tbody"><tr><td colspan="7" class="empty-row">Nenhum ativo cadastrado.</td></tr></tbody>
-          </table>
-        </div>
-      </div>
-    </section>
-
     <!-- ════ METAS ════════════════════════════════════════════ -->
     <section id="tab-metas" class="tab-content hidden">
-      <div class="page-header">
-        <div class="page-header-text"><h2 class="page-title">Metas</h2><p class="page-subtitle">Seus objetivos financeiros</p></div>
+      <div class="page-header" style="justify-content:flex-end">
         <button class="btn btn-primary btn-sm" id="btn-nova-meta">
           <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
           Nova Meta
@@ -508,12 +456,8 @@
         </div>
       </div>
     </section>
-
     <!-- ════ CONFIGURAÇÕES ════════════════════════════════════ -->
     <section id="tab-configuracoes" class="tab-content hidden">
-      <div class="page-header">
-        <div class="page-header-text"><h2 class="page-title">Configurações</h2><p class="page-subtitle">Personalize o Fluxo</p></div>
-      </div>
       <div class="config-grid">
         <div class="card">
           <div class="card-header">
@@ -564,14 +508,8 @@
         </div>
       </div>
     </section>
-
-
-    <!-- ════ CALENDÁRIO ══════════════════════════════════════ -->
-    <section id="tab-calendario" class="tab-content hidden"></section>
-
     <!-- ════ TIMELINE ════════════════════════════════════════ -->
     <section id="tab-timeline" class="tab-content hidden"></section>
-
     <!-- ════ RELATÓRIOS ══════════════════════════════════════ -->
     <section id="tab-relatorios" class="tab-content hidden"></section>
 
@@ -781,7 +719,7 @@
     <div class="modal-body">
       <input type="hidden" id="cat-id" />
       <div class="form-row"><label class="form-label">Nome *</label><input type="text" id="cat-nome" class="form-input" placeholder="Ex: Saúde" required /></div>
-      <div class="form-row"><label class="form-label">Cor</label><input type="color" id="cat-cor" class="form-input-color" value="#910A67" /></div>
+      <div class="form-row"><label class="form-label">Cor</label><input type="color" id="cat-cor" class="form-input-color" value="#3982f7" /></div>
     </div>
     <div class="modal-footer"><button class="btn btn-ghost" data-modal="modal-categoria">Cancelar</button><button class="btn btn-primary" id="btn-salvar-categoria">Salvar</button></div>
   </div>

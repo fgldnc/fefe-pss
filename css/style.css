@@ -1,37 +1,40 @@
 /* ═══════════════════════════════════════════════════════════════
-   FLUXO — Design System v2
-   Paleta: #030637 / #3C0753 / #720455 / #910A67
+   RADAR — Design System v3
+   Paleta: #161616 / #1f1f1f / #3982f7 / #3ec2fc + acento magenta
    Fonte: Outfit + JetBrains Mono
 ════════════════════════════════════════════════════════════════ */
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 
 :root {
-  /* Fundo: mais escuro que a cor da imagem */
-  --bg-main:          #0a0929;
-  /* Cards, sidebar, headers: #0f0e39 (cor da imagem enviada) */
-  --bg-card:          #0f0e39;
-  --bg-card-raised:   #161560;
-  --bg-hover:         #1c1b70;
-  --bg-active:        #222180;
-  /* Acentos magenta/rosa — para botões, destaques, elementos ativos */
-  --accent-secondary: #720455;
-  --accent-primary:   #910A67;
-  --accent-bright:    #c01888;
-  --accent-dim:       rgba(145, 10, 103, 0.13);
-  --accent-glow:      rgba(145, 10, 103, 0.22);
+  /* Fundo: preto/cinza muito escuro */
+  --bg-main:          #161616;
+  /* Cards, sidebar, headers */
+  --bg-card:          #1f1f1f;
+  --bg-card-raised:   #262626;
+  --bg-hover:         #2c2c2c;
+  --bg-active:        #333333;
+  /* Acentos azul/ciano — botões, destaques, elementos ativos */
+  --accent-secondary: #345cea;
+  --accent-primary:   #3982f7;
+  --accent-bright:    #3ec2fc;
+  --accent-dim:       rgba(57, 130, 247, 0.14);
+  --accent-glow:      rgba(57, 130, 247, 0.25);
+  /* Acento secundário: magenta (mantido) */
+  --accent-magenta:     #c01888;
+  --accent-magenta-dim: rgba(192, 24, 136, 0.14);
 
-  --text-primary:   #e8e6ff;
-  --text-secondary: #9d9bc8;
-  --text-muted:     #5a587a;
-  --text-inverse:   #0a0929;
+  --text-primary:   #f5f5f5;
+  --text-secondary: #a3a3a3;
+  --text-muted:     #6b6b6b;
+  --text-inverse:   #161616;
 
-  /* Bordas neutras com alpha — não competem com o magenta */
-  --border-soft:   rgba(255, 255, 255, 0.06);
-  --border-md:     rgba(255, 255, 255, 0.11);
-  --border-strong: rgba(145, 10, 103, 0.45);
+  /* Bordas neutras com alpha */
+  --border-soft:   rgba(255, 255, 255, 0.07);
+  --border-md:     rgba(255, 255, 255, 0.12);
+  --border-strong: rgba(57, 130, 247, 0.45);
 
-  --success:      #34d399;
-  --success-dim:  rgba(52, 211, 153, 0.14);
+  --success:      #1eb11b;
+  --success-dim:  rgba(30, 177, 27, 0.14);
   --danger:       #f87171;
   --danger-dim:   rgba(248, 113, 113, 0.14);
   --warning:      #fbbf24;
@@ -50,8 +53,8 @@
   --radius-xl:  20px;
   --radius-2xl: 28px;
 
-  --shadow:      0 4px 24px rgba(5, 4, 20, 0.85);
-  --shadow-card: 0 2px 16px rgba(5, 4, 20, 0.65), 0 0 0 1px var(--border-soft);
+  --shadow:      0 4px 24px rgba(0, 0, 0, 0.6);
+  --shadow-card: 0 2px 16px rgba(0, 0, 0, 0.45), 0 0 0 1px var(--border-soft);
   --shadow-glow: 0 0 40px var(--accent-glow);
 
   --sidebar-w:        230px;
@@ -71,7 +74,7 @@ html {
 
 body {
   font-family: var(--font-sans);
-  background: #0a0929;
+  background: #161616;
   color: var(--text-primary);
   min-height: 100vh;
   line-height: 1.6;
@@ -91,7 +94,7 @@ body {
   background:
     radial-gradient(ellipse 70% 60% at 20% 80%, rgba(114, 4, 85, 0.3) 0%, transparent 55%),
     radial-gradient(ellipse 50% 40% at 80% 20%, rgba(145, 10, 103, 0.22) 0%, transparent 55%),
-    #0a0929;
+    #161616;
   padding: 1.5rem;
 }
 
@@ -252,7 +255,7 @@ body {
 
 .topbar {
   height: var(--topbar-h);
-  background: rgba(15, 14, 57, 0.88);
+  background: rgba(31, 31, 31, 0.88);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border-bottom: 1px solid var(--border-soft);

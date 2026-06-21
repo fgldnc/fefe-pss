@@ -100,7 +100,7 @@ export function renderDashboard() {
   renderOrcamentoDashboard(txExpenses, month);
 }
 
-// ─── GRÁFICO DE CATEGORIAS ─────────────────────────────────────────────────
+// ─── GRÁFICO DE CATEGORIAS (PIZZA COM TOTAL NO CENTRO) ─────────────────────
 function renderChartCategorias(txs) {
   const catMap = {};
   for (const tx of txs) {
@@ -113,41 +113,66 @@ function renderChartCategorias(txs) {
   const labels = sorted.map(([k]) => k);
   const values = sorted.map(([, v]) => v);
   const colors = sorted.map(([k]) => state.categories.find(c => c.name === k)?.color || '#94a3b8');
-  const maxVal = Math.max(...values, 1);
+  const total  = values.reduce((s, v) => s + v, 0);
+
+  const totalEl = document.getElementById('pizza-total-value');
+  if (totalEl) totalEl.textContent = fmt(total);
 
   const canvas = document.getElementById('chart-categorias');
   if (chartCategorias) chartCategorias.destroy();
 
+  if (!values.length) {
+    // Empty state: small gray ring placeholder
+    chartCategorias = new Chart(canvas, {
+      type: 'doughnut',
+      data: { labels: ['Sem dados'], datasets: [{ data: [1], backgroundColor: ['#2c2c2c'], borderWidth: 0 }] },
+      options: { responsive: true, plugins: { legend: { display: false }, tooltip: { enabled: false } }, cutout: '68%' },
+    });
+    const legend = document.getElementById('pizza-legend');
+    if (legend) legend.innerHTML = '<p style="text-align:center;color:var(--text-muted);font-size:0.82rem">Sem gastos neste mês</p>';
+    return;
+  }
+
   chartCategorias = new Chart(canvas, {
-    type: 'bar',
+    type: 'doughnut',
     data: {
       labels,
       datasets: [{
         data: values,
-        backgroundColor: colors.map(c => c + '99'),
-        borderColor: colors,
-        borderWidth: 1.5,
-        borderRadius: 5,
+        backgroundColor: colors,
+        borderColor: 'var(--bg-card)',
+        borderWidth: 2,
+        hoverOffset: 6,
       }],
     },
     options: {
       responsive: true,
+      cutout: '62%',
       plugins: {
         legend: { display: false },
-        tooltip: { callbacks: { label: ctx => fmt(ctx.raw) } },
-      },
-      scales: {
-        x: { ticks: { color: '#94a3b8', font: { family: 'DM Sans', size: 11 } }, grid: { color: 'rgba(148,163,184,0.06)' } },
-        y: {
-          ticks: {
-            color: '#94a3b8', font: { family: 'DM Mono', size: 11 },
-            callback: v => maxVal >= 1000 ? `R$${(v/1000).toFixed(1)}k` : `R$${v}`,
+        tooltip: {
+          callbacks: {
+            label: ctx => `${ctx.label}: ${fmt(ctx.raw)} (${((ctx.raw/total)*100).toFixed(1)}%)`,
           },
-          grid: { color: 'rgba(148,163,184,0.06)' },
         },
       },
     },
   });
+
+  // Legenda customizada abaixo do gráfico
+  const legend = document.getElementById('pizza-legend');
+  if (legend) {
+    legend.innerHTML = sorted.map(([name, val], i) => {
+      const pct = ((val / total) * 100).toFixed(1);
+      return `
+        <div style="display:flex;align-items:center;gap:0.6rem;padding:0.5rem 0;border-bottom:1px solid var(--border-soft)">
+          <span style="width:10px;height:10px;border-radius:50%;background:${colors[i]};flex-shrink:0"></span>
+          <span style="flex:1;font-size:0.85rem;color:var(--text-secondary)">${esc(name)}</span>
+          <span style="font-size:0.74rem;color:var(--text-muted)">${pct}%</span>
+          <span style="font-family:var(--font-mono);font-size:0.85rem;color:var(--text-primary);min-width:80px;text-align:right">${fmt(val)}</span>
+        </div>`;
+    }).join('');
+  }
 }
 
 // ─── GRÁFICO DE EVOLUÇÃO MENSAL ─────────────────────────────────────────────
@@ -170,25 +195,25 @@ function renderChartEvolucao() {
     data: {
       labels,
       datasets: [
-        { label: 'Receitas',  data: receitas,  backgroundColor: 'rgba(52,211,153,0.25)',  borderColor: '#34d399', borderWidth: 1.5, borderRadius: 4 },
-        { label: 'Despesas',  data: despesas,  backgroundColor: 'rgba(248,113,113,0.22)', borderColor: '#f87171', borderWidth: 1.5, borderRadius: 4 },
-        { label: 'Investido', data: investido, backgroundColor: 'rgba(251,191,36,0.20)',  borderColor: '#fbbf24', borderWidth: 1.5, borderRadius: 4 },
+        { label: 'Receitas',  data: receitas,  backgroundColor: 'rgba(30,177,27,0.30)',   borderColor: '#1eb11b', borderWidth: 1.5, borderRadius: 3 },
+        { label: 'Despesas',  data: despesas,  backgroundColor: 'rgba(248,113,113,0.25)', borderColor: '#f87171', borderWidth: 1.5, borderRadius: 3 },
       ],
     },
     options: {
       responsive: true,
+      maintainAspectRatio: false,
       plugins: {
-        legend: { labels: { color: '#94a3b8', font: { family: 'DM Sans', size: 11 }, boxWidth: 10, boxHeight: 10 } },
+        legend: { position: 'top', align: 'end', labels: { color: '#a3a3a3', font: { family: 'Outfit', size: 10 }, boxWidth: 8, boxHeight: 8, padding: 10 } },
         tooltip: { callbacks: { label: ctx => `${ctx.dataset.label}: ${fmt(ctx.raw)}` } },
       },
       scales: {
-        x: { ticks: { color: '#94a3b8', font: { family: 'DM Sans', size: 11 } }, grid: { display: false } },
+        x: { ticks: { color: '#a3a3a3', font: { family: 'Outfit', size: 10 } }, grid: { display: false } },
         y: {
           ticks: {
-            color: '#94a3b8', font: { family: 'DM Mono', size: 11 },
+            color: '#a3a3a3', font: { family: 'JetBrains Mono', size: 9 },
             callback: v => maxVal >= 1000 ? `R$${(v/1000).toFixed(1)}k` : `R$${v}`,
           },
-          grid: { color: 'rgba(148,163,184,0.06)' },
+          grid: { color: 'rgba(255,255,255,0.05)' },
         },
       },
     },

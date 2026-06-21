@@ -27,11 +27,7 @@ export function renderSaldos() {
   const [y, m] = month.split('-').map(Number);
 
   container.innerHTML = `
-    <div class="page-header">
-      <div class="page-header-text">
-        <h2 class="page-title">Saldos</h2>
-        <p class="page-subtitle">Fluxo de caixa diário — ${esc(monthLabel(month))}</p>
-      </div>
+    <div class="page-header" style="justify-content:flex-end">
       <div class="page-actions" style="font-size:0.78rem;color:var(--text-muted)">
         <span>Saldo inicia zerado no dia 1</span>
       </div>

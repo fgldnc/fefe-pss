@@ -12,13 +12,6 @@ export function renderRelatorios() {
   const month = state.currentMonth;
 
   container.innerHTML = `
-    <div class="page-header">
-      <div class="page-header-text">
-        <h2 class="page-title">Relatórios</h2>
-        <p class="page-subtitle">Exporte seus dados em CSV ou JSON</p>
-      </div>
-    </div>
-
     <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:1rem">
 
       ${_reportCard({
