@@ -433,7 +433,24 @@ async function _confirmarImportacao() {
     if (compM > 12) { compM -= 12; compY += 1; }
     const competenceMonth = `${compY}-${String(compM).padStart(2,'0')}`;
 
+    // Função auxiliar: verifica se já existe uma parcela igual (mesma descrição,
+    // valor aproximado, número da parcela e total) em QUALQUER mês.
+    // Evita duplicar projeções quando a mesma fatura/parcela é importada de novo.
+    const normDesc = (s) => (s || '').toLowerCase().replace(/\s+/g, ' ').trim();
+    function _parcelaJaExiste(desc, amount, parcelaNum, parcelaTotal) {
+      const nd = normDesc(desc);
+      return state.transactions.some(t => {
+        if ((t.installmentTotal || 1) <= 1) return false;
+        if (t.installmentCurrent !== parcelaNum) return false;
+        if (t.installmentTotal   !== parcelaTotal) return false;
+        if (normDesc(t.description) !== nd) return false;
+        return Math.abs((t.amount || 0) - amount) < 0.02;
+      });
+    }
+
     let saved = 0;
+    let skippedDuplicates = 0;
+
     for (const item of selected) {
       const tx = {
         date: item.date,
@@ -448,12 +465,22 @@ async function _confirmarImportacao() {
         isProjected: false,
         importedFrom: 'pdf',
       };
-      await saveTx(tx);
-      saved++;
 
-      // Projeta parcelas restantes
+      // Verifica se a parcela atual já existe antes de salvar
+      if (item.installmentTotal > 1 && _parcelaJaExiste(item.description, item.amount, item.installmentCurrent, item.installmentTotal)) {
+        skippedDuplicates++;
+      } else {
+        await saveTx(tx);
+        saved++;
+      }
+
+      // Projeta parcelas restantes — só se ainda não existirem
       if (item.installmentTotal > 1) {
         for (let p = item.installmentCurrent + 1; p <= item.installmentTotal; p++) {
+          if (_parcelaJaExiste(item.description, item.amount, p, item.installmentTotal)) {
+            skippedDuplicates++;
+            continue;
+          }
           const delta = p - item.installmentCurrent;
           const [y, mo] = competenceMonth.split('-').map(Number);
           const d = new Date(y, mo - 1 + delta, 1);
@@ -461,6 +488,10 @@ async function _confirmarImportacao() {
           await saveTx({ ...tx, installmentCurrent: p, competenceMonth: futureMonth, isProjected: true });
         }
       }
+    }
+
+    if (skippedDuplicates > 0) {
+      toast(`${skippedDuplicates} parcela(s) já existente(s) foram ignoradas para evitar duplicidade.`, 'info');
     }
 
     document.getElementById('modal-pdf').classList.add('hidden');
