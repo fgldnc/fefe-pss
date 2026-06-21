@@ -485,7 +485,25 @@ async function _confirmarImportacao() {
           const [y, mo] = competenceMonth.split('-').map(Number);
           const d = new Date(y, mo - 1 + delta, 1);
           const futureMonth = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
-          await saveTx({ ...tx, installmentCurrent: p, competenceMonth: futureMonth, isProjected: true });
+
+          // Calcula data projetada: mantém o DIA original da compra,
+          // mas avança o mês/ano de acordo com a parcela.
+          // Isso é essencial para a aba Saldos (fluxo de caixa diário) —
+          // sem isso, todas as parcelas ficariam "presas" na data da compra original.
+          const origDate = item.date ? new Date(item.date + 'T00:00:00') : new Date();
+          const dayOfMonth = origDate.getDate();
+          const projDate = new Date(y, mo - 1 + delta, 1);
+          const lastDayOfProjMonth = new Date(projDate.getFullYear(), projDate.getMonth() + 1, 0).getDate();
+          const safeDay = Math.min(dayOfMonth, lastDayOfProjMonth); // evita dia 31 em mês de 30
+          const projectedDateStr = `${projDate.getFullYear()}-${String(projDate.getMonth()+1).padStart(2,'0')}-${String(safeDay).padStart(2,'0')}`;
+
+          await saveTx({
+            ...tx,
+            date: projectedDateStr,
+            installmentCurrent: p,
+            competenceMonth: futureMonth,
+            isProjected: true,
+          });
         }
       }
     }

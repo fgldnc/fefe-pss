@@ -88,6 +88,25 @@ export function renderConfiguracoes() {
         <div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.7px;color:var(--text-muted);margin-bottom:0.75rem">Dados armazenados</div>
         <div id="storage-stats" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:0.6rem"></div>
       </div>
+
+      <div class="card" style="margin-top:1rem;padding:1.25rem;border-color:rgba(248,113,113,0.3)">
+        <div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.7px;color:var(--danger);margin-bottom:0.5rem">⚠ Zona de risco</div>
+        <p style="font-size:0.82rem;color:var(--text-secondary);line-height:1.5;margin-bottom:1rem">
+          Apaga TODOS os dados de uma coleção antes de reimportar um backup. Use isso para evitar duplicatas
+          quando for substituir os dados por completo. Esta ação não pode ser desfeita.
+        </p>
+        <div style="display:flex;gap:0.6rem;flex-wrap:wrap;align-items:center">
+          <select id="wipe-collection-select" class="form-select" style="max-width:220px">
+            <option value="transactions">Transações (gastos + extratos)</option>
+            <option value="incomes">Receitas</option>
+            <option value="budgets">Orçamentos</option>
+            <option value="assets">Patrimônio (ativos)</option>
+            <option value="goals">Metas</option>
+          </select>
+          <button class="btn btn-danger btn-sm" id="btn-wipe-collection">🗑 Apagar tudo desta coleção</button>
+        </div>
+        <div id="wipe-status" style="font-size:0.8rem;color:var(--text-muted);margin-top:0.6rem"></div>
+      </div>
     </div>
 
     <div class="config-section hidden" id="cfg-preferencias">
@@ -304,6 +323,36 @@ function _initEvents() {
   const savedOffset = localStorage.getItem('fluxo_billing_offset') ?? '-1';
   const offsetSel = document.getElementById('billing-offset');
   if (offsetSel) offsetSel.value = savedOffset;
+
+  document.getElementById('btn-wipe-collection')?.addEventListener('click', async () => {
+    const sel  = document.getElementById('wipe-collection-select');
+    const col  = sel?.value;
+    const label = sel?.options[sel.selectedIndex]?.text || col;
+    const status = document.getElementById('wipe-status');
+
+    if (!confirm(`Tem certeza? Isso vai apagar PERMANENTEMENTE todos os dados de "${label}". Esta ação não pode ser desfeita.`)) return;
+    if (!confirm(`Confirma de novo: apagar TUDO de "${label}"? Recomendado fazer backup antes.`)) return;
+
+    const btn = document.getElementById('btn-wipe-collection');
+    btn.disabled = true;
+    btn.textContent = 'Apagando…';
+    if (status) status.textContent = 'Apagando documentos…';
+
+    try {
+      const { wipeCollection } = await import('./db.js');
+      const count = await wipeCollection(col);
+      toast(`${count} documento(s) apagado(s) de "${label}".`, 'success');
+      if (status) status.textContent = `✓ ${count} documento(s) removido(s). Agora você pode importar um backup limpo.`;
+      _renderStorageStats();
+    } catch (err) {
+      console.error('Erro ao apagar coleção:', err);
+      toast(`Erro: ${err.message}`, 'error');
+      if (status) status.textContent = `Erro: ${err.message}`;
+    } finally {
+      btn.disabled = false;
+      btn.textContent = '🗑 Apagar tudo desta coleção';
+    }
+  });
 
   document.getElementById('btn-cfg-logout')?.addEventListener('click', async () => {
     const { auth, signOut } = window._FB;

@@ -262,6 +262,57 @@ export async function deleteCategory(id) {
 // ─── BACKUP ────────────────────────────────────────────────────────────────
 
 /** Exporta todos os dados como JSON e faz download */
+// ─── LIMPAR COLEÇÃO ────────────────────────────────────────────────────────
+// Apaga TODOS os documentos de uma coleção do usuário (ex: antes de reimportar backup).
+// Usa writeBatch para eficiência — Firestore limita a 500 operações por batch,
+// então divide em lotes se necessário.
+const WIPABLE_COLLECTIONS = ['transactions', 'incomes', 'budgets', 'assets', 'goals'];
+
+export async function wipeCollection(colName) {
+  if (!WIPABLE_COLLECTIONS.includes(colName)) {
+    throw new Error(`Coleção "${colName}" não pode ser limpa por aqui.`);
+  }
+
+  const { db, collection, getDocs, writeBatch, doc } = fb();
+  const uid = getUid();
+  if (!uid) throw new Error('Não autenticado.');
+
+  const colRef = collection(db, `users/${uid}/${colName}`);
+  const snap   = await getDocs(colRef);
+
+  if (snap.empty) return 0;
+
+  const docs = snap.docs;
+  let deleted = 0;
+
+  // Processa em lotes de até 450 (margem de segurança sob o limite de 500 do Firestore)
+  for (let i = 0; i < docs.length; i += 450) {
+    const chunk = docs.slice(i, i + 450);
+    const batch = writeBatch(db);
+    for (const d of chunk) {
+      batch.delete(doc(db, `users/${uid}/${colName}`, d.id));
+    }
+    await batch.commit();
+    deleted += chunk.length;
+  }
+
+  // Limpa o state local também
+  if (colName === 'transactions') {
+    state.transactions = [];
+    state.extratoTransactions = [];
+  } else if (colName === 'incomes') {
+    state.incomes = [];
+  } else if (colName === 'budgets') {
+    state.budgets = {};
+  } else if (colName === 'assets') {
+    state.assets = [];
+  } else if (colName === 'goals') {
+    state.goals = [];
+  }
+
+  return deleted;
+}
+
 export async function exportBackup(version) {
   const [transactions, incomes, budgets, assets, goals, categories] = await Promise.all([
     getAll('transactions'),
