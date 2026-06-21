@@ -138,7 +138,15 @@ function _buildDayData(ym, year, month, daysInMonth) {
   // Despesas (transactions) — filtra pela DATA REAL (não pela competenceMonth)
   // Saldo diário precisa refletir quando o dinheiro realmente saiu/vai sair,
   // independente do mês de competência usado nos relatórios/dashboard.
-  for (const tx of state.transactions.filter(t => t.date && t.date.slice(0, 7) === ym)) {
+  //
+  // IMPORTANTE: exclui explicitamente itens de extrato bancário (source === 'statement_import').
+  // Eles são tratados separadamente no loop de extratoTransactions abaixo, com a lógica
+  // correta de type (income/expense). Sem essa exclusão, um item de extrato que por
+  // qualquer motivo apareça em state.transactions seria contado como SAÍDA mesmo
+  // quando for uma RECEITA (ex: TED recebido, resgate de CDB).
+  for (const tx of state.transactions.filter(t =>
+    t.date && t.date.slice(0, 7) === ym && t.source !== 'statement_import'
+  )) {
     const day = parseInt(tx.date.slice(8, 10), 10);
     if (!result[day]) continue;
 
