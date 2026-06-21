@@ -135,28 +135,33 @@ function _buildDayData(ym, year, month, daysInMonth) {
   const totalBudget = Object.values(budgets).reduce((s, v) => s + (v || 0), 0);
   const diarioValue = daysInMonth > 0 ? totalBudget / daysInMonth : 0;
 
-  // Despesas (transactions) — filtra pela DATA REAL (não pela competenceMonth)
-  // Saldo diário precisa refletir quando o dinheiro realmente saiu/vai sair,
-  // independente do mês de competência usado nos relatórios/dashboard.
+  // Despesas (transactions) — usa competenceMonth para decidir SE a transação
+  // pertence a este mês, e usa o DIA do campo date para posicionar na tabela.
   //
-  // IMPORTANTE: exclui explicitamente itens de extrato bancário (source === 'statement_import').
-  // Eles são tratados separadamente no loop de extratoTransactions abaixo, com a lógica
-  // correta de type (income/expense). Sem essa exclusão, um item de extrato que por
-  // qualquer motivo apareça em state.transactions seria contado como SAÍDA mesmo
-  // quando for uma RECEITA (ex: TED recebido, resgate de CDB).
+  // Por quê: uma parcela como "SENAC WEB 5/6" tem date apontando para quando a
+  // PRIMEIRA parcela foi comprada (ex: janeiro), mas o competenceMonth dela é maio
+  // — é em maio que essa parcela específica "pesa" na fatura e desconta o saldo.
+  // Por isso filtramos por competenceMonth (não por date.slice(0,7)) e usamos
+  // apenas o número do dia do date para posicionar visualmente na tabela do mês.
+  //
+  // IMPORTANTE: exclui itens de extrato bancário (source === 'statement_import').
+  // Eles são tratados separadamente no loop de extratoTransactions abaixo, com a
+  // lógica correta de type (income/expense).
   for (const tx of state.transactions.filter(t =>
-    t.date && t.date.slice(0, 7) === ym && t.source !== 'statement_import'
+    t.competenceMonth === ym && t.date && t.source !== 'statement_import'
   )) {
     const day = parseInt(tx.date.slice(8, 10), 10);
-    if (!result[day]) continue;
+    // Se o dia original não existir neste mês (ex: dia 31 em mês de 30), usa o último dia válido
+    const safeDay = Math.min(day, daysInMonth);
+    if (!result[safeDay]) continue;
 
     const isInvest = investIds.includes(tx.categoryId);
     if (isInvest) {
-      result[day].investimento += tx.amount || 0;
+      result[safeDay].investimento += tx.amount || 0;
     } else if (tx.paymentType === 'cartao') {
-      result[day].cartao += tx.amount || 0;
+      result[safeDay].cartao += tx.amount || 0;
     } else {
-      result[day].saidas += tx.amount || 0;
+      result[safeDay].saidas += tx.amount || 0;
     }
   }
 
