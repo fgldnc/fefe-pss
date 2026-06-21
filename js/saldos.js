@@ -152,23 +152,24 @@ function _buildDayData(ym, year, month, daysInMonth) {
     }
   }
 
-  // Receitas do mês
-  for (const inc of state.incomes.filter(i => (i.month === ym || i.competenceMonth === ym) && i.date)) {
+  // Receitas do mês — usa state.incomes como fonte ÚNICA de entradas.
+  // IMPORTANTE: entradas vindas de extrato bancário já são espelhadas em
+  // state.incomes (ver extratos.js _saveExtrato), então NÃO somamos de novo
+  // a partir de state.extratoTransactions — isso duplicaria o valor.
+  for (const inc of state.incomes.filter(i => (i.month === ym || i.competenceMonth === ym || (i.date||'').slice(0,7) === ym) && i.date)) {
     const day = parseInt(inc.date.slice(8, 10), 10);
     if (!result[day]) continue;
     result[day].entradas += inc.amount || 0;
   }
 
-  // Transações de extrato bancário que também afetam o saldo do dia
+  // Transações de extrato bancário — soma SOMENTE as saídas (expense).
+  // As entradas (income) já foram contabilizadas acima via state.incomes.
   for (const tx of (state.extratoTransactions || [])) {
     if (!tx.date || tx.date.slice(0, 7) !== ym) continue;
+    if (tx.type !== 'expense') continue; // pula income — já contado em incomes
     const day = parseInt(tx.date.slice(8, 10), 10);
     if (!result[day]) continue;
-    if (tx.type === 'income') {
-      result[day].entradas += tx.amount || 0;
-    } else if (tx.type === 'expense') {
-      result[day].saidas += tx.amount || 0;
-    }
+    result[day].saidas += tx.amount || 0;
   }
 
   // Aplica valor diário de orçamento em todos os dias
