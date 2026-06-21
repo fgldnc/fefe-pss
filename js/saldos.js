@@ -135,8 +135,10 @@ function _buildDayData(ym, year, month, daysInMonth) {
   const totalBudget = Object.values(budgets).reduce((s, v) => s + (v || 0), 0);
   const diarioValue = daysInMonth > 0 ? totalBudget / daysInMonth : 0;
 
-  // Despesas (transactions) do mês — separadas por tipo de pagamento
-  for (const tx of state.transactions.filter(t => t.competenceMonth === ym && t.date)) {
+  // Despesas (transactions) — filtra pela DATA REAL (não pela competenceMonth)
+  // Saldo diário precisa refletir quando o dinheiro realmente saiu/vai sair,
+  // independente do mês de competência usado nos relatórios/dashboard.
+  for (const tx of state.transactions.filter(t => t.date && t.date.slice(0, 7) === ym)) {
     const day = parseInt(tx.date.slice(8, 10), 10);
     if (!result[day]) continue;
 
