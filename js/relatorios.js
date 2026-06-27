@@ -3,6 +3,7 @@
  */
 
 import { state, fmt, monthLabel, offsetMonth, esc, toast } from './utils.js';
+import { allExpensesOfMonth } from './db.js';
 
 // ─── RENDER DA SEÇÃO ──────────────────────────────────────────
 export function renderRelatorios() {
@@ -152,9 +153,7 @@ function _gastosPorCategoria(month) {
     .filter(c => (c.id + c.name).toLowerCase().includes('investiment'))
     .map(c => c.id);
 
-  const txs = state.transactions.filter(
-    t => t.competenceMonth === month && !investIds.includes(t.categoryId)
-  );
+  const txs = allExpensesOfMonth(month).filter(t => !investIds.includes(t.categoryId));
   const total = txs.reduce((s, t) => s + (t.amount || 0), 0);
 
   const catMap = {};
@@ -178,7 +177,7 @@ function _evolucaoMensal() {
   const rows = [];
   for (let i = 11; i >= 0; i--) {
     const m     = offsetMonth(state.currentMonth, -i);
-    const txs   = state.transactions.filter(t => t.competenceMonth === m);
+    const txs   = allExpensesOfMonth(m);
     const inc   = state.incomes.filter(t => t.month === m || t.competenceMonth === m);
     const receita  = inc.reduce((s, t) => s + (t.amount || 0), 0);
     const despesa  = txs.reduce((s, t) => s + (t.amount || 0), 0);
@@ -195,7 +194,7 @@ function _evolucaoMensal() {
 function _orcamentoRealizado(month) {
   const budgets = state.budgets[month] || {};
   const catTotals = {};
-  for (const tx of state.transactions.filter(t => t.competenceMonth === month)) {
+  for (const tx of allExpensesOfMonth(month)) {
     catTotals[tx.categoryId] = (catTotals[tx.categoryId] || 0) + (tx.amount || 0);
   }
   return Object.entries(budgets).map(([catId, limit]) => {
@@ -233,8 +232,7 @@ function _parcelasFuturas(fromMonth) {
 }
 
 function _todasTransacoes(month) {
-  return state.transactions
-    .filter(t => t.competenceMonth === month)
+  return allExpensesOfMonth(month)
     .sort((a, b) => (a.date || '').localeCompare(b.date || ''))
     .map(tx => {
       const cat = state.categories.find(c => c.id === tx.categoryId);

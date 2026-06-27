@@ -452,3 +452,7 @@
 
 /* ── DASHBOARD REDESIGN v3 ──────────────────────────────────────── */
 #chart-categorias { max-width: 100%; }
+
+/* ── HIST\u00d3RICO DE APORTES (Metas) ──────────────────────────────── */
+.btn-toggle-aportes:hover .aporte-chevron { color: var(--accent-bright); }
+.btn-toggle-aportes:hover span:last-child { color: var(--text-secondary); }

@@ -3,7 +3,7 @@
  */
 
 import { state, esc, fmt, toast } from './utils.js';
-import { saveBudgets }             from './db.js';
+import { saveBudgets, allExpensesOfMonth } from './db.js';
 
 export function renderOrcamento() {
   const editor = document.getElementById('orcamento-editor');
@@ -24,9 +24,9 @@ export function renderOrcamento() {
     return;
   }
 
-  // Total gasto por categoria no mês
+  // Total gasto por categoria no mês (inclui despesas de extrato bancário)
   const spentByCat = {};
-  for (const tx of state.transactions.filter(t => t.competenceMonth === month)) {
+  for (const tx of allExpensesOfMonth(month)) {
     spentByCat[tx.categoryId] = (spentByCat[tx.categoryId] || 0) + (tx.amount || 0);
   }
 

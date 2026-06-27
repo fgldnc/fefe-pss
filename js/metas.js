@@ -61,11 +61,37 @@ function _renderMetasGrid() {
           </div>
         </div>
         ${aportes.length ? `
-          <div style="margin-top:0.75rem;border-top:1px solid var(--border);padding-top:0.6rem">
-            <span style="font-size:0.72rem;color:var(--text-muted)">${aportes.length} aporte(s) · total: ${fmt(totalAp)}</span>
+          <div style="margin-top:0.75rem;border-top:1px solid var(--border-soft);padding-top:0.6rem">
+            <button class="btn-toggle-aportes" data-meta-id="${g.id}" style="display:flex;align-items:center;gap:0.4rem;width:100%;background:none;border:none;cursor:pointer;padding:0;color:var(--text-muted);font-family:var(--font-sans)">
+              <span class="aporte-chevron" style="font-size:0.65rem;transition:transform 0.15s">▶</span>
+              <span style="font-size:0.72rem">${aportes.length} aporte(s) · total: ${fmt(totalAp)}</span>
+            </button>
+            <div class="aportes-detail hidden" data-meta-id="${g.id}" style="margin-top:0.5rem;display:none;flex-direction:column;gap:0.35rem">
+              ${[...aportes].sort((a,b) => (b.date||'').localeCompare(a.date||'')).map(a => `
+                <div style="display:flex;justify-content:space-between;align-items:baseline;font-size:0.74rem;padding:0.3rem 0;border-bottom:1px solid var(--border-soft)">
+                  <span style="color:var(--text-secondary)">
+                    ${a.date ? new Date(a.date + 'T12:00:00').toLocaleDateString('pt-BR') : '—'}
+                    ${a.obs ? `<span style="color:var(--text-muted)"> · ${esc(a.obs)}</span>` : ''}
+                  </span>
+                  <span style="font-family:var(--font-mono);color:var(--accent-bright);flex-shrink:0;margin-left:0.5rem">${fmt(a.amount)}</span>
+                </div>`).join('')}
+            </div>
           </div>` : ''}
       </div>`;
   }).join('');
+
+  // Toggle de expansão do histórico de aportes
+  grid.querySelectorAll('.btn-toggle-aportes').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = btn.dataset.metaId;
+      const detail  = grid.querySelector(`.aportes-detail[data-meta-id="${id}"]`);
+      const chevron = btn.querySelector('.aporte-chevron');
+      if (!detail) return;
+      const isHidden = detail.style.display === 'none' || !detail.style.display;
+      detail.style.display = isHidden ? 'flex' : 'none';
+      if (chevron) chevron.style.transform = isHidden ? 'rotate(90deg)' : 'rotate(0deg)';
+    });
+  });
 }
 
 function _initMetasEvents() {

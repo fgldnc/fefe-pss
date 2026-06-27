@@ -11,7 +11,7 @@
  */
 
 import { state, fmt, monthLabel, offsetMonth, esc, renderInsights, showKpiSkeleton } from './utils.js';
-import { txOfMonth, incomesOfMonth } from './db.js';
+import { txOfMonth, allExpensesOfMonth, incomesOfMonth } from './db.js';
 
 let chartCategorias = null;
 let chartEvolucao   = null;
@@ -32,7 +32,8 @@ function getInvestCatIds() {
 export function renderDashboard() {
   const month = state.currentMonth;
 
-  const txs     = txOfMonth(month);
+  // Inclui despesas normais (cartão/manual) + despesas vindas de extrato bancário
+  const txs     = allExpensesOfMonth(month);
   const incomes = incomesOfMonth(month);
 
   const investIds     = getInvestCatIds();
@@ -183,8 +184,8 @@ function renderChartEvolucao() {
   const investIds = getInvestCatIds();
 
   const receitas  = months.map(m => incomesOfMonth(m).reduce((s, i) => s + (i.amount||0), 0));
-  const despesas  = months.map(m => txOfMonth(m).filter(t => !investIds.includes(t.categoryId)).reduce((s,t)=>s+(t.amount||0),0));
-  const investido = months.map(m => txOfMonth(m).filter(t =>  investIds.includes(t.categoryId)).reduce((s,t)=>s+(t.amount||0),0));
+  const despesas  = months.map(m => allExpensesOfMonth(m).filter(t => !investIds.includes(t.categoryId)).reduce((s,t)=>s+(t.amount||0),0));
+  const investido = months.map(m => allExpensesOfMonth(m).filter(t =>  investIds.includes(t.categoryId)).reduce((s,t)=>s+(t.amount||0),0));
   const labels    = months.map(m => monthLabel(m).slice(0,3));
   const maxVal    = Math.max(...receitas, ...despesas, ...investido, 1);
 

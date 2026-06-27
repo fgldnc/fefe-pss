@@ -134,6 +134,28 @@ export function txOfMonth(month) {
   return state.transactions.filter(t => t.competenceMonth === month);
 }
 
+/**
+ * Retorna TODAS as despesas do mês para fins de dashboard/relatórios:
+ * transações normais (cartão/manual) + despesas vindas de extrato bancário.
+ * Normaliza os campos do extrato (date/category/type) para o formato
+ * usado pelo resto do app (competenceMonth/categoryId/amount), sem alterar
+ * os dados originais no Firestore — a normalização é só para leitura.
+ */
+export function allExpensesOfMonth(month) {
+  const normais = state.transactions.filter(t => t.competenceMonth === month);
+
+  const doExtrato = (state.extratoTransactions || [])
+    .filter(t => t.type === 'expense' && (t.date || '').slice(0, 7) === month)
+    .map(t => ({
+      ...t,
+      categoryId: t.categoryId || t.category || '',
+      competenceMonth: month,
+      paymentType: t.paymentType || 'extrato',
+    }));
+
+  return [...normais, ...doExtrato];
+}
+
 /** Retorna transações que são parcelas projetadas para meses futuros */
 export function projectedInstallments(fromMonth) {
   return state.transactions.filter(t =>
