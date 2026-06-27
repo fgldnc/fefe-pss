@@ -34,6 +34,7 @@
   messagingSenderId: "988495815243",
 
   appId: "1:988495815243:web:0309d3a01b5d6033e4e3ce"
+
     };
 
     const app  = initializeApp(firebaseConfig);
@@ -209,22 +210,24 @@
       </div>
 
       <!-- Evolução mensal — sozinho na linha, compacto -->
-      <div class="card" style="margin-bottom:1rem;padding:1rem 1.25rem">
-        <div style="position:relative;height:160px">
+      <div class="card" style="margin-bottom:1rem;padding:1.25rem">
+        <div style="position:relative;height:260px">
           <canvas id="chart-evolucao"></canvas>
         </div>
       </div>
 
-      <!-- Distribuição dos gastos (pizza com total no centro) -->
-      <div class="card" style="margin-bottom:1rem;padding:1.25rem">
-        <div style="position:relative;width:240px;height:240px;margin:0 auto">
-          <canvas id="chart-categorias"></canvas>
-          <div id="pizza-total-center" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;pointer-events:none">
-            <div style="font-size:0.68rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px">Total</div>
-            <div style="font-size:1.1rem;font-weight:700;color:var(--text-primary);font-family:var(--font-mono)" id="pizza-total-value">R$ 0</div>
+      <!-- Distribuição dos gastos (pizza com total no centro + legenda ao lado) -->
+      <div class="card" style="margin-bottom:1rem;padding:1.5rem">
+        <div style="display:flex;align-items:center;gap:2rem;flex-wrap:wrap">
+          <div style="position:relative;width:200px;height:200px;flex-shrink:0">
+            <canvas id="chart-categorias"></canvas>
+            <div id="pizza-total-center" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;pointer-events:none">
+              <div style="font-size:0.65rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px">Total</div>
+              <div style="font-size:1.05rem;font-weight:700;color:var(--text-primary);font-family:var(--font-mono)" id="pizza-total-value">R$ 0</div>
+            </div>
           </div>
+          <div id="pizza-legend" style="flex:1;min-width:240px"></div>
         </div>
-        <div id="pizza-legend" style="padding:1rem 0 0;max-width:480px;margin:0 auto"></div>
       </div>
 
       <div class="dashboard-row">

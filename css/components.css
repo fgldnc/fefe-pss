@@ -451,7 +451,4 @@
 }
 
 /* ── DASHBOARD REDESIGN v3 ──────────────────────────────────────── */
-#chart-evolucao { max-height: 130px; }
-.card > #chart-evolucao { padding: 1rem 1.25rem; }
-
 #chart-categorias { max-width: 100%; }

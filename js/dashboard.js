@@ -160,17 +160,17 @@ function renderChartCategorias(txs) {
     },
   });
 
-  // Legenda customizada abaixo do gráfico
+  // Legenda customizada ao lado do gráfico
   const legend = document.getElementById('pizza-legend');
   if (legend) {
     legend.innerHTML = sorted.map(([name, val], i) => {
       const pct = ((val / total) * 100).toFixed(1);
       return `
-        <div style="display:flex;align-items:center;gap:0.6rem;padding:0.5rem 0;border-bottom:1px solid var(--border-soft)">
-          <span style="width:10px;height:10px;border-radius:50%;background:${colors[i]};flex-shrink:0"></span>
-          <span style="flex:1;font-size:0.85rem;color:var(--text-secondary)">${esc(name)}</span>
-          <span style="font-size:0.74rem;color:var(--text-muted)">${pct}%</span>
-          <span style="font-family:var(--font-mono);font-size:0.85rem;color:var(--text-primary);min-width:80px;text-align:right">${fmt(val)}</span>
+        <div style="display:flex;align-items:center;gap:0.6rem;padding:0.45rem 0;border-bottom:1px solid var(--border-soft)">
+          <span style="width:9px;height:9px;border-radius:50%;background:${colors[i]};flex-shrink:0"></span>
+          <span style="flex:1;font-size:0.83rem;color:var(--text-secondary)">${esc(name)}</span>
+          <span style="font-size:0.72rem;color:var(--text-muted)">${pct}%</span>
+          <span style="font-family:var(--font-mono);font-size:0.83rem;color:var(--text-primary);min-width:75px;text-align:right">${fmt(val)}</span>
         </div>`;
     }).join('');
   }
