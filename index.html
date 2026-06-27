@@ -21,20 +21,12 @@
 
     // ── Configure Firebase ──────────────────────────────────────
     const firebaseConfig = {
-  apiKey: "AIzaSyCZ_xc7UJsIsHI_M8GvxggtcYu2cBunqFo",
-
-  authDomain: "fefe-df577.firebaseapp.com",
-
-  databaseURL: "https://fefe-df577-default-rtdb.firebaseio.com",
-
-  projectId: "fefe-df577",
-
-  storageBucket: "fefe-df577.firebasestorage.app",
-
-  messagingSenderId: "988495815243",
-
-  appId: "1:988495815243:web:0309d3a01b5d6033e4e3ce"
-
+      apiKey:            "COLE_AQUI",
+      authDomain:        "COLE_AQUI",
+      projectId:         "COLE_AQUI",
+      storageBucket:     "COLE_AQUI",
+      messagingSenderId: "COLE_AQUI",
+      appId:             "COLE_AQUI"
     };
 
     const app  = initializeApp(firebaseConfig);
@@ -193,15 +185,6 @@
 
     <!-- ════ DASHBOARD ════════════════════════════════════════ -->
     <section id="tab-dashboard" class="tab-content active">
-      <div class="page-header" style="justify-content:flex-end">
-        <div class="page-actions">
-          <button class="btn btn-ghost btn-sm" id="btn-import-pdf-dash">
-            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-            Importar Fatura
-          </button>
-        </div>
-      </div>
-
       <!-- Insights strip -->
       <div class="insights-strip" id="insights-strip">
         <div class="insight-chip info">
@@ -219,20 +202,22 @@
       </div>
 
       <!-- Evolução mensal — sozinho na linha, compacto -->
-      <div class="card" style="margin-bottom:1rem">
-        <canvas id="chart-evolucao" height="90"></canvas>
+      <div class="card" style="margin-bottom:1rem;padding:1rem 1.25rem">
+        <div style="position:relative;height:160px">
+          <canvas id="chart-evolucao"></canvas>
+        </div>
       </div>
 
       <!-- Distribuição dos gastos (pizza com total no centro) -->
-      <div class="card" style="margin-bottom:1rem">
-        <div style="position:relative;max-width:340px;margin:0 auto;padding:1.25rem 0">
+      <div class="card" style="margin-bottom:1rem;padding:1.25rem">
+        <div style="position:relative;width:240px;height:240px;margin:0 auto">
           <canvas id="chart-categorias"></canvas>
           <div id="pizza-total-center" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;pointer-events:none">
             <div style="font-size:0.68rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px">Total</div>
-            <div style="font-size:1.25rem;font-weight:700;color:var(--text-primary);font-family:var(--font-mono)" id="pizza-total-value">R$ 0</div>
+            <div style="font-size:1.1rem;font-weight:700;color:var(--text-primary);font-family:var(--font-mono)" id="pizza-total-value">R$ 0</div>
           </div>
         </div>
-        <div id="pizza-legend" style="padding:0 1.25rem 1.25rem"></div>
+        <div id="pizza-legend" style="padding:1rem 0 0;max-width:480px;margin:0 auto"></div>
       </div>
 
       <div class="dashboard-row">

@@ -126,7 +126,7 @@ function renderChartCategorias(txs) {
     chartCategorias = new Chart(canvas, {
       type: 'doughnut',
       data: { labels: ['Sem dados'], datasets: [{ data: [1], backgroundColor: ['#2c2c2c'], borderWidth: 0 }] },
-      options: { responsive: true, plugins: { legend: { display: false }, tooltip: { enabled: false } }, cutout: '68%' },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { enabled: false } }, cutout: '68%' },
     });
     const legend = document.getElementById('pizza-legend');
     if (legend) legend.innerHTML = '<p style="text-align:center;color:var(--text-muted);font-size:0.82rem">Sem gastos neste mês</p>';
@@ -147,6 +147,7 @@ function renderChartCategorias(txs) {
     },
     options: {
       responsive: true,
+      maintainAspectRatio: false,
       cutout: '62%',
       plugins: {
         legend: { display: false },
