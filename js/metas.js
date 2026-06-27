@@ -66,7 +66,7 @@ function _renderMetasGrid() {
               <span class="aporte-chevron" style="font-size:0.65rem;transition:transform 0.15s">▶</span>
               <span style="font-size:0.72rem">${aportes.length} aporte(s) · total: ${fmt(totalAp)}</span>
             </button>
-            <div class="aportes-detail hidden" data-meta-id="${g.id}" style="margin-top:0.5rem;display:none;flex-direction:column;gap:0.35rem">
+            <div class="aportes-detail" data-meta-id="${g.id}" style="margin-top:0.5rem;display:none;flex-direction:column;gap:0.35rem">
               ${[...aportes].sort((a,b) => (b.date||'').localeCompare(a.date||'')).map(a => `
                 <div style="display:flex;justify-content:space-between;align-items:baseline;font-size:0.74rem;padding:0.3rem 0;border-bottom:1px solid var(--border-soft)">
                   <span style="color:var(--text-secondary)">
