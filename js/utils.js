@@ -17,6 +17,29 @@ export const state = {
   importRules: [],
 };
 
+// ─── CATEGORIAS: RESOLVE SLUG → ID REAL ───────────────────────
+// Os parsers de extrato classificam com slugs ('alimentacao', 'transporte'...),
+// mas as categorias no Firestore têm IDs auto-gerados. Esta função mapeia
+// slug (ou nome) → ID real da categoria do usuário, por nome normalizado.
+const _SLUG_TO_NAME = {
+  alimentacao: 'alimentação', transporte: 'transporte', assinatura: 'assinaturas',
+  saude: 'saúde', compras: 'compras', eletronicos: 'eletrônicos', educacao: 'educação',
+  moradia: 'moradia', lazer: 'lazer', investimento: 'investimento',
+  vestuario: 'vestuário', encargos: 'outros', outros: 'outros',
+};
+const _norm = s => (s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+
+export function resolveCategoryId(slugOrId) {
+  if (!slugOrId) return '';
+  // Já é um ID válido?
+  if (state.categories.some(c => c.id === slugOrId)) return slugOrId;
+  const target = _norm(_SLUG_TO_NAME[slugOrId] ?? slugOrId);
+  if (!target) return '';
+  const cat = state.categories.find(c => _norm(c.name) === target)
+           || state.categories.find(c => _norm(c.name).includes(target) || target.includes(_norm(c.name)));
+  return cat?.id || '';
+}
+
 // ─── FORMATAÇÃO ────────────────────────────────────────────────
 export function esc(str) {
   if (str === null || str === undefined) return '';

@@ -13,6 +13,7 @@
  */
 
 import { state, fmt, monthLabel, offsetMonth, esc } from './utils.js';
+import { incomesOfMonth } from './db.js';
 
 export function renderCalendario() {
   // Mantém o nome da função para compatibilidade com app.js (TAB_MODULES)
@@ -78,7 +79,7 @@ function _buildTable(year, month, ym) {
   }
 
   const dayRows = rows.map(r => `
-    <tr style="${r.isToday ? 'background:rgba(145,10,103,0.10)' : ''}">
+    <tr style="${r.isToday ? 'background:rgba(192,24,136,0.10)' : ''}">
       <td style="font-weight:${r.isToday ? '700' : '500'};color:${r.isToday ? 'var(--accent-bright)' : 'var(--text-secondary)'}">${r.d}</td>
       <td class="val-mono" style="color:${r.entradas > 0 ? 'var(--success)' : 'var(--text-muted)'}">${r.entradas > 0 ? fmt(r.entradas) : '—'}</td>
       <td class="val-mono" style="color:${r.saidas > 0 ? 'var(--danger)' : 'var(--text-muted)'}">${r.saidas > 0 ? fmt(r.saidas) : '—'}</td>
@@ -165,7 +166,7 @@ function _buildDayData(ym, year, month, daysInMonth) {
   // IMPORTANTE: entradas vindas de extrato bancário já são espelhadas em
   // state.incomes (ver extratos.js _saveExtrato), então NÃO somamos de novo
   // a partir de state.extratoTransactions — isso duplicaria o valor.
-  for (const inc of state.incomes.filter(i => (i.month === ym || i.competenceMonth === ym || (i.date||'').slice(0,7) === ym) && i.date)) {
+  for (const inc of incomesOfMonth(ym).filter(i => i.date)) {
     const day = parseInt(inc.date.slice(8, 10), 10);
     if (!result[day]) continue;
     result[day].entradas += inc.amount || 0;

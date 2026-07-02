@@ -173,7 +173,8 @@
 
       <div class="month-nav">
         <button class="btn-icon" id="btn-prev-month">‹</button>
-        <span id="month-label" class="month-label">—</span>
+        <span id="month-label" class="month-label" title="Clique para escolher o mês">—</span>
+        <input type="month" id="month-picker" class="month-picker-input" aria-label="Selecionar mês" />
         <button class="btn-icon" id="btn-next-month">›</button>
       </div>
 
@@ -415,7 +416,8 @@
     </section>
     <!-- ════ RECEITAS ═════════════════════════════════════════ -->
     <section id="tab-receitas" class="tab-content hidden">
-      <div class="page-header" style="justify-content:flex-end">
+      <div class="page-header" style="justify-content:flex-end;gap:0.5rem">
+        <button class="btn btn-ghost btn-sm" id="btn-copiar-receitas" title="Copia as receitas manuais do mês anterior para este mês">⟳ Copiar do mês anterior</button>
         <button class="btn btn-primary btn-sm" id="btn-nova-receita">
           <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
           Nova Receita
@@ -567,9 +569,16 @@
         <div id="pdf-processing" class="hidden pdf-processing"><div class="spinner"></div><span>Lendo fatura…</span></div>
       </div>
       <div id="pdf-step-2" class="hidden">
-        <div class="pdf-review-header">
-          <p class="pdf-info-text" id="pdf-info-text"></p>
-          <p class="form-hint">Revise e edite antes de salvar. Marque/desmarque para excluir lançamentos.</p>
+        <div class="pdf-review-header" style="display:flex;align-items:flex-end;justify-content:space-between;gap:1rem;flex-wrap:wrap">
+          <div>
+            <p class="pdf-info-text" id="pdf-info-text"></p>
+            <p class="form-hint">Revise e edite antes de salvar. Marque/desmarque para excluir lançamentos.</p>
+          </div>
+          <div class="form-row" style="margin:0">
+            <label class="form-label" for="pdf-competencia">Mês de competência</label>
+            <input type="month" id="pdf-competencia" class="form-input" style="max-width:170px" />
+            <span class="form-hint">Em qual mês estes gastos contam no dashboard.</span>
+          </div>
         </div>
         <div class="table-wrapper">
           <table class="data-table" id="tabela-pdf-preview">

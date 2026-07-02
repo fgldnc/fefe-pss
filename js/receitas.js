@@ -3,7 +3,7 @@
  */
 
 import { state, fmt, toast, esc } from './utils.js';
-import { incomesOfMonth, saveIncome, deleteIncome, saveBudgets } from './db.js';
+import { incomesOfMonth, saveIncome, deleteIncome } from './db.js';
 
 let _receitasInit = false;
 
@@ -13,7 +13,6 @@ export function renderReceitas() {
     _receitasInit = true;
   }
   _renderReceitasTable();
-  _renderOrcamentoEditor();
 }
 
 function _renderReceitasTable() {
@@ -44,31 +43,6 @@ function _renderReceitasTable() {
         <button class="btn-icon-only danger" data-action="delete-income" data-id="${i.id}">✕</button>
       </td>
     </tr>`).join('');
-}
-
-function _renderOrcamentoEditor() {
-  const month   = state.currentMonth;
-  const current = state.budgets[month] || {};
-  const el      = document.getElementById('orcamento-editor');
-
-  if (!state.categories.length) {
-    el.innerHTML = '<p class="empty-state">Nenhuma categoria cadastrada.</p>';
-    return;
-  }
-
-  el.innerHTML = state.categories.map(cat => {
-    const val = current[cat.id] || '';
-    return `
-      <div class="orcamento-input-row">
-        <span class="orcamento-input-label">
-          <span class="cat-dot" style="background:${cat.color}"></span>
-          ${esc(cat.name)}
-        </span>
-        <input type="number" class="form-input sm orcamento-cat-input"
-          data-cat-id="${cat.id}" value="${val}" placeholder="0,00" step="0.01" min="0"
-          style="width:110px;text-align:right" />
-      </div>`;
-  }).join('');
 }
 
 function _initReceitasEvents() {
@@ -120,16 +94,36 @@ function _initReceitasEvents() {
     }
   });
 
-  document.getElementById('btn-salvar-orcamento').addEventListener('click', async () => {
-    const inputs = document.querySelectorAll('.orcamento-cat-input');
-    const map    = {};
-    inputs.forEach(inp => {
-      const val = parseFloat(inp.value);
-      if (val > 0) map[inp.dataset.catId] = val;
-    });
-    await saveBudgets(state.currentMonth, map);
-    toast('Orçamento salvo!', 'success');
+  // Copiar receitas do mês anterior (receitas manuais; extratos ficam de fora)
+  document.getElementById('btn-copiar-receitas')?.addEventListener('click', async () => {
+    const prev = _offsetMonth(state.currentMonth, -1);
+    const fromPrev = state.incomes.filter(i =>
+      i.month === prev && i.source !== 'statement_import'
+    );
+    if (!fromPrev.length) return toast('Nenhuma receita manual no mês anterior.', 'warning');
+    if (!confirm(`Copiar ${fromPrev.length} receita(s) de ${prev} para ${state.currentMonth}?`)) return;
+
+    for (const inc of fromPrev) {
+      // Mantém o dia original, ajustando para o mês atual
+      const day = (inc.date || '').slice(8, 10) || '01';
+      const [y, m] = state.currentMonth.split('-').map(Number);
+      const lastDay = new Date(y, m, 0).getDate();
+      const safeDay = Math.min(parseInt(day, 10) || 1, lastDay);
+      await saveIncome({
+        type: inc.type, description: inc.description, amount: inc.amount,
+        date: `${state.currentMonth}-${String(safeDay).padStart(2, '0')}`,
+        month: state.currentMonth,
+      });
+    }
+    toast(`${fromPrev.length} receita(s) copiada(s)!`, 'success');
+    _renderReceitasTable();
   });
+}
+
+function _offsetMonth(ym, delta) {
+  const [y, m] = ym.split('-').map(Number);
+  const d = new Date(y, m - 1 + delta, 1);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
 }
 
 function _today() { return new Date().toISOString().slice(0, 10); }

@@ -68,8 +68,9 @@ const BANK_PARSERS = {
       const amount = parseMoney(m[3]);
       const isIn   = m[4] === 'C'; // C = Crédito = entrada
       if (!date || amount === 0) continue;
-      const { category } = autoClassify(desc, amount, userRules);
-      items.push(_buildItem(date, desc, amount, isIn ? 'income' : 'expense', category, bankName, batchId));
+      const cls = autoClassify(desc, amount, userRules);
+      const type = cls.type === 'transfer' ? 'transfer' : (isIn ? 'income' : 'expense');
+      items.push(_buildItem(date, desc, amount, type, cls.category, bankName, batchId));
     }
     return items;
   },
@@ -92,8 +93,9 @@ const BANK_PARSERS = {
       if (!date || amount === 0) continue;
       const lower  = line.toLowerCase();
       const isIn   = /entrada|crédito|credito|receb/.test(lower);
-      const { category } = autoClassify(desc, amount, userRules);
-      items.push(_buildItem(date, desc, amount, isIn ? 'income' : 'expense', category, bankName, batchId));
+      const cls  = autoClassify(desc, amount, userRules);
+      const type = cls.type === 'transfer' ? 'transfer' : (isIn ? 'income' : 'expense');
+      items.push(_buildItem(date, desc, amount, type, cls.category, bankName, batchId));
     }
     return items;
   },
@@ -127,8 +129,9 @@ function _genericParser(lines, bankName, userRules) {
     let isIn     = marker === 'C' || /crédito|credito|entrada|receb/.test(lower);
     if (marker === 'D') isIn = false;
 
-    const { category } = autoClassify(desc, amount, userRules);
-    items.push(_buildItem(date, desc, amount, isIn ? 'income' : 'expense', category, bankName || 'generico', batchId));
+    const cls  = autoClassify(desc, amount, userRules);
+    const type = cls.type === 'transfer' ? 'transfer' : (isIn ? 'income' : 'expense');
+    items.push(_buildItem(date, desc, amount, type, cls.category, bankName || 'generico', batchId));
   }
 
   return items;

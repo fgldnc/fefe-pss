@@ -3,7 +3,7 @@
  * Orquestra: seleção de banco → parse → revisão → salvar no Firestore
  */
 
-import { state, esc, fmt, toast } from './utils.js';
+import { state, esc, fmt, toast, resolveCategoryId } from './utils.js';
 import { detectDuplicates }        from './parsers/base-parser.js';
 import { parseOFX }                from './parsers/ofx-parser.js';
 import { parseCSV }                from './parsers/csv-parser.js';
@@ -107,31 +107,43 @@ function _renderExtratosTable() {
   txs.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
 
   tbody.innerHTML = txs.map(tx => {
-    const cat = state.categories.find(c => c.id === tx.category) || { name: tx.category || '—', color: '#888' };
-    const valClass = tx.type === 'income' ? 'val-positive' : 'val-negative';
-    const signal   = tx.type === 'income' ? '+' : '-';
+    // Resolve categoria: aceita ID real (novo) ou slug do parser (legado)
+    const catId = tx.categoryId || resolveCategoryId(tx.category) || tx.category;
+    const cat = state.categories.find(c => c.id === catId) || { name: tx.category || '—', color: '#888' };
+    const isTransfer = tx.type === 'transfer';
+    const valClass = isTransfer ? '' : tx.type === 'income' ? 'val-positive' : 'val-negative';
+    const signal   = isTransfer ? '' : tx.type === 'income' ? '+' : '-';
+    const tipoTag  = isTransfer
+      ? '<span class="tag-tipo tag-debito">Transferência</span>'
+      : `<span class="tag-tipo tag-${esc(tx.type === 'income' ? 'pix' : 'outro')}">${esc(tx.type === 'income' ? 'Entrada' : 'Saída')}</span>`;
     return `<tr>
       <td>${esc(tx.date || '—')}</td>
       <td><span style="font-size:0.72rem;color:var(--text-muted)">${esc(BANK_NAMES[tx.bankName] || tx.bankName || '—')}</span></td>
       <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(tx.description || '—')}</td>
-      <td><span class="tag-tipo tag-${esc(tx.type === 'income' ? 'pix' : 'outro')}">${esc(tx.type === 'income' ? 'Entrada' : 'Saída')}</span></td>
+      <td>${tipoTag}</td>
       <td><span class="cat-dot" style="background:${esc(cat.color || '#888')}"></span>${esc(cat.name)}</td>
-      <td class="col-value val-mono ${valClass}">${signal}${fmt(tx.amount)}</td>
+      <td class="col-value val-mono ${valClass}" style="${isTransfer ? 'color:var(--text-muted)' : ''}">${signal}${fmt(tx.amount)}</td>
     </tr>`;
   }).join('');
 }
 
+let _bancoFiltersBound = false;
 function _renderBancoFilters() {
   const sel = document.getElementById('filter-extrato-banco');
-  if (!sel || sel.children.length > 1) return;
+  if (!sel) return;
+  // Listeners: registra UMA vez (antes empilhavam a cada render sem extratos)
+  if (!_bancoFiltersBound) {
+    sel.addEventListener('change', _renderExtratosTable);
+    document.getElementById('filter-extrato-tipo')?.addEventListener('change', _renderExtratosTable);
+    _bancoFiltersBound = true;
+  }
+  if (sel.children.length > 1) return; // opções já populadas
   const banks = [...new Set((state.extratoTransactions || []).map(t => t.bankName))];
   banks.forEach(b => {
     const opt = document.createElement('option');
     opt.value = b; opt.textContent = BANK_NAMES[b] || b;
     sel.appendChild(opt);
   });
-  sel.addEventListener('change', _renderExtratosTable);
-  document.getElementById('filter-extrato-tipo')?.addEventListener('change', _renderExtratosTable);
 }
 
 // ─── MODAL DE IMPORTAÇÃO ───────────────────────────────────────
@@ -208,13 +220,17 @@ export function initExtratoModal() {
     });
   }
 
-  // Checkbox "marcar todos"
-  const checkAll = _fresh('extrato-check-all');
-  checkAll?.addEventListener('change', e => {
-    document.querySelectorAll('#extrato-preview-tbody .row-check').forEach(cb => {
-      cb.checked = e.target.checked;
+  // Checkbox "marcar todos" — delegação no document: o thead é recriado
+  // em _showReview quando há entradas, o que destruiria um listener direto.
+  if (!window.__extratoCheckAllBound) {
+    document.addEventListener('change', e => {
+      if (e.target?.id !== 'extrato-check-all') return;
+      document.querySelectorAll('#extrato-preview-tbody .row-check').forEach(cb => {
+        cb.checked = e.target.checked;
+      });
     });
-  });
+    window.__extratoCheckAllBound = true;
+  }
 
   // Botão confirmar
   const btnConfirmar = _fresh('btn-confirmar-extrato');
@@ -249,7 +265,7 @@ async function _deleteBatch(batchId, items) {
   const uid = window._FB.auth.currentUser?.uid;
   if (!uid) { toast('Não autenticado.', 'error'); return; }
 
-  const btn = document.querySelector(`[data-batch="${batchId}"]`);
+  const btn = document.querySelector(`[data-batchid="${batchId}"]`);
   if (btn) { btn.disabled = true; btn.textContent = 'Excluindo…'; }
 
   try {
@@ -300,7 +316,7 @@ async function _handleFile(file) {
     let items = [];
 
     if (autoFormat === 'ofx') {
-      const text = await file.text();
+      const text = await _readFileAsText(file); // fallback Latin-1 também no OFX
       items = parseOFX(text, bank, state.importRules || []);
     } else if (autoFormat === 'csv') {
       const text = await _readFileAsText(file);
@@ -341,14 +357,17 @@ function _detectBankFromFile(filename) {
   return 'generico';
 }
 
-function _readFileAsText(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload  = e => resolve(e.target.result);
-    reader.onerror = () => reject(new Error('Falha ao ler arquivo.'));
-    // Tenta detectar encoding
-    reader.readAsText(file, 'UTF-8');
-  });
+async function _readFileAsText(file) {
+  // Bancos BR frequentemente exportam em ISO-8859-1/Windows-1252.
+  // Decodifica UTF-8 primeiro; se aparecer o caractere de substituição (�),
+  // refaz o decode em Latin-1 — senão acentos quebram e as regras de
+  // classificação com acento (crédito, saúde...) param de bater.
+  const buf  = await file.arrayBuffer();
+  const utf8 = new TextDecoder('utf-8', { fatal: false }).decode(buf);
+  if (utf8.includes('\uFFFD')) {
+    return new TextDecoder('iso-8859-1').decode(buf);
+  }
+  return utf8;
 }
 
 // ─── REVISÃO ─────────────────────────────────────────────────
@@ -396,8 +415,10 @@ function _showReview(items, bank, format) {
   tbody.innerHTML = items.map((tx, idx) => {
     const isIncome = tx.type === 'income';
 
+    // Resolve slug do parser → ID real, e já grava no item para o save usar
+    if (!tx.categoryId) tx.categoryId = resolveCategoryId(tx.category);
     const catOptions = cats.map(c =>
-      `<option value="${esc(c.id)}" ${c.id === tx.category ? 'selected' : ''}>${esc(c.name)}</option>`
+      `<option value="${esc(c.id)}" ${c.id === tx.categoryId ? 'selected' : ''}>${esc(c.name)}</option>`
     ).join('');
 
     const incomeTypeOptions = INCOME_TYPES.map(([val, label]) =>
@@ -417,7 +438,7 @@ function _showReview(items, bank, format) {
       ? `<select class="select-inline" data-field="incomeType" data-idx="${idx}" style="max-width:180px">
            ${incomeTypeOptions}
          </select>`
-      : `<select class="select-inline" data-field="category" data-idx="${idx}">
+      : `<select class="select-inline" data-field="categoryId" data-idx="${idx}">
            <option value="">—</option>${catOptions}
          </select>`;
 
@@ -486,35 +507,46 @@ async function _saveExtrato() {
     const now = new Date().toISOString();
     const txRef  = collection(db, `users/${uid}/transactions`);
     const incRef = collection(db, `users/${uid}/incomes`);
+    const savedForState = [];
 
     for (const tx of selected) {
-      const base = { ...tx, isReviewed: true, importedAt: now, updatedAt: now, createdAt: now };
+      const base = {
+        ...tx,
+        // Garante categoryId REAL (slug resolvido) para dashboard/orçamento/relatórios
+        categoryId: tx.categoryId || resolveCategoryId(tx.category) || '',
+        isReviewed: true, importedAt: now, updatedAt: now, createdAt: now,
+      };
+      delete base.id; // o Firestore gera o ID; o genId() do parser era só temporário
+      delete base.isDuplicate;
 
-      // Salva em transactions (sempre)
-      await addDoc(txRef, base);
+      // Salva em transactions (sempre) — guarda o ID real do documento
+      const ref = await addDoc(txRef, base);
+      savedForState.push({ ...base, id: ref.id });
 
       // Entradas também salvam em incomes para aparecer no dashboard de receitas
       if (tx.type === 'income' && tx.amount > 0) {
         const incomeData = {
-          type:        tx.incomeType || _classifyIncomeType(tx.description),
-          description: tx.description,
-          amount:      tx.amount,
-          date:        tx.date,
-          month:       tx.date ? tx.date.slice(0, 7) : now.slice(0, 7),
-          source:      'statement_import',
-          bankName:    tx.bankName,
-          importedAt:  now,
-          createdAt:   now,
+          type:          tx.incomeType || _classifyIncomeType(tx.description),
+          description:   tx.description,
+          amount:        tx.amount,
+          date:          tx.date,
+          month:         tx.date ? tx.date.slice(0, 7) : now.slice(0, 7),
+          source:        'statement_import',
+          bankName:      tx.bankName,
+          // ESSENCIAL: sem isso, excluir o lote deixava receitas órfãs no Firestore
+          importBatchId: tx.importBatchId || null,
+          importedAt:    now,
+          createdAt:     now,
         };
-        await addDoc(incRef, incomeData);
+        const incDocRef = await addDoc(incRef, incomeData);
         state.incomes = state.incomes || [];
-        state.incomes.push(incomeData);
+        state.incomes.push({ ...incomeData, id: incDocRef.id });
       }
     }
 
-    // Atualiza state local
+    // Atualiza state local com os IDs reais do Firestore
     if (!state.extratoTransactions) state.extratoTransactions = [];
-    state.extratoTransactions.push(...selected.map(tx => ({ ...tx, isReviewed: true, importedAt: now })));
+    state.extratoTransactions.push(...savedForState);
 
     const dupSkipped = parsedItems.length - selected.length;
     toast(

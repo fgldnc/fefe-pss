@@ -152,6 +152,7 @@ Agora **copie todos os arquivos do app** para essa pasta, mantendo a estrutura:
 financas-pessoais/        ← pasta que o GitHub Desktop criou
 ├── index.html
 ├── README.md
+├── vercel.json
 ├── css/
 │   ├── style.css
 │   └── components.css
@@ -159,13 +160,25 @@ financas-pessoais/        ← pasta que o GitHub Desktop criou
     ├── app.js
     ├── auth.js
     ├── db.js
+    ├── utils.js
     ├── dashboard.js
     ├── gastos.js
-    ├── pdf-import.js
+    ├── extratos.js
     ├── receitas.js
+    ├── orcamento.js
+    ├── saldos.js
+    ├── calendario.js
+    ├── timeline.js
+    ├── relatorios.js
     ├── patrimonio.js
     ├── metas.js
-    └── configuracoes.js
+    ├── configuracoes.js
+    ├── pdf-import.js
+    └── parsers/
+        ├── base-parser.js
+        ├── csv-parser.js
+        ├── ofx-parser.js
+        └── pdf-statement-parser.js
 ```
 
 7. Volte ao GitHub Desktop — você vai ver a lista de arquivos novos aparecer

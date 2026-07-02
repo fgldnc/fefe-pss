@@ -13,7 +13,7 @@
  *  - Linhas com valor zerado
  */
 
-import { state, toast } from './utils.js';
+import { state, toast, esc } from './utils.js';
 import { saveTx } from './db.js';
 
 if (typeof pdfjsLib !== 'undefined') {
@@ -279,7 +279,8 @@ function _parseGenerico(text) {
 function _parseMoney(raw) {
   if (!raw) return 0;
   const s = raw.trim().replace(/\s/g,'');
-  if (/^\d{1,3}(\.\d{3})*,\d{2}$/.test(s))
+  // Formato BR: "1.234,56" OU "3200,56" (sem separador de milhar)
+  if (/^\d+(\.\d{3})*,\d{2}$/.test(s))
     return parseFloat(s.replace(/\./g,'').replace(',','.'));
   return parseFloat(s.replace(/[^0-9.]/g,'')) || 0;
 }
@@ -334,6 +335,19 @@ function _showPreview(items, filename) {
   document.getElementById('pdf-info-text').textContent =
     `${items.length} lançamentos encontrados em "${filename}"`;
 
+  // Pré-preenche o mês de competência com o palpite (data do 1º item + offset),
+  // mas quem manda é o valor do input — o usuário confirma/ajusta antes de salvar.
+  const compInput = document.getElementById('pdf-competencia');
+  if (compInput) {
+    const refDate = items[0]?.date || new Date().toISOString().slice(0, 10);
+    const [gy, gm] = refDate.split('-').map(Number);
+    const offset = parseInt(localStorage.getItem('fluxo_billing_offset') ?? '-1', 10);
+    let cy = gy, cm = gm + offset;
+    if (cm < 1)  { cm += 12; cy -= 1; }
+    if (cm > 12) { cm -= 12; cy += 1; }
+    compInput.value = `${cy}-${String(cm).padStart(2, '0')}`;
+  }
+
   const catOpts = state.categories
     .map(c => `<option value="${c.id}">${c.name}</option>`).join('');
 
@@ -363,7 +377,7 @@ function _showPreview(items, filename) {
         <td>
           <input type="text" class="filter-input pdf-desc-input"
             style="font-size:0.78rem;padding:0.25rem 0.5rem;min-width:0;width:100%"
-            value="${_esc(item.description)}" data-idx="${idx}" data-field="description" />
+            value="${esc(item.description)}" data-idx="${idx}" data-field="description" />
         </td>
         <td>
           <select class="select-inline pdf-cat-select" data-idx="${idx}">
@@ -401,10 +415,6 @@ function _showPreview(items, filename) {
   });
 }
 
-function _esc(str) {
-  return (str||'').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-}
-
 // ─── CONFIRMAR E SALVAR ────────────────────────────────────────────────────
 async function _confirmarImportacao() {
   const checkboxes = document.querySelectorAll('#pdf-preview-tbody .pdf-row-check');
@@ -421,17 +431,20 @@ async function _confirmarImportacao() {
   btn.disabled = true; btn.textContent = 'Salvando…';
 
   try {
-    // Calcula mês de competência com base na preferência do usuário
-    const refDate = selected[0].date || '';
-    const [refY, refM] = (refDate || `${new Date().getFullYear()}-${new Date().getMonth()+1}`).split('-').map(Number);
-
-    // Lê offset da preferência salva (localStorage), padrão -1
-    const offset = parseInt(localStorage.getItem('fluxo_billing_offset') ?? '-1');
-
-    let compY = refY, compM = refM + offset;
-    if (compM < 1)  { compM += 12; compY -= 1; }
-    if (compM > 12) { compM -= 12; compY += 1; }
-    const competenceMonth = `${compY}-${String(compM).padStart(2,'0')}`;
+    // Mês de competência: valor EXPLÍCITO do input (pré-preenchido no preview).
+    // Antes era derivado de selected[0].date — desmarcar o 1º item mudava a
+    // competência do lote inteiro, causando desalinhamentos silenciosos.
+    let competenceMonth = document.getElementById('pdf-competencia')?.value || '';
+    if (!/^\d{4}-\d{2}$/.test(competenceMonth)) {
+      // Fallback: heurística antiga (data do 1º item + offset da preferência)
+      const refDate = selected[0].date || new Date().toISOString().slice(0, 10);
+      const [refY, refM] = refDate.split('-').map(Number);
+      const offset = parseInt(localStorage.getItem('fluxo_billing_offset') ?? '-1', 10);
+      let compY = refY, compM = refM + offset;
+      if (compM < 1)  { compM += 12; compY -= 1; }
+      if (compM > 12) { compM -= 12; compY += 1; }
+      competenceMonth = `${compY}-${String(compM).padStart(2,'0')}`;
+    }
 
     // Função auxiliar: verifica se já existe uma parcela igual (mesma descrição,
     // valor aproximado, número da parcela e total) em QUALQUER mês.

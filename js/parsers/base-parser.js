@@ -4,6 +4,10 @@
 
 // ─── CATEGORIZAÇÃO AUTOMÁTICA ─────────────────────────────────
 const DEFAULT_RULES = [
+  // Transferências internas — NÃO são gasto nem receita (evita dupla contagem
+  // do pagamento de fatura quando fatura e extrato são importados juntos)
+  { pattern: /pagamento\s+(de\s+)?fatura|pagto?\s*(de\s*)?(fatura|cart[aã]o)|pag\s*cart[aã]o|fatura\s+cart[aã]o/i, category: null, type: 'transfer' },
+  { pattern: /aplica[cç][aã]o\s*(rdb|cdb|autom)|resgate\s*(rdb|autom)|transf(er[eê]ncia)?\s*(entre\s*contas|mesma\s*titular)/i, category: null, type: 'transfer' },
   { pattern: /ifood|rappi|uber\s*eat|delivery|restaura|padaria|lanchon|mercado|supermercado|hortifruti|açougue|panificadora/i, category: 'alimentacao', type: 'expense' },
   { pattern: /uber|99\s*pop|cabify|taxi|metrô|metro|ônibus|onibus|transfacil|passagem|estacion|combustivel|gasolina|etanol|posto/i, category: 'transporte', type: 'expense' },
   { pattern: /spotify|netflix|disney|prime video|hbo|globoplay|youtube|apple tv|deezer|twitch|steam|psn|xbox|google one|icloud/i, category: 'assinatura', type: 'expense' },
@@ -29,9 +33,11 @@ export function autoClassify(description, amount, userRules = []) {
 
   // Regras do usuário têm prioridade
   for (const rule of userRules) {
-    if (new RegExp(rule.pattern, 'i').test(desc)) {
-      return { type: rule.type || 'expense', category: rule.category || null };
-    }
+    try {
+      if (new RegExp(rule.pattern, 'i').test(desc)) {
+        return { type: rule.type || 'expense', category: rule.category || null };
+      }
+    } catch { /* padrão regex inválido — ignora a regra, não quebra a importação */ }
   }
 
   // Regras padrão
@@ -88,7 +94,8 @@ export function detectDuplicates(newItems, existingTransactions) {
 export function parseMoney(raw) {
   if (!raw) return 0;
   const s = String(raw).trim().replace(/\s/g, '');
-  if (/^\-?\d{1,3}(\.\d{3})*,\d{2}$/.test(s))
+  // Formato BR: "1.234,56" OU "3200,56" (sem separador de milhar)
+  if (/^\-?\d+(\.\d{3})*,\d{2}$/.test(s))
     return parseFloat(s.replace(/\./g, '').replace(',', '.'));
   return parseFloat(s.replace(/[^0-9.\-]/g, '')) || 0;
 }
@@ -103,20 +110,20 @@ export function parseDate(raw) {
   // YYYYMMDD
   if (/^\d{8}$/.test(s)) return `${s.slice(0,4)}-${s.slice(4,6)}-${s.slice(6,8)}`;
 
-  // DD/MM/YYYY ou DD/MM/YY
+  // DD/MM/YYYY ou DD/MM/YY (com desambiguação de MM/DD americano)
   const m1 = s.match(/^(\d{2})\/(\d{2})\/(\d{2,4})$/);
   if (m1) {
-    const y = m1[3].length === 2 ? `20${m1[3]}` : m1[3];
-    return `${y}-${m1[2]}-${m1[1]}`;
+    let [, dd, mm, yy] = m1;
+    // Se "mês" > 12 e "dia" <= 12, o formato era MM/DD (americano) → inverte
+    if (parseInt(mm) > 12 && parseInt(dd) <= 12) [dd, mm] = [mm, dd];
+    const y = yy.length === 2 ? `20${yy}` : yy;
+    if (parseInt(mm) < 1 || parseInt(mm) > 12) return null;
+    return `${y}-${mm}-${dd}`;
   }
 
   // YYYY-MM-DD
   const m2 = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
   if (m2) return `${m2[1]}-${m2[2]}-${m2[3]}`;
-
-  // MM/DD/YYYY (OFX americano)
-  const m3 = s.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
-  if (m3 && parseInt(m3[1]) <= 12) return `${m3[3]}-${m3[1]}-${m3[2]}`;
 
   return null;
 }

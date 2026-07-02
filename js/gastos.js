@@ -163,11 +163,6 @@ function _initGastosEvents() {
   // Salvar gasto
   document.getElementById('btn-salvar-gasto').addEventListener('click', _salvarGasto);
 
-  // Mostrar/ocultar linha de depreciação no modal de ativo (reutilizado aqui p/ tipo de ativo)
-  document.getElementById('ativo-tipo')?.addEventListener('change', (e) => {
-    document.getElementById('deprec-row').style.display =
-      e.target.value === 'bem_pessoal' ? 'flex' : 'none';
-  });
 }
 
 function _openGastoModal(tx) {

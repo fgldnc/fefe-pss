@@ -63,12 +63,16 @@ export function parseCSV(content, bankName = 'generico', userRules = []) {
   const lines   = content.split(/\r?\n/).filter(l => l.trim());
   if (lines.length < 2) return [];
 
-  const headerIdx = _findHeaderLine(lines, sep, schema.skipPatterns);
+  const headerIdx = _findHeaderLine(lines, sep);
   if (headerIdx < 0) return [];
 
   const headers = _parseRow(lines[headerIdx], sep).map(h => h.trim().replace(/"/g, ''));
   const batchId = genId();
   const results = [];
+
+  // Nubank: CSV da FATURA tem coluna "Título" (positivo = despesa);
+  // CSV do EXTRATO da NuConta tem "Descrição" (negativo = saída) — sinais opostos.
+  const nubankConta = bankName === 'nubank' && !headers.some(h => /t[ií]tulo|title/i.test(h));
 
   for (let i = headerIdx + 1; i < lines.length; i++) {
     const line = lines[i].trim();
@@ -115,8 +119,13 @@ export function parseCSV(content, bankName = 'generico', userRules = []) {
       amount     = Math.abs(val);
 
       if (schema.amountSign === 'nubank') {
-        // Nubank cartão: positivo = despesa, negativo = estorno/pagamento
-        type = val >= 0 ? 'expense' : 'income';
+        if (nubankConta) {
+          // Extrato NuConta: negativo = saída, positivo = entrada
+          type = val < 0 ? 'expense' : 'income';
+        } else {
+          // Fatura de cartão: positivo = despesa, negativo = estorno/pagamento
+          type = val >= 0 ? 'expense' : 'income';
+        }
       } else if (schema.signLogic === 'santander') {
         // Santander: valor negativo = débito (saída), positivo = crédito
         type = val < 0 ? 'expense' : 'income';
@@ -129,7 +138,10 @@ export function parseCSV(content, bankName = 'generico', userRules = []) {
 
     if (amount === 0) continue;
 
-    const { category } = autoClassify(desc, amount, userRules);
+    const cls = autoClassify(desc, amount, userRules);
+    const category = cls.category;
+    // Regras podem forçar 'transfer' (ex: pagamento de fatura) — evita dupla contagem
+    if (cls.type === 'transfer') type = 'transfer';
 
     results.push({
       id:                    genId(),
@@ -182,12 +194,15 @@ function _pick(row, candidates) {
   return null;
 }
 
-function _findHeaderLine(lines, sep, skipPatterns = []) {
+function _findHeaderLine(lines, sep) {
+  // NÃO aplica skipPatterns aqui: eles são para linhas de DADOS.
+  // O header do Itaú/Bradesco começa com "Data..." e seria pulado
+  // pelo /^data/i, quebrando arquivos com linhas de metadata antes do header.
   const dateWords = ['data', 'date', 'dt', 'fecha'];
-  for (let i = 0; i < Math.min(lines.length, 20); i++) {
-    if (skipPatterns.some(p => p.test(lines[i]))) continue;
+  for (let i = 0; i < Math.min(lines.length, 25); i++) {
     const lower = lines[i].toLowerCase();
-    if (dateWords.some(w => lower.includes(w))) return i;
+    // Header precisa ter uma palavra de data E o separador (evita pegar título solto)
+    if (dateWords.some(w => lower.includes(w)) && lines[i].includes(sep)) return i;
   }
-  return 0;
+  return 0; // fallback: assume primeira linha
 }

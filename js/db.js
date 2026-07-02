@@ -5,7 +5,7 @@
  *   transactions, incomes, budgets, assets, goals, categories, settings
  */
 
-import { state } from './utils.js';
+import { state, resolveCategoryId } from './utils.js';
 import { getUid } from './auth.js';
 
 // ─── CATEGORIAS PADRÃO ─────────────────────────────────────────────────────
@@ -148,7 +148,9 @@ export function allExpensesOfMonth(month) {
     .filter(t => t.type === 'expense' && (t.date || '').slice(0, 7) === month)
     .map(t => ({
       ...t,
-      categoryId: t.categoryId || t.category || '',
+      // Resolve slug do parser ('alimentacao'...) → ID real da categoria do usuário.
+      // Sem isso, todo gasto de extrato caía em "Outros" nos gráficos.
+      categoryId: t.categoryId || resolveCategoryId(t.category) || t.category || '',
       competenceMonth: month,
       paymentType: t.paymentType || 'extrato',
     }));
@@ -184,7 +186,12 @@ export async function deleteTx(id) {
 // ─── INCOMES ───────────────────────────────────────────────────────────────
 
 export function incomesOfMonth(month) {
-  return state.incomes.filter(i => i.month === month);
+  // Critério unificado: 'month' explícito vence; sem 'month', aceita
+  // competenceMonth ou o mês da data. Nunca conta a mesma receita duas vezes.
+  return state.incomes.filter(i =>
+    i.month === month ||
+    (!i.month && (i.competenceMonth === month || (i.date || '').slice(0, 7) === month))
+  );
 }
 
 export async function saveIncome(data, id = null) {
@@ -336,13 +343,14 @@ export async function wipeCollection(colName) {
 }
 
 export async function exportBackup(version) {
-  const [transactions, incomes, budgets, assets, goals, categories] = await Promise.all([
+  const [transactions, incomes, budgets, assets, goals, categories, rules] = await Promise.all([
     getAll('transactions'),
     getAll('incomes'),
     getAll('budgets'),
     getAll('assets'),
     getAll('goals'),
     getAll('categories'),
+    getAll('rules').catch(() => []),
   ]);
 
   const now = new Date();
@@ -354,9 +362,9 @@ export async function exportBackup(version) {
       version:   version || '1.0.0',
       exportedAt: now.toISOString(),
       exportedBy: window._FB?.auth?.currentUser?.email || 'unknown',
-      app: 'Finanças Pessoais',
+      app: 'Radar Financeiro',
     },
-    data: { transactions, incomes, budgets, assets, goals, categories },
+    data: { transactions, incomes, budgets, assets, goals, categories, rules },
   };
 
   const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
@@ -370,13 +378,7 @@ export async function exportBackup(version) {
 
 // ─── VALIDAÇÃO DO BACKUP ──────────────────────────────────────────────────
 const BACKUP_MAX_BYTES  = 50 * 1024 * 1024; // 50 MB
-const ALLOWED_COL_NAMES = ['transactions','incomes','budgets','assets','goals','categories'];
-const ALLOWED_TX_FIELDS = new Set([
-  'id','date','description','amount','categoryId','paymentType',
-  'installmentCurrent','installmentTotal','competenceMonth','notes',
-  'isProjected','importedFrom'
-]);
-
+const ALLOWED_COL_NAMES = ['transactions','incomes','budgets','assets','goals','categories','rules'];
 function _validateBackupPayload(payload) {
   if (!payload || typeof payload !== 'object') throw new Error('Arquivo inválido.');
 

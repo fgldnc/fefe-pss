@@ -3,7 +3,7 @@
  */
 
 import { state, fmt, monthLabel, offsetMonth, esc, toast } from './utils.js';
-import { allExpensesOfMonth } from './db.js';
+import { allExpensesOfMonth, incomesOfMonth } from './db.js';
 
 // ─── RENDER DA SEÇÃO ──────────────────────────────────────────
 export function renderRelatorios() {
@@ -178,8 +178,7 @@ function _evolucaoMensal() {
   for (let i = 11; i >= 0; i--) {
     const m     = offsetMonth(state.currentMonth, -i);
     const txs   = allExpensesOfMonth(m);
-    const inc   = state.incomes.filter(t => t.month === m || t.competenceMonth === m);
-    const receita  = inc.reduce((s, t) => s + (t.amount || 0), 0);
+    const receita  = incomesOfMonth(m).reduce((s, t) => s + (t.amount || 0), 0);
     const despesa  = txs.reduce((s, t) => s + (t.amount || 0), 0);
     rows.push({
       mes:      monthLabel(m),

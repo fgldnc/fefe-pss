@@ -40,8 +40,11 @@ export function parseOFX(content, bankName = 'Desconhecido', userRules = []) {
     const isCredit  = trntype === 'CREDIT' || trntype === 'DEP' || trntype === 'INT' || trntype === 'DIV';
     const finalType = isCredit ? 'income' : 'expense';
 
-    // Auto-classifica para refinar categoria (ignora tipo — já definido pelo TRNTYPE)
-    const { category } = autoClassify(desc, Math.abs(amount), userRules);
+    // Auto-classifica para refinar categoria. O TRNTYPE define income/expense,
+    // mas regras que classificam como 'transfer' (ex: pagamento de fatura) prevalecem.
+    const cls = autoClassify(desc, Math.abs(amount), userRules);
+    const category  = cls.category;
+    const finalType2 = cls.type === 'transfer' ? 'transfer' : finalType;
 
     results.push({
       id:                    genId(),
@@ -50,8 +53,8 @@ export function parseOFX(content, bankName = 'Desconhecido', userRules = []) {
       description:           desc,
       normalizedDescription: normDesc,
       amount:                Math.abs(amount),
-      type:                  finalType,
-      category:              category || (finalType === 'income' ? null : 'outros'),
+      type:                  finalType2,
+      category:              category || (finalType2 === 'income' ? null : 'outros'),
       source:                'statement_import',
       fileType:              'ofx',
       importBatchId:         batchId,

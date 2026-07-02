@@ -3,6 +3,7 @@
  */
 
 import { state, monthLabel, offsetMonth, fmt, esc } from './utils.js';
+import { incomesOfMonth } from './db.js';
 
 export function renderCalendario() {
   const container = document.getElementById('tab-calendario');
@@ -86,7 +87,7 @@ function _buildCalendar(year, month, ym) {
 
     html += `
       <div style="min-height:72px;${borderRight}border-bottom:1px solid var(--border-soft);padding:0.4rem 0.45rem;display:flex;flex-direction:column;gap:0.2rem;transition:background 0.15s;cursor:default"
-        onmouseenter="this.style.background='rgba(145,10,103,0.07)'" onmouseleave="this.style.background=''">
+        onmouseenter="this.style.background='rgba(192,24,136,0.07)'" onmouseleave="this.style.background=''">
         <span style="${dayNumStyle}">${d}</span>
         ${dots ? `<div style="display:flex;gap:2px;flex-wrap:wrap">${dots}</div>` : ''}
         ${hasMoney ? `<span style="font-size:0.63rem;font-family:var(--font-mono);color:${totalColor};margin-top:auto">${totalSign}${_shortFmt(numTotal)}</span>` : ''}
@@ -121,7 +122,7 @@ function _buildEventMap(ym) {
     });
   }
 
-  for (const inc of state.incomes.filter(i => (i.month === ym || i.competenceMonth === ym) && i.date)) {
+  for (const inc of incomesOfMonth(ym).filter(i => i.date)) {
     add(inc.date, { type: 'income', amount: inc.amount, label: inc.description || 'Receita', dotColor: 'var(--success)' });
   }
 
@@ -151,7 +152,7 @@ function _buildEventsList(ym) {
     });
   }
 
-  for (const inc of state.incomes.filter(i => (i.month === ym || i.competenceMonth === ym) && i.date)) {
+  for (const inc of incomesOfMonth(ym).filter(i => i.date)) {
     events.push({
       date:   inc.date,
       label:  inc.description || inc.type || 'Receita',

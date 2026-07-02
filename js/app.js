@@ -8,7 +8,7 @@ import { initAuth }    from './auth.js';
 import { loadAllData } from './db.js';
 import {
   state, thisMonth, monthLabel, offsetMonth,
-  showKpiSkeleton, toast,
+  showKpiSkeleton, toast, esc,
 } from './utils.js';
 
 // Re-exporta utils para quem ainda importa de app.js (compatibilidade)
@@ -126,7 +126,7 @@ function renderCmdResults(q) {
         const val = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(t.amount || 0);
         return `<div class="cmd-item" data-tab="gastos">
           <span class="cmd-item-icon">💳</span>
-          <span class="cmd-item-label">${(t.description || '').slice(0,40)}</span>
+          <span class="cmd-item-label">${esc((t.description || '').slice(0,40))}</span>
           <span class="cmd-item-sub">${val}</span>
          </div>`;
       }).join(''));
@@ -139,14 +139,14 @@ function renderCmdResults(q) {
       sections.push(goals.map(g =>
         `<div class="cmd-item" data-tab="metas">
           <span class="cmd-item-icon">🎯</span>
-          <span class="cmd-item-label">${g.name || ''}</span>
+          <span class="cmd-item-label">${esc(g.name || '')}</span>
          </div>`
       ).join(''));
     }
   }
 
   if (!sections.length) {
-    results.innerHTML = `<div class="cmd-empty">Sem resultados para "${q}"</div>`;
+    results.innerHTML = `<div class="cmd-empty">Sem resultados para "${esc(q)}"</div>`;
     return;
   }
   results.innerHTML = sections.join('');
@@ -236,6 +236,21 @@ async function finishOnboarding() {
 document.addEventListener('DOMContentLoaded', async () => {
   state.currentMonth = thisMonth();
   updateMonthLabel();
+
+  // Month picker: clicar no nome do mês abre o seletor nativo (pula N meses de uma vez)
+  const monthPicker = document.getElementById('month-picker');
+  document.getElementById('month-label')?.addEventListener('click', () => {
+    if (!monthPicker) return;
+    monthPicker.value = state.currentMonth;
+    if (typeof monthPicker.showPicker === 'function') monthPicker.showPicker();
+    else monthPicker.focus();
+  });
+  monthPicker?.addEventListener('change', async () => {
+    if (!/^\d{4}-\d{2}$/.test(monthPicker.value)) return;
+    state.currentMonth = monthPicker.value;
+    updateMonthLabel();
+    await refreshCurrentTab();
+  });
 
   // Navegação por mês
   document.getElementById('btn-prev-month')?.addEventListener('click', async () => {

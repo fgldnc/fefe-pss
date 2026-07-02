@@ -52,6 +52,23 @@ export function renderDashboard() {
     .filter(a => a.type === 'investimento')
     .reduce((s, a) => s + (a.currentValue || 0), 0);
 
+  // ── Comparativo com o mês anterior (delta % nos KPIs) ────────────────
+  const prevMonth   = offsetMonth(month, -1);
+  const prevTxs     = allExpensesOfMonth(prevMonth);
+  const prevIncome  = incomesOfMonth(prevMonth).reduce((s, i) => s + (i.amount || 0), 0);
+  const prevExpense = prevTxs.filter(t => !investIds.includes(t.categoryId)).reduce((s, t) => s + (t.amount || 0), 0);
+
+  // goodWhenUp: receita subir é bom (verde); despesa subir é ruim (vermelho)
+  const _delta = (now, prev, goodWhenUp) => {
+    if (!prev || prev <= 0) return '';
+    const pct = ((now - prev) / prev) * 100;
+    if (Math.abs(pct) < 0.5) return `<span style="color:var(--text-muted)">= mês anterior</span>`;
+    const up   = pct > 0;
+    const good = goodWhenUp ? up : !up;
+    const color = good ? 'var(--success)' : 'var(--danger)';
+    return `<span style="color:${color}">${up ? '▲' : '▼'} ${Math.abs(pct).toFixed(0)}% vs mês anterior</span>`;
+  };
+
   // ── Renderiza HTML dos KPIs (substitui skeleton) ─────────────────────
   const kpiGrid = document.getElementById('kpi-grid');
   if (kpiGrid) {
@@ -62,7 +79,7 @@ export function renderDashboard() {
           <div class="kpi-icon">💰</div>
         </div>
         <span class="kpi-value positive" id="kpi-receitas">${fmt(totalIncome)}</span>
-        <div class="kpi-delta">mês ${esc(monthLabel(month))}</div>
+        <div class="kpi-delta">${_delta(totalIncome, prevIncome, true) || 'mês ' + esc(monthLabel(month))}</div>
       </div>
       <div class="kpi-card">
         <div class="kpi-header">
@@ -70,7 +87,7 @@ export function renderDashboard() {
           <div class="kpi-icon">💳</div>
         </div>
         <span class="kpi-value negative" id="kpi-despesas">${fmt(totalExpense)}</span>
-        <div class="kpi-delta">excluindo investimentos</div>
+        <div class="kpi-delta">${_delta(totalExpense, prevExpense, false) || 'excluindo investimentos'}</div>
       </div>
       <div class="kpi-card">
         <div class="kpi-header">
@@ -141,7 +158,7 @@ function renderChartCategorias(txs) {
       datasets: [{
         data: values,
         backgroundColor: colors,
-        borderColor: 'var(--bg-card)',
+        borderColor: '#1f1f1f', // hex direto: canvas do Chart.js não resolve var(--bg-card)
         borderWidth: 2,
         hoverOffset: 6,
       }],
@@ -199,6 +216,7 @@ function renderChartEvolucao() {
       datasets: [
         { label: 'Receitas',  data: receitas,  backgroundColor: 'rgba(30,177,27,0.30)',   borderColor: '#1eb11b', borderWidth: 1.5, borderRadius: 3 },
         { label: 'Despesas',  data: despesas,  backgroundColor: 'rgba(248,113,113,0.25)', borderColor: '#f87171', borderWidth: 1.5, borderRadius: 3 },
+        { label: 'Investido', data: investido, backgroundColor: 'rgba(251,191,36,0.22)',  borderColor: '#fbbf24', borderWidth: 1.5, borderRadius: 3 },
       ],
     },
     options: {
@@ -232,7 +250,11 @@ function renderParcelasPrevisao() {
 
   const list = document.getElementById('parcelas-list');
   if (!parcelas.length) {
-    list.innerHTML = '<p class="empty-state">Nenhuma parcela prevista nos próximos 3 meses.</p>';
+    list.innerHTML = `<div class="empty-state" style="padding:1.5rem">
+      <div class="empty-state-icon">📅</div>
+      <div class="empty-state-title">Sem parcelas futuras</div>
+      <div class="empty-state-text">Nenhuma parcela prevista nos próximos 3 meses.</div>
+    </div>`;
     return;
   }
   list.innerHTML = parcelas.slice(0,10).map(p => `
@@ -251,7 +273,11 @@ function renderOrcamentoDashboard(txs, month) {
   const budgetMonth = state.budgets[month] || {};
   const list = document.getElementById('orcamento-list');
   if (!Object.keys(budgetMonth).length) {
-    list.innerHTML = '<p class="empty-state">Defina um orçamento na aba Receitas.</p>';
+    list.innerHTML = `<div class="empty-state" style="padding:1.5rem">
+      <div class="empty-state-icon">🎯</div>
+      <div class="empty-state-title">Sem orçamento definido</div>
+      <div class="empty-state-text">Defina limites por categoria na aba Orçamento.</div>
+    </div>`;
     return;
   }
   const realMap = {};
@@ -282,5 +308,9 @@ function renderOrcamentoDashboard(txs, month) {
           </div>
         </div>`;
     });
-  list.innerHTML = rows.join('') || '<p class="empty-state">Nenhuma categoria com orçamento definido.</p>';
+  list.innerHTML = rows.join('') || `<div class="empty-state" style="padding:1.5rem">
+      <div class="empty-state-icon">🎯</div>
+      <div class="empty-state-title">Sem orçamento definido</div>
+      <div class="empty-state-text">Defina limites por categoria na aba Orçamento.</div>
+    </div>`;
 }

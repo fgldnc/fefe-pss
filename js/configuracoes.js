@@ -3,7 +3,7 @@
  */
 
 import { state, toast, esc } from './utils.js';
-import { saveCategory, deleteCategory, exportBackup, importBackup } from './db.js';
+import { saveCategory, deleteCategory, exportBackup, importBackup, saveDoc, removeDoc } from './db.js';
 
 export function renderConfiguracoes() {
   const section = document.getElementById('tab-configuracoes');
@@ -113,14 +113,6 @@ export function renderConfiguracoes() {
               <option value="0">Sem offset (mesmo mês do vencimento)</option>
             </select>
             <span class="form-hint">Define como faturas importadas são alocadas nos meses.</span>
-          </div>
-          <div class="form-row">
-            <label class="form-label">Moeda</label>
-            <select id="pref-moeda" class="form-select" style="max-width:200px">
-              <option value="BRL" selected>Real (BRL)</option>
-              <option value="USD">Dólar (USD)</option>
-              <option value="EUR">Euro (EUR)</option>
-            </select>
           </div>
         </div>
       </div>
@@ -272,15 +264,23 @@ function _initEvents() {
     _openRuleModal();
   });
 
-  document.getElementById('regras-list')?.addEventListener('click', e => {
+  document.getElementById('regras-list')?.addEventListener('click', async e => {
     const btn = e.target.closest('[data-action]');
     if (!btn || btn.dataset.action !== 'delete-rule') return;
     const idx = parseInt(btn.dataset.idx);
     if (isNaN(idx)) return;
     if (!confirm('Excluir esta regra?')) return;
-    state.importRules?.splice(idx, 1);
-    toast('Regra removida.', 'success');
-    _renderRegras();
+    const rule = state.importRules?.[idx];
+    try {
+      // Remove do Firestore (regras agora são persistidas na coleção 'rules')
+      if (rule?.id) await removeDoc('rules', rule.id);
+      state.importRules?.splice(idx, 1);
+      toast('Regra removida.', 'success');
+      _renderRegras();
+    } catch (err) {
+      console.error('Erro ao remover regra:', err);
+      toast(`Erro ao remover: ${err.message}`, 'error');
+    }
   });
 
   document.getElementById('btn-export-backup')?.addEventListener('click', async () => {
@@ -300,7 +300,7 @@ function _initEvents() {
       toast(`Backup v${version} importado! Recarregue.`, 'success');
       if (status) status.textContent = `Backup v${version} importado com sucesso.`;
     } catch (err) {
-      toast('Erro ao importar backup.', 'error');
+      toast(`Erro ao importar: ${err.message}`, 'error');
       if (status) status.textContent = `Erro: ${err.message}`;
     }
     e.target.value = '';
@@ -391,15 +391,28 @@ function _openRuleModal() {
   const close = () => overlay.remove();
   overlay.querySelector('#_rc').onclick      = close;
   overlay.querySelector('#_rcancel').onclick = close;
-  overlay.querySelector('#_rsave').onclick   = () => {
+  overlay.querySelector('#_rsave').onclick   = async () => {
     const pattern  = overlay.querySelector('#_rp').value.trim();
     const category = overlay.querySelector('#_rcat').value;
     const type     = overlay.querySelector('#_rtype').value;
     if (!pattern) { toast('Informe o padrão.', 'error'); return; }
-    if (!state.importRules) state.importRules = [];
-    state.importRules.push({ pattern, category, type });
-    toast('Regra adicionada!', 'success');
-    close();
-    _renderRegras();
+
+    // Valida o regex ANTES de salvar — um padrão inválido quebraria
+    // todas as importações futuras dentro do autoClassify
+    try { new RegExp(pattern, 'i'); }
+    catch { toast('Padrão inválido. Verifique caracteres especiais como ( ) [ ] — para texto literal, use só palavras separadas por |.', 'error'); return; }
+
+    try {
+      // Persiste no Firestore — antes a regra vivia só na memória e sumia no reload
+      const id = await saveDoc('rules', { pattern, category, type });
+      if (!state.importRules) state.importRules = [];
+      state.importRules.push({ id, pattern, category, type });
+      toast('Regra adicionada!', 'success');
+      close();
+      _renderRegras();
+    } catch (err) {
+      console.error('Erro ao salvar regra:', err);
+      toast(`Erro ao salvar: ${err.message}`, 'error');
+    }
   };
 }
