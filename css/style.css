@@ -1,25 +1,38 @@
+/* ═══════════════════════════════════════════════════════════════
+   RADAR — Design System v3
+   Paleta: #161616 / #1f1f1f / #3982f7 / #3ec2fc + acento magenta
+   Fonte: Outfit + JetBrains Mono
+════════════════════════════════════════════════════════════════ */
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 
 :root {
+  /* Fundo: preto/cinza muito escuro */
   --bg-main:          #161616;
+  /* Cards, sidebar, headers */
   --bg-card:          #1f1f1f;
   --bg-card-raised:   #262626;
   --bg-hover:         #2c2c2c;
   --bg-active:        #333333;
+  /* Acentos azul/ciano — botões, destaques, elementos ativos */
   --accent-secondary: #345cea;
   --accent-primary:   #3982f7;
   --accent-bright:    #3ec2fc;
   --accent-dim:       rgba(57, 130, 247, 0.14);
   --accent-glow:      rgba(57, 130, 247, 0.25);
+  /* Acento secundário: magenta (mantido) */
   --accent-magenta:     #c01888;
   --accent-magenta-dim: rgba(192, 24, 136, 0.14);
+
   --text-primary:   #f5f5f5;
   --text-secondary: #a3a3a3;
   --text-muted:     #6b6b6b;
   --text-inverse:   #161616;
+
+  /* Bordas neutras com alpha */
   --border-soft:   rgba(255, 255, 255, 0.07);
   --border-md:     rgba(255, 255, 255, 0.12);
   --border-strong: rgba(57, 130, 247, 0.45);
+
   --success:      #1eb11b;
   --success-dim:  rgba(30, 177, 27, 0.14);
   --danger:       #f87171;
@@ -30,16 +43,20 @@
   --info-dim:     rgba(167, 139, 250, 0.14);
   --gold:         #fbbf24;
   --gold-dim:     rgba(251, 191, 36, 0.14);
+
   --font-sans: 'Outfit', system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
+
   --radius-sm:  6px;
   --radius-md:  10px;
   --radius-lg:  14px;
   --radius-xl:  20px;
   --radius-2xl: 28px;
+
   --shadow:      0 4px 24px rgba(0, 0, 0, 0.6);
   --shadow-card: 0 2px 16px rgba(0, 0, 0, 0.45), 0 0 0 1px var(--border-soft);
   --shadow-glow: 0 0 40px var(--accent-glow);
+
   --sidebar-w:        230px;
   --topbar-h:         60px;
   --transition:       0.18s cubic-bezier(0.4, 0, 0.2, 1);
@@ -66,6 +83,9 @@ body {
 
 .hidden { display: none !important; }
 
+/* ═══════════════════════════════════════════════════════════════
+   LOGIN
+════════════════════════════════════════════════════════════════ */
 .login-screen {
   min-height: 100vh;
   display: flex;
@@ -125,8 +145,14 @@ body {
 
 .login-footer { font-size: 0.74rem; color: var(--text-muted); margin-top: 1.5rem; line-height: 1.5; }
 
+/* ═══════════════════════════════════════════════════════════════
+   LAYOUT
+════════════════════════════════════════════════════════════════ */
 .app { display: grid; grid-template-columns: var(--sidebar-w) 1fr; min-height: 100vh; }
 
+/* ═══════════════════════════════════════════════════════════════
+   SIDEBAR
+════════════════════════════════════════════════════════════════ */
 .sidebar {
   background: var(--bg-card);
   border-right: 1px solid var(--border-soft);
@@ -222,6 +248,9 @@ body {
 }
 .btn-logout:hover { color: var(--danger); border-left-color: var(--danger); }
 
+/* ═══════════════════════════════════════════════════════════════
+   MAIN + TOPBAR
+════════════════════════════════════════════════════════════════ */
 .main-content { display: flex; flex-direction: column; min-height: 100vh; overflow-x: hidden; }
 
 .topbar {
@@ -245,6 +274,7 @@ body {
 .month-nav { display: flex; align-items: center; gap: 0.5rem; }
 .month-label { font-size: 0.9rem; font-weight: 600; min-width: 130px; text-align: center; letter-spacing: 0.3px; cursor: pointer; border-radius: var(--radius-sm); padding: 0.2rem 0.4rem; transition: background 0.15s; }
 .month-label:hover { background: var(--bg-hover); }
+/* Input do month picker: invisível, mas ancorado ao label para o popup nativo abrir no lugar certo */
 .month-picker-input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; border: 0; padding: 0; }
 
 .btn-icon {
@@ -281,6 +311,9 @@ body {
   font-size: 0.8rem; font-weight: 700; color: var(--accent-bright); flex-shrink: 0;
 }
 
+/* ═══════════════════════════════════════════════════════════════
+   TAB CONTENT
+════════════════════════════════════════════════════════════════ */
 .tab-content { padding: 1.75rem; flex: 1; animation: fadeInUp 0.22s ease; }
 
 .page-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 0.75rem; }
@@ -289,6 +322,9 @@ body {
 .page-subtitle { font-size: 0.8rem; color: var(--text-muted); margin-top: 0.15rem; }
 .page-actions { display: flex; gap: 0.6rem; flex-wrap: wrap; align-items: center; }
 
+/* ═══════════════════════════════════════════════════════════════
+   KPI CARDS
+════════════════════════════════════════════════════════════════ */
 .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.5rem; }
 .kpi-grid-3 { grid-template-columns: repeat(3, 1fr); }
 
@@ -330,19 +366,25 @@ body {
 .kpi-delta.up   { color: var(--success); }
 .kpi-delta.down { color: var(--danger); }
 
+/* ═══════════════════════════════════════════════════════════════
+   DASHBOARD GRID
+════════════════════════════════════════════════════════════════ */
 .dashboard-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
 .dashboard-row  { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem; }
 
+/* Insights */
 .insights-strip {
-  display: flex; gap: 0.75rem; flex-wrap: wrap; width: 100%;
+  display: flex; gap: 0.75rem; overflow-x: auto;
   padding-bottom: 0.25rem; margin-bottom: 1.25rem;
+  scrollbar-width: none;
 }
+.insights-strip::-webkit-scrollbar { display: none; }
 
 .insight-chip {
-  display: inline-flex; align-items: center; gap: 0.5rem;
+  display: flex; align-items: center; gap: 0.5rem;
   background: var(--bg-card); border: 1px solid var(--border-soft);
   border-radius: 20px; padding: 0.5rem 0.9rem;
-  white-space: normal; word-break: break-word; font-size: 0.8rem; color: var(--text-secondary);
+  white-space: nowrap; font-size: 0.8rem; color: var(--text-secondary);
   flex-shrink: 0; cursor: default; transition: all var(--transition);
 }
 .insight-chip:hover { border-color: var(--border-md); color: var(--text-primary); }
@@ -350,6 +392,9 @@ body {
 .insight-chip.good  { border-color: rgba(52,211,153,0.35); color: var(--success); }
 .insight-chip.info  { border-color: rgba(192,24,136,0.45); color: var(--accent-bright); }
 
+/* ═══════════════════════════════════════════════════════════════
+   EMPTY STATES
+════════════════════════════════════════════════════════════════ */
 .empty-state {
   display: flex; flex-direction: column; align-items: center;
   justify-content: center; padding: 3rem 2rem; text-align: center; gap: 0.6rem;
@@ -358,6 +403,9 @@ body {
 .empty-state-title { font-size: 1rem; font-weight: 600; color: var(--text-primary); }
 .empty-state-text { font-size: 0.82rem; color: var(--text-muted); max-width: 260px; line-height: 1.5; }
 
+/* ═══════════════════════════════════════════════════════════════
+   SKELETON
+════════════════════════════════════════════════════════════════ */
 @keyframes shimmer {
   0%   { background-position: -600px 0; }
   100% { background-position: 600px 0; }
@@ -378,6 +426,9 @@ body {
   display: flex; flex-direction: column; gap: 0.75rem;
 }
 
+/* ═══════════════════════════════════════════════════════════════
+   TOAST
+════════════════════════════════════════════════════════════════ */
 #toast-container {
   position: fixed; bottom: 1.5rem; right: 1.5rem;
   display: flex; flex-direction: column; gap: 0.5rem;
@@ -407,6 +458,9 @@ body {
 .toast.info    { border-color: rgba(192,24,136,0.5); }
 .toast.info    .toast-icon { color: var(--accent-bright); }
 
+/* ═══════════════════════════════════════════════════════════════
+   COMMAND PALETTE
+════════════════════════════════════════════════════════════════ */
 .cmd-overlay {
   position: fixed; inset: 0;
   background: rgba(0, 0, 0, 0.75); backdrop-filter: blur(8px);
@@ -444,6 +498,9 @@ body {
 .cmd-footer { padding: 0.6rem 1.25rem; border-top: 1px solid var(--border-soft); display: flex; gap: 1rem; font-size: 0.7rem; color: var(--text-muted); }
 .cmd-footer kbd { background: var(--bg-card); border: 1px solid var(--border-md); border-radius: 4px; padding: 1px 5px; font-family: var(--font-sans); }
 
+/* ═══════════════════════════════════════════════════════════════
+   FILTROS
+════════════════════════════════════════════════════════════════ */
 .filter-bar { display: flex; gap: 0.6rem; margin-bottom: 1rem; flex-wrap: wrap; align-items: center; }
 .filter-chips { display: flex; gap: 0.4rem; flex-wrap: wrap; align-items: center; }
 .filter-chip {
@@ -465,11 +522,17 @@ body {
 .filter-select { min-width: 150px; }
 .filter-input  { flex: 1; min-width: 150px; }
 
+/* ═══════════════════════════════════════════════════════════════
+   GRIDS DE ABA
+════════════════════════════════════════════════════════════════ */
 .receitas-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
 .metas-grid    { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem; }
 .config-grid   { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
 .extratos-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
 
+/* ═══════════════════════════════════════════════════════════════
+   ONBOARDING
+════════════════════════════════════════════════════════════════ */
 .onboarding-overlay {
   position: fixed; inset: 0;
   background: rgba(0, 0, 0, 0.82); backdrop-filter: blur(10px);
@@ -491,9 +554,15 @@ body {
 .onboarding-sub { font-size: 0.85rem; color: var(--text-secondary); text-align: center; margin-bottom: 1.75rem; line-height: 1.5; }
 .onboarding-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 1.75rem; }
 
+/* ═══════════════════════════════════════════════════════════════
+   MOBILE
+════════════════════════════════════════════════════════════════ */
 .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(3px); z-index: 150; }
 .sidebar-overlay.active { display: block; }
 
+/* ═══════════════════════════════════════════════════════════════
+   ANIMAÇÕES
+════════════════════════════════════════════════════════════════ */
 @keyframes fadeIn        { from { opacity: 0; } to { opacity: 1; } }
 @keyframes fadeInUp      { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes scaleIn       { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: scale(1); } }
@@ -501,6 +570,9 @@ body {
 @keyframes slideOutRight { from { opacity: 1; transform: translateX(0); } to { opacity: 0; transform: translateX(18px); } }
 @keyframes pulse         { 0%,100% { opacity:1; } 50% { opacity:0.55; } }
 
+/* ═══════════════════════════════════════════════════════════════
+   RESPONSIVO
+════════════════════════════════════════════════════════════════ */
 @media (max-width: 1200px) {
   .kpi-grid       { grid-template-columns: repeat(2, 1fr); }
   .dashboard-grid { grid-template-columns: 1fr; }
