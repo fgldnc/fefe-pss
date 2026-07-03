@@ -127,11 +127,19 @@ function renderChartCategorias(txs) {
     catMap[key] = (catMap[key] || 0) + (tx.amount || 0);
   }
 
-  const sorted = Object.entries(catMap).sort((a, b) => b[1] - a[1]).slice(0, 8);
+  // Top 7 categorias + agrupa o resto em "Outras" — antes o slice(0,8)
+  // DESCARTAVA as categorias menores e o total do centro não batia com o KPI
+  const allSorted = Object.entries(catMap).sort((a, b) => b[1] - a[1]);
+  const sorted    = allSorted.slice(0, 7);
+  const resto     = allSorted.slice(7).reduce((s, [, v]) => s + v, 0);
+  if (resto > 0) sorted.push(['Outras', resto]);
+
   const labels = sorted.map(([k]) => k);
   const values = sorted.map(([, v]) => v);
-  const colors = sorted.map(([k]) => state.categories.find(c => c.name === k)?.color || '#94a3b8');
-  const total  = values.reduce((s, v) => s + v, 0);
+  const colors = sorted.map(([k]) =>
+    k === 'Outras' ? '#6b6b6b' : (state.categories.find(c => c.name === k)?.color || '#94a3b8')
+  );
+  const total  = values.reduce((s, v) => s + v, 0); // = total real de despesas do mês
 
   const totalEl = document.getElementById('pizza-total-value');
   if (totalEl) totalEl.textContent = fmt(total);

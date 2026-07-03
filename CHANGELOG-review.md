@@ -33,6 +33,10 @@
 - **M12** Transferências aparecem com tag própria (neutra, sem sinal) na tabela de extratos.
 - **M13** README com a estrutura de arquivos atual (parsers/, extratos, saldos, vercel.json...).
 
+## Rodada 2 (pós-feedback)
+- **Pizza ≠ KPI corrigido**: a pizza cortava em top-8 e o total do centro somava só essas fatias (por isso R$ 2.581 vs R$ 2.673 no KPI). Agora: top 7 + fatia "Outras" cinza — o total do centro sempre bate com o KPI de Despesas.
+- **Insights acionáveis**: chip "maior categoria" substituído por (1) anomalia — categoria ±30% fora da sua média dos últimos 3 meses (máx. 2 chips, ignora categorias com média < R$ 80) e (2) projeção — "no ritmo atual, o mês fecha em ~R$X" (só no mês corrente, a partir do dia 5). Insights agora incluem despesas de extrato (antes só transactions).
+
 ## Dashboard / visual
 - Delta ▲/▼ % vs mês anterior nos KPIs de Receitas e Despesas (verde/vermelho conforme direção boa/ruim).
 - Barra "Investido" (dourada) no gráfico de evolução — o dado já era calculado e nunca usado.

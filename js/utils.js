@@ -119,6 +119,18 @@ export function showTableSkeleton(tbodyId, cols = 6) {
 }
 
 // ─── INSIGHTS AUTOMÁTICOS ─────────────────────────────────────
+// Despesas do mês (transactions + extrato), excluindo investimentos.
+// Duplicado de allExpensesOfMonth de propósito: utils.js não pode importar
+// db.js (circular). Mantém a MESMA regra de inclusão do dashboard.
+function _expensesForInsights(month, investIds) {
+  const normais = state.transactions.filter(t =>
+    t.competenceMonth === month && !investIds.includes(t.categoryId));
+  const extrato = (state.extratoTransactions || []).filter(t =>
+    t.type === 'expense' && (t.date || '').slice(0, 7) === month &&
+    !investIds.includes(t.categoryId));
+  return [...normais, ...extrato];
+}
+
 export function renderInsights() {
   const strip = document.getElementById('insights-strip');
   if (!strip) return;
@@ -130,8 +142,8 @@ export function renderInsights() {
     .filter(c => (c.id + c.name).toLowerCase().includes('investiment'))
     .map(c => c.id);
 
-  const txs     = state.transactions.filter(t => t.competenceMonth === month && !investIds.includes(t.categoryId));
-  const txsPrev = state.transactions.filter(t => t.competenceMonth === prevMonth && !investIds.includes(t.categoryId));
+  const txs     = _expensesForInsights(month, investIds);
+  const txsPrev = _expensesForInsights(prevMonth, investIds);
 
   const totalNow  = txs.reduce((s, t) => s + (t.amount || 0), 0);
   const totalPrev = txsPrev.reduce((s, t) => s + (t.amount || 0), 0);
@@ -149,10 +161,59 @@ export function renderInsights() {
   const catTotals = {};
   for (const tx of txs) catTotals[tx.categoryId] = (catTotals[tx.categoryId] || 0) + (tx.amount || 0);
 
-  const topEntry = Object.entries(catTotals).sort((a, b) => b[1] - a[1])[0];
-  if (topEntry) {
-    const cat = state.categories.find(c => c.id === topEntry[0]);
-    if (cat) chips.push({ type: 'info', icon: '💡', text: `${cat.name} é sua maior categoria: ${fmt(topEntry[1])}` });
+  // ── ANOMALIA: categoria fora da média dos últimos 3 meses ──────────
+  // Mais útil que "X é sua maior categoria" (ranking que você já conhece).
+  // Regras: média ≥ R$ 80 (ignora categorias irrelevantes), desvio ≥ 30%,
+  // mostra no máx. as 2 maiores anomalias para não poluir a faixa.
+  {
+    const histTotals = {}; // categoria → [total m-1, m-2, m-3]
+    for (let i = 1; i <= 3; i++) {
+      const m = offsetMonth(month, -i);
+      for (const tx of _expensesForInsights(m, investIds)) {
+        const k = tx.categoryId || '_sem';
+        (histTotals[k] = histTotals[k] || []).push(tx.amount || 0);
+      }
+    }
+    const anomalies = [];
+    for (const [catId, val] of Object.entries(catTotals)) {
+      const hist = histTotals[catId];
+      if (!hist || !hist.length) continue;
+      const avg = hist.reduce((s, v) => s + v, 0) / 3; // média mensal (3 meses)
+      if (avg < 80) continue;
+      const dev = ((val - avg) / avg) * 100;
+      if (Math.abs(dev) < 30) continue;
+      const cat = state.categories.find(c => c.id === catId);
+      if (!cat) continue;
+      anomalies.push({ dev, cat, val });
+    }
+    anomalies.sort((a, b) => Math.abs(b.dev) - Math.abs(a.dev));
+    for (const a of anomalies.slice(0, 2)) {
+      chips.push({
+        type: a.dev > 0 ? 'warn' : 'good',
+        icon: a.dev > 0 ? '🔺' : '🔻',
+        text: `${a.cat.name} ${a.dev > 0 ? '+' : ''}${a.dev.toFixed(0)}% vs sua média de 3 meses (${fmt(a.val)})`,
+      });
+    }
+  }
+
+  // ── PROJEÇÃO: no ritmo atual, o mês fecha em ~R$X ──────────────────
+  // Só faz sentido no mês corrente, com o mês já rodando (dia ≥ 5) e ainda
+  // com dias pela frente. Projeção linear simples: gasto ÷ dias corridos × dias do mês.
+  {
+    const now = new Date();
+    const isCurrent = month === `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    const dayNow = now.getDate();
+    const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+    if (isCurrent && dayNow >= 5 && dayNow < daysInMonth && totalNow > 0) {
+      const projected = (totalNow / dayNow) * daysInMonth;
+      // Compara com o mês anterior para dar referência de cor
+      const worse = totalPrev > 0 && projected > totalPrev;
+      chips.push({
+        type: worse ? 'warn' : 'info',
+        icon: '🔮',
+        text: `No ritmo atual, o mês fecha em ~${fmt(projected)}`,
+      });
+    }
   }
 
   const budgets = state.budgets[month] || {};
