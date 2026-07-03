@@ -1,9 +1,3 @@
-/**
- * utils.js — Utilitários e estado global compartilhados
- * SEM imports de outros módulos do projeto para evitar circular dependency.
- */
-
-// ─── ESTADO GLOBAL ─────────────────────────────────────────────
 export const state = {
   user: null,
   currentMonth: '',
@@ -17,10 +11,6 @@ export const state = {
   importRules: [],
 };
 
-// ─── CATEGORIAS: RESOLVE SLUG → ID REAL ───────────────────────
-// Os parsers de extrato classificam com slugs ('alimentacao', 'transporte'...),
-// mas as categorias no Firestore têm IDs auto-gerados. Esta função mapeia
-// slug (ou nome) → ID real da categoria do usuário, por nome normalizado.
 const _SLUG_TO_NAME = {
   alimentacao: 'alimentação', transporte: 'transporte', assinatura: 'assinaturas',
   saude: 'saúde', compras: 'compras', eletronicos: 'eletrônicos', educacao: 'educação',
@@ -31,16 +21,17 @@ const _norm = s => (s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u0
 
 export function resolveCategoryId(slugOrId) {
   if (!slugOrId) return '';
-  // Já é um ID válido?
-  if (state.categories.some(c => c.id === slugOrId)) return slugOrId;
-  const target = _norm(_SLUG_TO_NAME[slugOrId] ?? slugOrId);
+  const cleanId = String(slugOrId).toLowerCase().trim();
+  if (state.categories.some(c => c.id.toLowerCase().trim() === cleanId)) {
+    return state.categories.find(c => c.id.toLowerCase().trim() === cleanId).id;
+  }
+  const target = _norm(_SLUG_TO_NAME[cleanId] ?? cleanId);
   if (!target) return '';
   const cat = state.categories.find(c => _norm(c.name) === target)
            || state.categories.find(c => _norm(c.name).includes(target) || target.includes(_norm(c.name)));
   return cat?.id || '';
 }
 
-// ─── FORMATAÇÃO ────────────────────────────────────────────────
 export function esc(str) {
   if (str === null || str === undefined) return '';
   return String(str)
@@ -70,7 +61,6 @@ export function offsetMonth(ym, delta) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
 }
 
-// ─── TOAST ────────────────────────────────────────────────────
 const TOAST_ICONS = { success: '✓', error: '✕', warning: '⚠', info: '◈' };
 
 export function toast(msg, type = 'info', title = '', duration = 4500) {
@@ -98,7 +88,6 @@ function removeToast(el) {
   setTimeout(() => el.parentNode?.removeChild(el), 260);
 }
 
-// ─── SKELETON ─────────────────────────────────────────────────
 export function showKpiSkeleton() {
   const grid = document.getElementById('kpi-grid');
   if (!grid) return;
@@ -118,10 +107,6 @@ export function showTableSkeleton(tbodyId, cols = 6) {
   ).join('');
 }
 
-// ─── INSIGHTS AUTOMÁTICOS ─────────────────────────────────────
-// Despesas do mês (transactions + extrato), excluindo investimentos.
-// Duplicado de allExpensesOfMonth de propósito: utils.js não pode importar
-// db.js (circular). Mantém a MESMA regra de inclusão do dashboard.
 function _expensesForInsights(month, investIds) {
   const normais = state.transactions.filter(t =>
     t.competenceMonth === month && !investIds.includes(t.categoryId));
@@ -159,46 +144,43 @@ export function renderInsights() {
   }
 
   const catTotals = {};
-  for (const tx of txs) catTotals[tx.categoryId] = (catTotals[tx.categoryId] || 0) + (tx.amount || 0);
+  for (const tx of txs) {
+    const normId = tx.categoryId ? tx.categoryId.toLowerCase().trim() : '_sem';
+    catTotals[normId] = (catTotals[normId] || 0) + (tx.amount || 0);
+  }
 
-  // ── ANOMALIA: categoria fora da média dos últimos 3 meses ──────────
-  // Mais útil que "X é sua maior categoria" (ranking que você já conhece).
-  // Regras: média ≥ R$ 80 (ignora categorias irrelevantes), desvio ≥ 30%,
-  // mostra no máx. as 2 maiores anomalias para não poluir a faixa.
   {
-    const histTotals = {}; // categoria → [total m-1, m-2, m-3]
+    const histTotals = {};
     for (let i = 1; i <= 3; i++) {
       const m = offsetMonth(month, -i);
       for (const tx of _expensesForInsights(m, investIds)) {
-        const k = tx.categoryId || '_sem';
-        (histTotals[k] = histTotals[k] || []).push(tx.amount || 0);
+        const k = tx.categoryId ? tx.categoryId.toLowerCase().trim() : '_sem';
+        histTotals[k] = histTotals[k] || [];
+        histTotals[k].push(tx.amount || 0);
       }
     }
     const anomalies = [];
     for (const [catId, val] of Object.entries(catTotals)) {
       const hist = histTotals[catId];
       if (!hist || !hist.length) continue;
-      const avg = hist.reduce((s, v) => s + v, 0) / 3; // média mensal (3 meses)
+      const avg = hist.reduce((s, v) => s + v, 0) / 3;
       if (avg < 80) continue;
       const dev = ((val - avg) / avg) * 100;
       if (Math.abs(dev) < 30) continue;
-      const cat = state.categories.find(c => c.id === catId);
+      const cat = state.categories.find(c => c.id.toLowerCase().trim() === catId);
       if (!cat) continue;
-      anomalies.push({ dev, cat, val });
+      anomalies.push({ dev, cat, val, avg });
     }
     anomalies.sort((a, b) => Math.abs(b.dev) - Math.abs(a.dev));
     for (const a of anomalies.slice(0, 2)) {
       chips.push({
         type: a.dev > 0 ? 'warn' : 'good',
         icon: a.dev > 0 ? '🔺' : '🔻',
-        text: `${a.cat.name} ${a.dev > 0 ? '+' : ''}${a.dev.toFixed(0)}% vs sua média de 3 meses (${fmt(a.val)})`,
+        text: `${a.cat.name} ${a.dev > 0 ? '+' : ''}${a.dev.toFixed(0)}% (${fmt(a.val)}) vs sua média de 3 meses (${fmt(a.avg)})`,
       });
     }
   }
 
-  // ── PROJEÇÃO: no ritmo atual, o mês fecha em ~R$X ──────────────────
-  // Só faz sentido no mês corrente, com o mês já rodando (dia ≥ 5) e ainda
-  // com dias pela frente. Projeção linear simples: gasto ÷ dias corridos × dias do mês.
   {
     const now = new Date();
     const isCurrent = month === `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
@@ -206,7 +188,6 @@ export function renderInsights() {
     const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
     if (isCurrent && dayNow >= 5 && dayNow < daysInMonth && totalNow > 0) {
       const projected = (totalNow / dayNow) * daysInMonth;
-      // Compara com o mês anterior para dar referência de cor
       const worse = totalPrev > 0 && projected > totalPrev;
       chips.push({
         type: worse ? 'warn' : 'info',
@@ -219,9 +200,10 @@ export function renderInsights() {
   const budgets = state.budgets[month] || {};
   for (const [catId, limit] of Object.entries(budgets)) {
     if (limit <= 0) continue;
-    const spent = catTotals[catId] || 0;
+    const normId = catId.toLowerCase().trim();
+    const spent = catTotals[normId] || 0;
     const pct   = (spent / limit) * 100;
-    const cat   = state.categories.find(c => c.id === catId);
+    const cat   = state.categories.find(c => c.id.toLowerCase().trim() === normId);
     if (pct >= 90 && cat) {
       chips.push({ type: 'warn', icon: '⚠️',
         text: `Orçamento de ${cat.name} ${pct >= 100 ? 'ultrapassado' : 'quase no limite'}` });

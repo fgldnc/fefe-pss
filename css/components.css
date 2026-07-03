@@ -1,8 +1,3 @@
-/* ═══════════════════════════════════════════════════════════════
-   FLUXO — Componentes v2
-════════════════════════════════════════════════════════════════ */
-
-/* ── CARDS ──────────────────────────────────────────────────── */
 .card {
   background: var(--bg-card);
   border: 1px solid var(--border-soft);
@@ -20,7 +15,6 @@
 .card-month { font-size: 0.78rem; color: var(--text-muted); }
 .card > canvas { padding: 1rem 1.25rem; display: block; width: 100% !important; }
 
-/* ── BUTTONS ─────────────────────────────────────────────────── */
 .btn {
   display: inline-flex; align-items: center; gap: 0.45rem;
   border-radius: var(--radius-sm); font-family: var(--font-sans);
@@ -60,7 +54,6 @@
 .btn-icon-only:hover { background: var(--bg-hover); color: var(--text-primary); border-color: var(--border-md); }
 .btn-icon-only.danger:hover { color: var(--danger); border-color: rgba(248,113,113,0.35); background: var(--danger-dim); }
 
-/* ── TABLES ──────────────────────────────────────────────────── */
 .table-wrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; }
 
 .data-table { width: 100%; border-collapse: collapse; font-size: 0.83rem; }
@@ -92,7 +85,6 @@
 .table-footer { padding: 0.6rem 1rem; font-size: 0.82rem; color: var(--text-secondary); border-top: 1px solid var(--border-soft); text-align: right; }
 .table-total strong { font-family: var(--font-mono); color: var(--text-primary); margin-left: 0.3rem; }
 
-/* Tags */
 .tag-tipo { display: inline-flex; align-items: center; font-size: 0.68rem; font-weight: 600; padding: 0.12rem 0.5rem; border-radius: 20px; border: 1px solid; }
 .tag-cartao   { color: var(--info);    border-color: rgba(167,139,250,0.35); background: var(--info-dim); }
 .tag-pix      { color: var(--success); border-color: rgba(52,211,153,0.35);  background: var(--success-dim); }
@@ -105,7 +97,6 @@
 .tag-projetada { font-size: 0.67rem; color: var(--text-muted); background: var(--bg-hover); border: 1px solid var(--border-soft); border-radius: 20px; padding: 0.08rem 0.42rem; }
 .tag-duplicata { font-size: 0.67rem; color: var(--warning); background: var(--warning-dim); border: 1px solid rgba(251,191,36,0.35); border-radius: 20px; padding: 0.08rem 0.42rem; }
 
-/* ── MODAIS ───────────────────────────────────────────────────── */
 .modal-overlay {
   position: fixed; inset: 0;
   background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(4px);
@@ -136,7 +127,6 @@
 .modal-body { padding: 1.25rem 1.5rem; display: flex; flex-direction: column; gap: 0.85rem; }
 .modal-footer { padding: 1rem 1.5rem; border-top: 1px solid var(--border-soft); display: flex; justify-content: flex-end; gap: 0.6rem; }
 
-/* ── FORMS ────────────────────────────────────────────────────── */
 .form-row { display: flex; flex-direction: column; gap: 0.3rem; }
 .form-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
 .form-row-2 .form-row { margin: 0; }
@@ -157,7 +147,6 @@
 .form-hint { font-size: 0.72rem; color: var(--text-muted); line-height: 1.4; }
 .form-input-color { width: 44px; height: 36px; padding: 2px; border: 1px solid var(--border-md); border-radius: var(--radius-sm); background: var(--bg-card-raised); cursor: pointer; }
 
-/* ── PARCELAS (dashboard) ────────────────────────────────────── */
 .parcelas-list { padding: 0.2rem 0; }
 .parcela-item {
   display: flex; align-items: center; justify-content: space-between;
@@ -171,7 +160,6 @@
 .parcela-val  { font-family: var(--font-mono); font-size: 0.82rem; color: var(--info); }
 .parcela-mes  { font-size: 0.7rem; color: var(--text-muted); }
 
-/* ── ORÇAMENTO ───────────────────────────────────────────────── */
 .orcamento-list { padding: 0.2rem 0; }
 .orcamento-item { padding: 0.65rem 1.25rem; border-bottom: 1px solid var(--border-soft); }
 .orcamento-item:last-child { border-bottom: none; }
@@ -194,7 +182,6 @@
 .orcamento-input-label { font-size: 0.83rem; color: var(--text-secondary); flex: 1; }
 .cat-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 0.4rem; }
 
-/* ── METAS ───────────────────────────────────────────────────── */
 .meta-card {
   background: var(--bg-card); border: 1px solid var(--border-soft);
   border-radius: var(--radius-lg); padding: 1.25rem;
@@ -212,14 +199,12 @@
 .meta-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 0.75rem; font-size: 0.77rem; color: var(--text-muted); }
 .meta-actions { display: flex; gap: 0.4rem; }
 
-/* ── CATEGORIAS ─────────────────────────────────────────────── */
 .categorias-list { padding: 0.2rem 0; }
 .categoria-item { display: flex; align-items: center; gap: 0.65rem; padding: 0.52rem 1.25rem; border-bottom: 1px solid var(--border-soft); font-size: 0.83rem; }
 .categoria-item:last-child { border-bottom: none; }
 .categoria-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
 .categoria-nome { flex: 1; color: var(--text-secondary); }
 
-/* ── BACKUP ──────────────────────────────────────────────────── */
 .backup-section { padding: 1.25rem; }
 .backup-info p { font-size: 0.83rem; color: var(--text-secondary); margin-bottom: 1rem; line-height: 1.5; }
 .backup-version-row { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1.25rem; }
@@ -227,7 +212,6 @@
 .backup-actions { display: flex; gap: 0.6rem; flex-wrap: wrap; }
 .prefs-section { padding: 1.25rem; }
 
-/* ── PDF IMPORT ──────────────────────────────────────────────── */
 .pdf-drop-zone {
   border: 1.5px dashed var(--border-md); border-radius: var(--radius-lg);
   padding: 2.5rem 2rem; text-align: center; color: var(--text-muted);
@@ -251,7 +235,6 @@
 }
 .select-inline:focus { outline: none; border-color: var(--accent-primary); }
 
-/* ── EXTRATO MODULE ──────────────────────────────────────────── */
 .bank-selector {
   display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
   gap: 0.75rem; margin-bottom: 1.25rem;
@@ -287,7 +270,6 @@
 .batch-stat-in  { color: var(--success); }
 .batch-stat-out { color: var(--danger); }
 
-/* ── SPINNER ─────────────────────────────────────────────────── */
 .spinner {
   width: 20px; height: 20px;
   border: 2px solid var(--border-md); border-top-color: var(--accent-primary);
@@ -296,13 +278,11 @@
 .spinner-lg { width: 32px; height: 32px; border-width: 3px; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
-/* ── SCROLL PERSONALIZADO ────────────────────────────────────── */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: var(--bg-main); }
 ::-webkit-scrollbar-thumb { background: var(--border-md); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--border-strong); }
 
-/* ── CONFIG TABS ──────────────────────────────────────────────── */
 .config-tabs {
   display: flex;
   gap: 0.25rem;
@@ -329,7 +309,6 @@
 .config-tab:hover  { color: var(--text-secondary); background: var(--bg-hover); }
 .config-tab.active { background: var(--accent-primary); color: #fff; font-weight: 600; }
 
-/* ── CALENDÁRIO ──────────────────────────────────────────────── */
 .cal-header-row {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
@@ -398,7 +377,6 @@
   padding: 0.75rem 1.25rem 0.3rem;
 }
 
-/* ── TIMELINE ─────────────────────────────────────────────────── */
 .timeline-item {
   display: flex;
   align-items: flex-start;
@@ -426,7 +404,6 @@
 .timeline-meta  { display: flex; align-items: center; gap: 0.75rem; margin-top: 0.2rem; font-size: 0.74rem; color: var(--text-muted); }
 .timeline-amount { font-family: var(--font-mono); font-weight: 600; }
 
-/* ── FILTROS AVANÇADOS ─────────────────────────────────────────── */
 .advanced-filter-panel {
   background: var(--bg-card);
   border: 1px solid var(--border-soft);
@@ -443,16 +420,13 @@
 .filter-range { display: flex; align-items: center; gap: 0.4rem; }
 .filter-range span { font-size: 0.75rem; color: var(--text-muted); }
 
-/* ── MOBILE CAL ───────────────────────────────────────────────── */
 @media (max-width: 600px) {
   .cal-cell     { min-height: 54px; padding: 0.25rem; }
   .cal-day-num  { font-size: 0.7rem; width: 18px; height: 18px; }
   .cal-day-total{ display: none; }
 }
 
-/* ── DASHBOARD REDESIGN v3 ──────────────────────────────────────── */
 #chart-categorias { max-width: 100%; }
 
-/* ── HIST\u00d3RICO DE APORTES (Metas) ──────────────────────────────── */
 .btn-toggle-aportes:hover .aporte-chevron { color: var(--accent-bright); }
 .btn-toggle-aportes:hover span:last-child { color: var(--text-secondary); }
