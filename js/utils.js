@@ -22,11 +22,18 @@ const _norm = s => (s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u0
 export function resolveCategoryId(slugOrId) {
   if (!slugOrId) return '';
   const cleanId = String(slugOrId).toLowerCase().trim();
-  if (state.categories.some(c => c.id.toLowerCase().trim() === cleanId)) {
-    return state.categories.find(c => c.id.toLowerCase().trim() === cleanId).id;
+  
+  const foundById = state.categories.find(c => c.id.toLowerCase().trim() === cleanId);
+  if (foundById) return foundById.id;
+
+  let target = cleanId;
+  if (_SLUG_TO_NAME[cleanId]) {
+    target = _SLUG_TO_NAME[cleanId];
   }
-  const target = _norm(_SLUG_TO_NAME[cleanId] ?? cleanId);
-  if (!target) return '';
+  target = _norm(target);
+
+  if (target === 'assinatura') target = 'assinaturas';
+
   const cat = state.categories.find(c => _norm(c.name) === target)
            || state.categories.find(c => _norm(c.name).includes(target) || target.includes(_norm(c.name)));
   return cat?.id || '';
@@ -109,11 +116,20 @@ export function showTableSkeleton(tbodyId, cols = 6) {
 
 function _expensesForInsights(month, investIds) {
   const normais = state.transactions.filter(t =>
-    t.competenceMonth === month && !investIds.includes(t.categoryId));
-  const extrato = (state.extratoTransactions || []).filter(t =>
-    t.type === 'expense' && (t.date || '').slice(0, 7) === month &&
-    !investIds.includes(t.categoryId));
-  return [...normais, ...extrato];
+    t.competenceMonth === month && !investIds.map(id => id.toLowerCase().trim()).includes((t.categoryId || '').toLowerCase().trim()));
+  
+  const extrato = (state.extratoTransactions || []).filter(t => {
+    if (t.type !== 'expense' || (t.date || '').slice(0, 7) !== month) return false;
+    const resolvedId = resolveCategoryId(t.category || t.categoryId);
+    return !investIds.map(id => id.toLowerCase().trim()).includes(resolvedId.toLowerCase().trim());
+  });
+  
+  const mappedExtrato = extrato.map(t => ({
+    ...t,
+    categoryId: resolveCategoryId(t.category || t.categoryId)
+  }));
+
+  return [...normais, ...mappedExtrato];
 }
 
 export function renderInsights() {

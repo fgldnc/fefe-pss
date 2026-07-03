@@ -1,4 +1,4 @@
-import { state, fmt, monthLabel, offsetMonth, esc, renderInsights, showKpiSkeleton } from './utils.js';
+import { state, fmt, monthLabel, offsetMonth, esc, renderInsights, showKpiSkeleton, resolveCategoryId } from './utils.js';
 import { txOfMonth, allExpensesOfMonth, incomesOfMonth } from './db.js';
 
 let chartCategorias = null;
@@ -20,9 +20,17 @@ export function renderDashboard() {
   const txs     = allExpensesOfMonth(month);
   const incomes = incomesOfMonth(month);
 
-  const investIds     = getInvestCatIds();
-  const txExpenses    = txs.filter(t => t.categoryId && !investIds.map(id => id.toLowerCase().trim()).includes(t.categoryId.toLowerCase().trim()));
-  const txInvestments = txs.filter(t => t.categoryId && investIds.map(id => id.toLowerCase().trim()).includes(t.categoryId.toLowerCase().trim()));
+  const investIds = getInvestCatIds().map(id => id.toLowerCase().trim());
+  
+  const txExpenses = txs.filter(t => {
+    const rId = resolveCategoryId(t.categoryId || t.category);
+    return rId && !investIds.includes(rId.toLowerCase().trim());
+  });
+  
+  const txInvestments = txs.filter(t => {
+    const rId = resolveCategoryId(t.categoryId || t.category);
+    return rId && investIds.includes(rId.toLowerCase().trim());
+  });
 
   const totalIncome   = incomes.reduce((s, i) => s + (i.amount || 0), 0);
   const totalExpense  = txExpenses.reduce((s, t) => s + (t.amount || 0), 0);
@@ -39,7 +47,10 @@ export function renderDashboard() {
   const prevMonth   = offsetMonth(month, -1);
   const prevTxs     = allExpensesOfMonth(prevMonth);
   const prevIncome  = incomesOfMonth(prevMonth).reduce((s, i) => s + (i.amount || 0), 0);
-  const prevExpense = prevTxs.filter(t => t.categoryId && !investIds.map(id => id.toLowerCase().trim()).includes(t.categoryId.toLowerCase().trim())).reduce((s, t) => s + (t.amount || 0), 0);
+  const prevExpense = prevTxs.filter(t => {
+    const rId = resolveCategoryId(t.categoryId || t.category);
+    return rId && !investIds.includes(rId.toLowerCase().trim());
+  }).reduce((s, t) => s + (t.amount || 0), 0);
 
   const _delta = (now, prev, goodWhenUp) => {
     if (!prev || prev <= 0) return '';
@@ -100,7 +111,8 @@ export function renderDashboard() {
 function renderChartCategorias(txs) {
   const catMap = {};
   for (const tx of txs) {
-    const normId = tx.categoryId ? tx.categoryId.toLowerCase().trim() : '';
+    const rId = resolveCategoryId(tx.categoryId || tx.category);
+    const normId = rId ? rId.toLowerCase().trim() : '';
     const cat = state.categories.find(c => c.id.toLowerCase().trim() === normId);
     const key = cat?.name || 'Outros';
     catMap[key] = (catMap[key] || 0) + (tx.amount || 0);
@@ -182,11 +194,28 @@ function renderChartEvolucao() {
   for (let i = 5; i >= 0; i--) months.push(offsetMonth(state.currentMonth, -i));
   const investIds = getInvestCatIds().map(id => id.toLowerCase().trim());
 
-  const receitas  = months.map(m => incomesOfMonth(m).reduce((s, i) => s + (i.amount||0), 0));
-  const despesas  = months.map(m => allExpensesOfMonth(m).filter(t => t.categoryId && !investIds.includes(t.categoryId.toLowerCase().trim())).reduce((s,t)=>s+(t.amount||0),0));
-  const investido = months.map(m => allExpensesOfMonth(m).filter(t => t.categoryId && investIds.includes(t.categoryId.toLowerCase().trim())).reduce((s,t)=>s+(t.amount||0),0));
-  const labels    = months.map(m => monthLabel(m).slice(0,3));
-  const maxVal    = Math.max(...receitas, ...despesas, ...investido, 1);
+  const receitas = months.map(m => incomesOfMonth(m).reduce((s, i) => s + (i.amount||0), 0));
+  
+  const despesas = months.map(m => 
+    allExpensesOfMonth(m)
+      .filter(t => {
+        const rId = resolveCategoryId(t.categoryId || t.category);
+        return rId && !investIds.includes(rId.toLowerCase().trim());
+      })
+      .reduce((s, t) => s + (t.amount||0), 0)
+  );
+  
+  const investido = months.map(m => 
+    allExpensesOfMonth(m)
+      .filter(t => {
+        const rId = resolveCategoryId(t.categoryId || t.category);
+        return rId && investIds.includes(rId.toLowerCase().trim());
+      })
+      .reduce((s, t) => s + (t.amount||0), 0)
+  );
+
+  const labels = months.map(m => monthLabel(m).slice(0,3));
+  const maxVal = Math.max(...receitas, ...despesas, ...investido, 1);
 
   const canvas = document.getElementById('chart-evolucao');
   if (chartEvolucao) chartEvolucao.destroy();
@@ -262,7 +291,9 @@ function renderOrcamentoDashboard(txs, month) {
   }
   const realMap = {};
   for (const tx of txs) {
-    const normId = tx.categoryId ? tx.categoryId.toLowerCase().trim() : '';
+    const rId = resolveCategoryId(tx.categoryId || tx.category);
+    if (!rId) continue;
+    const normId = rId.toLowerCase().trim();
     realMap[normId] = (realMap[normId] || 0) + (tx.amount || 0);
   }
 
