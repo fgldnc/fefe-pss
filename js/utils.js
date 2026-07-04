@@ -119,19 +119,24 @@ export function showTableSkeleton(tbodyId, cols = 6) {
 }
 
 // ─── INSIGHTS AUTOMÁTICOS ─────────────────────────────────────
-// Despesas do mês (transactions + extrato), excluindo investimentos.
-// Duplicado de allExpensesOfMonth de propósito: utils.js não pode importar
-// db.js (circular). Mantém a MESMA regra de inclusão do dashboard.
-function _expensesForInsights(month, investIds) {
+// Fallback: despesas do mês (transactions + extrato) sem investimentos.
+// Usado APENAS se o chamador não passar getExpenses — o dashboard sempre
+// passa o callback baseado em allExpensesOfMonth (fonte única dos KPIs).
+// utils.js não pode importar db.js (dependência circular).
+function _expensesFallback(month, investIds) {
   const normais = state.transactions.filter(t =>
     t.competenceMonth === month && !investIds.includes(t.categoryId));
   const extrato = (state.extratoTransactions || []).filter(t =>
     t.type === 'expense' && (t.date || '').slice(0, 7) === month &&
-    !investIds.includes(t.categoryId));
-  return [...normais, ...extrato];
+    !investIds.includes(resolveCategoryId(t.categoryId || t.category)));
+  // Resolve categoryId dos itens de extrato (slug → ID real) para os
+  // agrupamentos por categoria baterem com o resto do app
+  return [...normais, ...extrato.map(t => ({
+    ...t, categoryId: t.categoryId || resolveCategoryId(t.category) || t.category || '',
+  }))];
 }
 
-export function renderInsights() {
+export function renderInsights(getExpenses = null) {
   const strip = document.getElementById('insights-strip');
   if (!strip) return;
 
@@ -142,8 +147,10 @@ export function renderInsights() {
     .filter(c => (c.id + c.name).toLowerCase().includes('investiment'))
     .map(c => c.id);
 
-  const txs     = _expensesForInsights(month, investIds);
-  const txsPrev = _expensesForInsights(prevMonth, investIds);
+  // Fonte única: mesmo cálculo dos KPIs quando o dashboard fornece o callback
+  const expensesOf = getExpenses || (m => _expensesFallback(m, investIds));
+  const txs     = expensesOf(month);
+  const txsPrev = expensesOf(prevMonth);
 
   const totalNow  = txs.reduce((s, t) => s + (t.amount || 0), 0);
   const totalPrev = txsPrev.reduce((s, t) => s + (t.amount || 0), 0);
@@ -169,7 +176,7 @@ export function renderInsights() {
     const histTotals = {}; // categoria → [total m-1, m-2, m-3]
     for (let i = 1; i <= 3; i++) {
       const m = offsetMonth(month, -i);
-      for (const tx of _expensesForInsights(m, investIds)) {
+      for (const tx of expensesOf(m)) {
         const k = tx.categoryId || '_sem';
         (histTotals[k] = histTotals[k] || []).push(tx.amount || 0);
       }

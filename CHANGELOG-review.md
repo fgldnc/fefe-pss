@@ -37,6 +37,11 @@
 - **Pizza ≠ KPI corrigido**: a pizza cortava em top-8 e o total do centro somava só essas fatias (por isso R$ 2.581 vs R$ 2.673 no KPI). Agora: top 7 + fatia "Outras" cinza — o total do centro sempre bate com o KPI de Despesas.
 - **Insights acionáveis**: chip "maior categoria" substituído por (1) anomalia — categoria ±30% fora da sua média dos últimos 3 meses (máx. 2 chips, ignora categorias com média < R$ 80) e (2) projeção — "no ritmo atual, o mês fecha em ~R$X" (só no mês corrente, a partir do dia 5). Insights agora incluem despesas de extrato (antes só transactions).
 
+## Rodada 3 (chips × KPIs × orçamentos órfãos)
+- **Insights com fonte única**: renderInsights agora recebe os dados do dashboard (mesmo `allExpensesOfMonth` dos KPIs, com categoryId resolvido). Fim do "+10%" no chip com "▼34%" no KPI e dos valores parciais por categoria (Compras R$ 152 quando o real era R$ 429 — o chip não enxergava a parte vinda de extrato).
+- **Strip com quebra de linha**: chips não são mais cortados na margem; empilham em várias linhas (flex-wrap).
+- **Orçamentos órfãos com chave-slug**: docs antigos de budget com categoryId 'assinatura'/'lazer'/'saude'/'moradia'/'vestuario' (herança do bug do botão duplo) são remapeados para o ID real na carga — as "categorias" minúsculas fantasmas somem do Orçamento×Real e o gasto aparece na linha certa. Salvar o orçamento do mês regrava os docs limpos no Firestore. Chaves irrecuperáveis não renderizam mais o slug cru.
+
 ## Dashboard / visual
 - Delta ▲/▼ % vs mês anterior nos KPIs de Receitas e Despesas (verde/vermelho conforme direção boa/ruim).
 - Barra "Investido" (dourada) no gráfico de evolução — o dado já era calculado e nunca usado.

@@ -109,8 +109,12 @@ export function renderDashboard() {
 
   document.getElementById('chart-cat-month') && (document.getElementById('chart-cat-month').textContent = monthLabel(month));
 
-  // Insights automáticos
-  renderInsights();
+  // Insights automáticos — usa a MESMA fonte de dados dos KPIs
+  // (allExpensesOfMonth com categoryId resolvido e investimentos excluídos),
+  // garantindo que chip e KPI nunca divirjam.
+  renderInsights(m =>
+    allExpensesOfMonth(m).filter(t => !investIds.includes(t.categoryId))
+  );
 
   renderChartCategorias(txExpenses);
   renderChartEvolucao();
@@ -294,8 +298,9 @@ function renderOrcamentoDashboard(txs, month) {
   const rows = Object.entries(budgetMonth)
     .filter(([,v]) => v > 0)
     .map(([catId, target]) => {
-      const real = realMap[catId] || 0;
       const cat  = state.categories.find(c => c.id === catId);
+      if (!cat) return ''; // chave órfã sem categoria — não mostra slug cru
+      const real = realMap[catId] || 0;
       const pct  = target > 0 ? Math.min((real/target)*100, 100) : 0;
       const cls  = pct > 100 ? 'progress-over' : pct > 80 ? 'progress-warn' : 'progress-ok';
       return `

@@ -115,7 +115,13 @@ export async function loadAllData() {
     let month = b.month || '';
     if (/^\d{4}-\d$/.test(month)) month = month.replace(/-(\d)$/, '-0$1');
     state.budgets[month] = state.budgets[month] || {};
-    state.budgets[month][b.categoryId] = b.amount;
+
+    // Remapeia chaves-slug legadas ('assinatura', 'lazer'...) → ID real.
+    // Se a categoria real já tem limite (doc novo), o doc órfão é ignorado.
+    const realId = resolveCategoryId(b.categoryId) || b.categoryId;
+    if (state.budgets[month][realId] === undefined) {
+      state.budgets[month][realId] = b.amount;
+    }
   }
 }
 
