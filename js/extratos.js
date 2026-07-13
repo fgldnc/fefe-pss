@@ -8,6 +8,7 @@ import { detectDuplicates }        from './parsers/base-parser.js';
 import { parseOFX }                from './parsers/ofx-parser.js';
 import { parseCSV }                from './parsers/csv-parser.js';
 import { parsePDFStatement }       from './parsers/pdf-statement-parser.js';
+import { addAporteToAsset }        from './db.js';
 
 // ─── ESTADO LOCAL ──────────────────────────────────────────────
 let selectedBank   = '';
@@ -417,6 +418,22 @@ function _showReview(items, bank, format) {
 
     // Resolve slug do parser → ID real, e já grava no item para o save usar
     if (!tx.categoryId) tx.categoryId = resolveCategoryId(tx.category);
+
+    const isInvestCat = (() => {
+      const c = state.categories.find(x => x.id === tx.categoryId);
+      return !!c && (c.id + c.name).toLowerCase().includes('investiment');
+    })();
+    const investAssets = state.assets.filter(a => a.type === 'investimento');
+    const assetOptions = investAssets.map(a =>
+      `<option value="${esc(a.id)}" ${tx.assetId === a.id ? 'selected' : ''}>${esc(a.name)}</option>`
+    ).join('');
+    // Seletor "→ qual ativo?" — visível só quando a categoria é de investimento
+    const assetSelect = `
+      <select class="select-inline asset-select ${isInvestCat ? '' : 'hidden'}"
+        data-field="assetId" data-idx="${idx}"
+        style="margin-top:0.25rem;max-width:100%" title="Aportar em qual investimento?">
+        <option value="">→ sem vínculo com ativo</option>${assetOptions}
+      </select>`;
     const catOptions = cats.map(c =>
       `<option value="${esc(c.id)}" ${c.id === tx.categoryId ? 'selected' : ''}>${esc(c.name)}</option>`
     ).join('');
@@ -440,7 +457,7 @@ function _showReview(items, bank, format) {
          </select>`
       : `<select class="select-inline" data-field="categoryId" data-idx="${idx}">
            <option value="">—</option>${catOptions}
-         </select>`;
+         </select>${assetSelect}`;
 
     const valColor = tx.type === 'income' ? 'var(--success)' : 'var(--danger)';
 
@@ -464,6 +481,16 @@ function _showReview(items, bank, format) {
       const idx   = parseInt(el.dataset.idx);
       const field = el.dataset.field;
       parsedItems[idx][field] = el.value;
+      // Categoria mudou → mostra o seletor de ativo se virou investimento
+      if (field === 'categoryId') {
+        const cat = state.categories.find(c => c.id === el.value);
+        const isInvest = !!cat && (cat.id + cat.name).toLowerCase().includes('investiment');
+        const assetSel = el.closest('td')?.querySelector('.asset-select');
+        if (assetSel) {
+          assetSel.classList.toggle('hidden', !isInvest);
+          if (!isInvest) { assetSel.value = ''; parsedItems[idx].assetId = ''; }
+        }
+      }
       // Ao mudar tipo de entrada/saída, atualiza a cor do valor
       if (field === 'type') {
         const row = el.closest('tr');
@@ -543,6 +570,23 @@ async function _saveExtrato() {
         state.incomes.push({ ...incomeData, id: incDocRef.id });
       }
     }
+
+    // Aportes automáticos: saídas de investimento vinculadas a um ativo
+    // somam no valor atual do ativo e entram no histórico dele
+    let aportes = 0;
+    for (const tx of selected) {
+      if (tx.type !== 'expense' || !tx.assetId || !(tx.amount > 0)) continue;
+      try {
+        await addAporteToAsset(tx.assetId, {
+          amount: tx.amount, date: tx.date,
+          obs: tx.description, source: 'statement_import',
+        });
+        aportes++;
+      } catch (err) {
+        console.error('Aporte falhou:', tx.description, err);
+      }
+    }
+    if (aportes > 0) toast(`${aportes} aporte(s) registrados no patrimônio.`, 'success');
 
     // Atualiza state local com os IDs reais do Firestore
     if (!state.extratoTransactions) state.extratoTransactions = [];

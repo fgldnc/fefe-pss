@@ -253,6 +253,28 @@ export async function saveAsset(data, id = null) {
   return savedId;
 }
 
+/**
+ * Registra um aporte em um ativo de investimento:
+ * adiciona ao histórico (contributions) e SOMA no valor atual.
+ * Usado pelo lançamento manual, importação de extrato e botão "+ Aporte".
+ */
+export async function addAporteToAsset(assetId, aporte) {
+  const asset = state.assets.find(a => a.id === assetId);
+  if (!asset) throw new Error('Ativo não encontrado no patrimônio.');
+
+  const contributions = [...(asset.contributions || []), {
+    amount: aporte.amount,
+    date:   aporte.date || new Date().toISOString().slice(0, 10),
+    obs:    aporte.obs || '',
+    source: aporte.source || 'manual',
+  }];
+  const currentValue = (asset.currentValue || 0) + (aporte.amount || 0);
+
+  const { id: _ignored, ...data } = asset;
+  await saveAsset({ ...data, contributions, currentValue }, assetId);
+  return currentValue;
+}
+
 export async function deleteAsset(id) {
   await removeDoc('assets', id);
   state.assets = state.assets.filter(a => a.id !== id);

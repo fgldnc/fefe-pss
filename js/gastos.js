@@ -3,7 +3,7 @@
  */
 
 import { state, fmt, toast, esc } from './utils.js';
-import { txOfMonth, saveTx, deleteTx } from './db.js';
+import { txOfMonth, saveTx, deleteTx, addAporteToAsset } from './db.js';
 import { initPdfImport } from './pdf-import.js';
 
 let _initialized = false;
@@ -163,6 +163,31 @@ function _initGastosEvents() {
   // Salvar gasto
   document.getElementById('btn-salvar-gasto').addEventListener('click', _salvarGasto);
 
+  // Mostra o seletor de ativo quando a categoria escolhida é de investimento
+  document.getElementById('gasto-categoria').addEventListener('change', _toggleAtivoRow);
+
+}
+
+function _isInvestCat(catId) {
+  const cat = state.categories.find(c => c.id === catId);
+  return !!cat && (cat.id + cat.name).toLowerCase().includes('investiment');
+}
+
+function _toggleAtivoRow() {
+  const catId = document.getElementById('gasto-categoria').value;
+  const row   = document.getElementById('gasto-ativo-row');
+  const sel   = document.getElementById('gasto-ativo');
+  if (!row || !sel) return;
+
+  if (_isInvestCat(catId)) {
+    const invest = state.assets.filter(a => a.type === 'investimento');
+    sel.innerHTML = '<option value="">Não vincular a um ativo</option>' +
+      invest.map(a => `<option value="${esc(a.id)}">${esc(a.name)}</option>`).join('');
+    row.classList.remove('hidden');
+  } else {
+    row.classList.add('hidden');
+    sel.value = '';
+  }
 }
 
 function _openGastoModal(tx) {
@@ -180,6 +205,8 @@ function _openGastoModal(tx) {
 
   _populateCategorySelects();
   document.getElementById('gasto-categoria').value = tx?.categoryId || '';
+  _toggleAtivoRow();
+  document.getElementById('gasto-ativo').value = tx?.assetId || '';
 
   document.getElementById('modal-gasto').classList.remove('hidden');
 }
@@ -195,6 +222,7 @@ async function _salvarGasto() {
   const parcT  = parseInt(document.getElementById('gasto-parcela-total').value) || 1;
   const mes    = document.getElementById('gasto-mes').value || state.currentMonth;
   const notes  = document.getElementById('gasto-obs').value.trim();
+  const assetId = document.getElementById('gasto-ativo')?.value || '';
 
   if (!desc)           return toast('Preencha a descrição.', 'error');
   if (!amount || amount <= 0) return toast('Informe um valor válido.', 'error');
@@ -210,12 +238,28 @@ async function _salvarGasto() {
     installmentTotal:   parcT,
     competenceMonth:    mes,
     notes,
+    assetId: assetId || null,
     isProjected: false,
     importedFrom: 'manual',
   };
 
   try {
     await saveTx(data, id);
+
+    // Aporte automático no ativo vinculado — SOMENTE em lançamento novo,
+    // para não somar de novo a cada edição do mesmo gasto
+    if (!id && assetId && amount > 0 && _isInvestCat(catId)) {
+      try {
+        const novoValor = await addAporteToAsset(assetId, {
+          amount, date, obs: desc, source: 'gasto_manual',
+        });
+        const ativo = state.assets.find(a => a.id === assetId);
+        toast(`Aporte registrado em "${ativo?.name}". Novo valor: ${fmt(novoValor)}`, 'success');
+      } catch (err) {
+        console.error('Aporte falhou:', err);
+        toast(`Gasto salvo, mas o aporte no ativo falhou: ${err.message}`, 'warning');
+      }
+    }
 
     // Projeta parcelas futuras automaticamente (apenas em novo lançamento de cartão)
     if (!id && tipo === 'cartao' && parcT > 1) {

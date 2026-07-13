@@ -3,7 +3,7 @@
  */
 
 import { state, fmt, toast, esc } from './utils.js';
-import { saveAsset, deleteAsset } from './db.js';
+import { saveAsset, deleteAsset, addAporteToAsset } from './db.js';
 
 let _patrimonioInit = false;
 
@@ -57,20 +57,65 @@ function _renderAtivos() {
       ? new Date(a.acquiredAt + 'T12:00:00').toLocaleDateString('pt-BR', {day:'2-digit', month:'2-digit', year:'2-digit'})
       : '—';
 
+    const aportes  = a.contributions || [];
+    const isInvest = a.type === 'investimento';
+    const totalAp  = aportes.reduce((s, x) => s + (x.amount || 0), 0);
+
+    // Nome + toggle do histórico de aportes (quando existir)
+    const nameCell = `
+      ${esc(a.name)}
+      ${aportes.length ? `
+        <button class="btn-toggle-aportes-ativo" data-asset-id="${a.id}"
+          style="display:flex;align-items:center;gap:0.35rem;background:none;border:none;cursor:pointer;padding:0.2rem 0 0;color:var(--text-muted);font-family:var(--font-sans)">
+          <span class="aporte-chevron" style="font-size:0.6rem;transition:transform 0.15s">▶</span>
+          <span style="font-size:0.7rem">${aportes.length} aporte(s) · ${fmt(totalAp)}</span>
+        </button>` : ''}`;
+
+    // Linha expansível com o histórico (escondida por padrão)
+    const sourceLabel = { statement_import: 'extrato', gasto_manual: 'gasto', manual: 'manual' };
+    const detailRow = aportes.length ? `
+      <tr class="aportes-ativo-row hidden" data-asset-id="${a.id}">
+        <td colspan="7" style="padding:0.4rem 1.25rem 0.8rem;background:rgba(255,255,255,0.02)">
+          ${[...aportes].sort((x, y) => (y.date || '').localeCompare(x.date || '')).map(ap => `
+            <div style="display:flex;justify-content:space-between;align-items:baseline;font-size:0.76rem;padding:0.32rem 0;border-bottom:1px solid var(--border-soft)">
+              <span style="color:var(--text-secondary)">
+                ${ap.date ? new Date(ap.date + 'T12:00:00').toLocaleDateString('pt-BR') : '—'}
+                ${ap.obs ? `<span style="color:var(--text-muted)"> · ${esc(ap.obs)}</span>` : ''}
+                <span style="color:var(--text-muted);font-size:0.68rem"> (${sourceLabel[ap.source] || ap.source || 'manual'})</span>
+              </span>
+              <span style="font-family:var(--font-mono);color:var(--gold);flex-shrink:0;margin-left:0.5rem">+${fmt(ap.amount)}</span>
+            </div>`).join('')}
+        </td>
+      </tr>` : '';
+
     return `
       <tr>
-        <td>${esc(a.name)}</td>
+        <td>${nameCell}</td>
         <td><span style="color:${tipoColor[a.type] || 'var(--text-secondary)'};">${tipoLabel[a.type] || a.type}</span></td>
         <td class="col-value"><span class="val-mono">${fmt(a.initialValue || 0)}</span></td>
         <td class="col-value"><span class="val-mono val-positive">${fmt(valorAtual)}</span></td>
         <td>${dateFmt}</td>
         <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(a.notes || '')}">${esc(a.notes) || '—'}</td>
         <td class="col-actions">
+          ${isInvest ? `<button class="btn btn-xs btn-secondary" data-action="aporte-asset" data-id="${a.id}">+ Aporte</button>` : ''}
           <button class="btn-icon-only" data-action="edit-asset" data-id="${a.id}">✎</button>
           <button class="btn-icon-only danger" data-action="delete-asset" data-id="${a.id}">✕</button>
         </td>
-      </tr>`;
+      </tr>${detailRow}`;
   }).join('');
+
+  // Toggle do histórico de aportes
+  tbody.querySelectorAll('.btn-toggle-aportes-ativo').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id  = btn.dataset.assetId;
+      const row = tbody.querySelector(`.aportes-ativo-row[data-asset-id="${id}"]`);
+      const chevron = btn.querySelector('.aporte-chevron');
+      if (!row) return;
+      const willShow = row.classList.contains('hidden');
+      row.classList.toggle('hidden', !willShow);
+      if (chevron) chevron.style.transform = willShow ? 'rotate(90deg)' : 'rotate(0deg)';
+    });
+  });
 }
 
 /** Calcula valor depreciado de um bem pessoal */
@@ -109,6 +154,32 @@ function _initPatrimonioEvents() {
       await deleteAsset(id);
       toast('Ativo excluído.', 'success');
       _renderAtivos();
+    }
+    if (btn.dataset.action === 'aporte-asset') {
+      const a = state.assets.find(x => x.id === id);
+      if (!a) return;
+      document.getElementById('modal-aporte-ativo-title').textContent = `Aporte em "${a.name}"`;
+      document.getElementById('aporte-ativo-id').value    = id;
+      document.getElementById('aporte-ativo-valor').value = '';
+      document.getElementById('aporte-ativo-data').value  = new Date().toISOString().slice(0, 10);
+      document.getElementById('aporte-ativo-obs').value   = '';
+      document.getElementById('modal-aporte-ativo').classList.remove('hidden');
+    }
+  });
+
+  document.getElementById('btn-salvar-aporte-ativo')?.addEventListener('click', async () => {
+    const assetId = document.getElementById('aporte-ativo-id').value;
+    const amount  = parseFloat(document.getElementById('aporte-ativo-valor').value);
+    const date    = document.getElementById('aporte-ativo-data').value;
+    const obs     = document.getElementById('aporte-ativo-obs').value.trim();
+    if (!amount || amount <= 0) return toast('Informe um valor para o aporte.', 'error');
+    try {
+      const novoValor = await addAporteToAsset(assetId, { amount, date, obs, source: 'manual' });
+      document.getElementById('modal-aporte-ativo').classList.add('hidden');
+      toast(`Aporte registrado! Novo valor: ${fmt(novoValor)}`, 'success');
+      _renderAtivos();
+    } catch (err) {
+      toast(`Erro: ${err.message}`, 'error');
     }
   });
 }

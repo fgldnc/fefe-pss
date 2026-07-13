@@ -42,6 +42,13 @@
 - **Strip com quebra de linha**: chips não são mais cortados na margem; empilham em várias linhas (flex-wrap).
 - **Orçamentos órfãos com chave-slug**: docs antigos de budget com categoryId 'assinatura'/'lazer'/'saude'/'moradia'/'vestuario' (herança do bug do botão duplo) são remapeados para o ID real na carga — as "categorias" minúsculas fantasmas somem do Orçamento×Real e o gasto aparece na linha certa. Salvar o orçamento do mês regrava os docs limpos no Firestore. Chaves irrecuperáveis não renderizam mais o slug cru.
 
+## Rodada 4 — Aportes automáticos em investimentos
+- **Novo fluxo**: gasto classificado como Investimento pode ser vinculado a um ativo do Patrimônio. O valor é somado ao "valor atual" do ativo e registrado no histórico de aportes automaticamente.
+- **Importação de extrato**: quando a categoria da linha é investimento, aparece o seletor "→ qual ativo?" abaixo da categoria (some/aparece ao trocar a categoria). Ao confirmar a importação, os aportes vinculados são aplicados nos ativos.
+- **Lançamento manual**: o modal de gasto ganha o campo "Aportar em qual investimento?" quando a categoria escolhida é investimento. O aporte só é aplicado em lançamento NOVO (editar um gasto não soma de novo).
+- **Patrimônio**: ativos de investimento ganham botão "+ Aporte" (aporte manual direto) e histórico expansível por ativo (data, valor, observação e origem: extrato/gasto/manual), no mesmo padrão das Metas. Os KPIs e o total do patrimônio refletem o novo valor na hora.
+- **Regras**: aportes acumulam no currentValue (testado: 1500 + 500 + 250,50 = 2250,50). Vincular é opcional — "sem vínculo com ativo" mantém o comportamento antigo. Excluir a transação depois NÃO desfaz o aporte no ativo (ajuste manual se precisar).
+
 ## Dashboard / visual
 - Delta ▲/▼ % vs mês anterior nos KPIs de Receitas e Despesas (verde/vermelho conforme direção boa/ruim).
 - Barra "Investido" (dourada) no gráfico de evolução — o dado já era calculado e nunca usado.

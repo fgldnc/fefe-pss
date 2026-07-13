@@ -533,6 +533,11 @@
       <div class="form-row"><label class="form-label">Descrição *</label><input type="text" id="gasto-desc" class="form-input" placeholder="Ex: Supermercado Extra" required /></div>
       <div class="form-row"><label class="form-label">Valor *</label><input type="number" id="gasto-valor" class="form-input" placeholder="0,00" step="0.01" min="0" required /></div>
       <div class="form-row"><label class="form-label">Categoria *</label><select id="gasto-categoria" class="form-select" required><option value="">Selecione…</option></select></div>
+      <div class="form-row hidden" id="gasto-ativo-row">
+        <label class="form-label">Aportar em qual investimento?</label>
+        <select id="gasto-ativo" class="form-select"><option value="">Não vincular a um ativo</option></select>
+        <span class="form-hint">O valor será somado ao ativo no Patrimônio como um aporte.</span>
+      </div>
       <div class="form-row"><label class="form-label">Tipo de pagamento</label>
         <select id="gasto-tipo" class="form-select">
           <option value="cartao">Cartão de crédito</option>
@@ -711,6 +716,19 @@
 </div>
 
 <!-- Modal: Aporte em Meta -->
+<div id="modal-aporte-ativo" class="modal-overlay hidden">
+  <div class="modal modal-sm">
+    <div class="modal-header"><h3 id="modal-aporte-ativo-title">Aporte no Ativo</h3><button class="modal-close" data-modal="modal-aporte-ativo">✕</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="aporte-ativo-id" />
+      <div class="form-row"><label class="form-label">Valor *</label><input type="number" id="aporte-ativo-valor" class="form-input" placeholder="0,00" step="0.01" min="0" required /></div>
+      <div class="form-row"><label class="form-label">Data</label><input type="date" id="aporte-ativo-data" class="form-input" /></div>
+      <div class="form-row"><label class="form-label">Observação</label><input type="text" id="aporte-ativo-obs" class="form-input" placeholder="Opcional…" /></div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-ghost" data-modal="modal-aporte-ativo">Cancelar</button><button class="btn btn-primary" id="btn-salvar-aporte-ativo">Salvar Aporte</button></div>
+  </div>
+</div>
+
 <div id="modal-aporte" class="modal-overlay hidden">
   <div class="modal modal-sm">
     <div class="modal-header"><h3>Registrar Aporte</h3><button class="modal-close" data-modal="modal-aporte">✕</button></div>
