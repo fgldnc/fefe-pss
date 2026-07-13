@@ -272,6 +272,28 @@ export async function addAporteToAsset(assetId, aporte) {
 
   const { id: _ignored, ...data } = asset;
   await saveAsset({ ...data, contributions, currentValue }, assetId);
+
+  // ── Propaga para a meta vinculada (ex: "IPCA 2050" → meta Aposentadoria).
+  // O aporte entra no histórico da meta e soma no progresso dela.
+  // Meta excluída/vínculo quebrado: ignora silenciosamente, sem travar o fluxo.
+  if (asset.linkedGoalId) {
+    const goal = state.goals.find(g => g.id === asset.linkedGoalId);
+    if (goal) {
+      const goalContribs = [...(goal.contributions || []), {
+        amount: aporte.amount,
+        date:   aporte.date || new Date().toISOString().slice(0, 10),
+        obs:    `via ${asset.name}${aporte.obs ? ' · ' + aporte.obs : ''}`,
+        source: aporte.source || 'manual',
+      }];
+      const { id: _gid, ...goalData } = goal;
+      await saveGoal({
+        ...goalData,
+        currentAmount: (goal.currentAmount || 0) + (aporte.amount || 0),
+        contributions: goalContribs,
+      }, asset.linkedGoalId);
+    }
+  }
+
   return currentValue;
 }
 

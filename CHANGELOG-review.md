@@ -49,6 +49,13 @@
 - **Patrimônio**: ativos de investimento ganham botão "+ Aporte" (aporte manual direto) e histórico expansível por ativo (data, valor, observação e origem: extrato/gasto/manual), no mesmo padrão das Metas. Os KPIs e o total do patrimônio refletem o novo valor na hora.
 - **Regras**: aportes acumulam no currentValue (testado: 1500 + 500 + 250,50 = 2250,50). Vincular é opcional — "sem vínculo com ativo" mantém o comportamento antigo. Excluir a transação depois NÃO desfaz o aporte no ativo (ajuste manual se precisar).
 
+## Rodada 5 — Ativo vinculado a Meta (cascata completa)
+- **Novo campo "Meta vinculada"** no modal do ativo (só para investimentos): vincule "Tesouro IPCA 2050" → meta Aposentadoria, "CDB Reserva" → Reserva de emergência, etc.
+- **Cascata automática**: extrato/gasto → aporte no ativo → aporte na meta vinculada. O progresso da meta soma o valor e o histórico dela registra "via {nome do ativo}" para rastreio.
+- Ativo sem vínculo continua como antes (só o ativo muda). Meta excluída/vínculo quebrado não trava o aporte — é ignorado silenciosamente.
+- **Fix de preservação**: editar um ativo pelo modal não apaga mais o histórico de aportes do state (contributions preservadas no save).
+- Tabela do Patrimônio mostra 🎯 com o nome da meta vinculada abaixo do nome do ativo.
+
 ## Dashboard / visual
 - Delta ▲/▼ % vs mês anterior nos KPIs de Receitas e Despesas (verde/vermelho conforme direção boa/ruim).
 - Barra "Investido" (dourada) no gráfico de evolução — o dado já era calculado e nunca usado.

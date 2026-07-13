@@ -686,6 +686,10 @@
       </div>
       <div class="form-row"><label class="form-label">Data de aquisição</label><input type="date" id="ativo-data" class="form-input" /></div>
       <div class="form-row" id="deprec-row"><label class="form-label">Depreciação anual (%)</label><input type="number" id="ativo-deprec" class="form-input" placeholder="Ex: 20" step="0.1" min="0" max="100" /><span class="form-hint">Apenas para bens pessoais.</span></div>
+      <div class="form-row" id="ativo-meta-row"><label class="form-label">Meta vinculada</label>
+        <select id="ativo-meta" class="form-select"><option value="">Nenhuma</option></select>
+        <span class="form-hint">Aportes neste ativo também contam automaticamente na meta escolhida.</span>
+      </div>
       <div class="form-row"><label class="form-label">Observações</label><textarea id="ativo-obs" class="form-textarea" rows="2" placeholder="Opcional…"></textarea></div>
     </div>
     <div class="modal-footer"><button class="btn btn-ghost" data-modal="modal-ativo">Cancelar</button><button class="btn btn-primary" id="btn-salvar-ativo">Salvar</button></div>

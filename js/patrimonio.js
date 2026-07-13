@@ -61,9 +61,15 @@ function _renderAtivos() {
     const isInvest = a.type === 'investimento';
     const totalAp  = aportes.reduce((s, x) => s + (x.amount || 0), 0);
 
+    // Meta vinculada (tag informativa abaixo do nome)
+    const linkedGoal = a.linkedGoalId ? state.goals.find(g => g.id === a.linkedGoalId) : null;
+    const goalTag = linkedGoal
+      ? `<div style="font-size:0.68rem;color:var(--text-muted);margin-top:0.15rem">🎯 ${esc(linkedGoal.name)}</div>`
+      : '';
+
     // Nome + toggle do histórico de aportes (quando existir)
     const nameCell = `
-      ${esc(a.name)}
+      ${esc(a.name)}${goalTag}
       ${aportes.length ? `
         <button class="btn-toggle-aportes-ativo" data-asset-id="${a.id}"
           style="display:flex;align-items:center;gap:0.35rem;background:none;border:none;cursor:pointer;padding:0.2rem 0 0;color:var(--text-muted);font-family:var(--font-sans)">
@@ -133,10 +139,13 @@ function _initPatrimonioEvents() {
     _openAtivoModal(null);
   });
 
-  // Mostrar campo de depreciação apenas para bem pessoal
+  // Mostrar campo de depreciação apenas para bem pessoal;
+  // campo de meta vinculada apenas para investimento
   document.getElementById('ativo-tipo').addEventListener('change', (e) => {
     document.getElementById('deprec-row').style.display =
       e.target.value === 'bem_pessoal' ? 'flex' : 'none';
+    const metaRow = document.getElementById('ativo-meta-row');
+    if (metaRow) metaRow.style.display = e.target.value === 'investimento' ? 'flex' : 'none';
   });
 
   document.getElementById('btn-salvar-ativo').addEventListener('click', _salvarAtivo);
@@ -184,6 +193,15 @@ function _initPatrimonioEvents() {
   });
 }
 
+function _populateMetaSelect(selectedId) {
+  const sel = document.getElementById('ativo-meta');
+  if (!sel) return;
+  sel.innerHTML = '<option value="">Nenhuma</option>' +
+    state.goals.map(g =>
+      `<option value="${esc(g.id)}" ${g.id === selectedId ? 'selected' : ''}>${esc(g.name)}</option>`
+    ).join('');
+}
+
 function _openAtivoModal(a) {
   document.getElementById('modal-ativo-title').textContent = a ? 'Editar Ativo' : 'Novo Ativo / Bem';
   document.getElementById('ativo-id').value           = a?.id || '';
@@ -196,6 +214,9 @@ function _openAtivoModal(a) {
   document.getElementById('ativo-obs').value          = a?.notes || '';
   document.getElementById('deprec-row').style.display =
     (a?.type === 'bem_pessoal') ? 'flex' : 'none';
+  _populateMetaSelect(a?.linkedGoalId || '');
+  const metaRow = document.getElementById('ativo-meta-row');
+  if (metaRow) metaRow.style.display = ((a?.type || 'investimento') === 'investimento') ? 'flex' : 'none';
   document.getElementById('modal-ativo').classList.remove('hidden');
 }
 
@@ -208,12 +229,19 @@ async function _salvarAtivo() {
   const date    = document.getElementById('ativo-data').value;
   const deprec  = parseFloat(document.getElementById('ativo-deprec').value) || 0;
   const notes   = document.getElementById('ativo-obs').value.trim();
+  const linkedGoalId = type === 'investimento'
+    ? (document.getElementById('ativo-meta')?.value || null)
+    : null;
 
   if (!name)              return toast('Informe o nome do ativo.', 'error');
   if (!current || current < 0) return toast('Informe o valor atual.', 'error');
 
+  // Preserva o histórico de aportes ao editar (não vem dos inputs do modal)
+  const existing = id ? state.assets.find(a => a.id === id) : null;
+
   await saveAsset({ name, type, initialValue: initial, currentValue: current,
-    acquiredAt: date, depreciationRate: deprec, notes }, id);
+    acquiredAt: date, depreciationRate: deprec, notes, linkedGoalId,
+    contributions: existing?.contributions || [] }, id);
 
   document.getElementById('modal-ativo').classList.add('hidden');
   toast('Ativo salvo!', 'success');
