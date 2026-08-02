@@ -456,3 +456,7 @@
 /* ── HIST\u00d3RICO DE APORTES (Metas) ──────────────────────────────── */
 .btn-toggle-aportes:hover .aporte-chevron { color: var(--accent-bright); }
 .btn-toggle-aportes:hover span:last-child { color: var(--text-secondary); }
+
+/* ── CALENDÁRIO ────────────────────────────────────────────────── */
+/* Hover do dia: era onmouseenter inline, movido para CSS por causa da CSP. */
+.cal-day:hover { background: rgba(192,24,136,0.07); }

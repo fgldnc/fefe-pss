@@ -57,8 +57,11 @@ function _renderImportacoesList() {
         <div class="empty-state-icon">🏦</div>
         <div class="empty-state-title">Nenhum extrato importado</div>
         <div class="empty-state-text">Importe extratos do Itaú, Nubank, Inter, Santander ou Bradesco em PDF, OFX ou CSV.</div>
-        <button class="btn btn-primary btn-sm" onclick="document.getElementById('btn-novo-extrato').click()">Importar agora</button>
+        <button id="btn-extrato-empty-import" class="btn btn-primary btn-sm">Importar agora</button>
       </div>`;
+    // Listener logo após o innerHTML: o nó é recriado a cada render.
+    container.querySelector('#btn-extrato-empty-import')
+      ?.addEventListener('click', () => document.getElementById('btn-novo-extrato')?.click());
     return;
   }
 

@@ -86,8 +86,7 @@ function _buildCalendar(year, month, ym) {
     const borderRight = col === 6 ? '' : 'border-right:1px solid var(--border-soft);';
 
     html += `
-      <div style="min-height:72px;${borderRight}border-bottom:1px solid var(--border-soft);padding:0.4rem 0.45rem;display:flex;flex-direction:column;gap:0.2rem;transition:background 0.15s;cursor:default"
-        onmouseenter="this.style.background='rgba(192,24,136,0.07)'" onmouseleave="this.style.background=''">
+      <div class="cal-day" style="min-height:72px;${borderRight}border-bottom:1px solid var(--border-soft);padding:0.4rem 0.45rem;display:flex;flex-direction:column;gap:0.2rem;transition:background 0.15s;cursor:default">
         <span style="${dayNumStyle}">${d}</span>
         ${dots ? `<div style="display:flex;gap:2px;flex-wrap:wrap">${dots}</div>` : ''}
         ${hasMoney ? `<span style="font-size:0.63rem;font-family:var(--font-mono);color:${totalColor};margin-top:auto">${totalSign}${_shortFmt(numTotal)}</span>` : ''}

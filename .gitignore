@@ -3,9 +3,10 @@
 .env.local
 .env.*.local
 
-# Backups de dados pessoais
-*.json
-!package.json
+# Backups de dados pessoais (regra específica: um "*.json" genérico esconderia
+# qualquer JSON de configuração futuro — vercel.json, firebase.json, etc.)
+financas-backup-*.json
+*-backup-*.json
 
 # Sistemas operacionais
 .DS_Store
@@ -14,6 +15,7 @@ desktop.ini
 
 # Scripts temporários de calibração/diagnóstico
 scripts/tmp-*.mjs
+tmp-*.json
 
 # Editores
 .vscode/

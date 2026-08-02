@@ -305,6 +305,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (e.target.classList.contains('modal-overlay')) e.target.classList.add('hidden');
   });
 
+  // Botões de empty-state que apenas reencaminham o clique para o botão real.
+  // Delegação em document porque esses templates são reinjetados via innerHTML.
+  document.addEventListener('click', e => {
+    const proxy = e.target.closest('[data-proxy-click]');
+    if (proxy) document.getElementById(proxy.dataset.proxyClick)?.click();
+  });
+
   // Logout
   document.getElementById('btn-logout')?.addEventListener('click', async () => {
     const { auth, signOut } = window._FB;

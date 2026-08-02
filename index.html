@@ -11,37 +11,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 
   <!-- Firebase -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
-    import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut }
-      from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
-    import { getFirestore, collection, doc, getDocs, setDoc, addDoc,
-      deleteDoc, updateDoc, query, where, writeBatch }
-      from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
-
-    // ── Configure Firebase ──────────────────────────────────────
-    const firebaseConfig = {
-  apiKey: "AIzaSyCZ_xc7UJsIsHI_M8GvxggtcYu2cBunqFo",
-
-  authDomain: "fefe-df577.firebaseapp.com",
-
-  projectId: "fefe-df577",
-
-  storageBucket: "fefe-df577.firebasestorage.app",
-
-  messagingSenderId: "988495815243",
-
-  appId: "1:988495815243:web:0309d3a01b5d6033e4e3ce"
-
-    };
-
-    const app  = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db   = getFirestore(app);
-
-    window._FB = { auth, db, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut,
-      collection, doc, getDocs, setDoc, addDoc, deleteDoc, updateDoc, query, where, writeBatch };
-  </script>
+  <script type="module" src="js/firebase-init.js"></script>
 
   <link rel="stylesheet" href="css/style.css" />
   <link rel="stylesheet" href="css/components.css" />
@@ -310,7 +280,7 @@
             <div class="empty-state-icon">🏦</div>
             <div class="empty-state-title">Nenhum extrato importado</div>
             <div class="empty-state-text">Importe extratos do seu banco em PDF, OFX ou CSV.</div>
-            <button class="btn btn-primary btn-sm" onclick="document.getElementById('btn-novo-extrato').click()">Importar agora</button>
+            <button class="btn btn-primary btn-sm" data-proxy-click="btn-novo-extrato">Importar agora</button>
           </div>
         </div>
       </div>
@@ -455,7 +425,7 @@
           <div class="empty-state-icon">🎯</div>
           <div class="empty-state-title">Nenhuma meta criada</div>
           <div class="empty-state-text">Defina objetivos financeiros e acompanhe seu progresso.</div>
-          <button class="btn btn-primary btn-sm" onclick="document.getElementById('btn-nova-meta').click()">Criar primeira meta</button>
+          <button class="btn btn-primary btn-sm" data-proxy-click="btn-nova-meta">Criar primeira meta</button>
         </div>
       </div>
     </section>
