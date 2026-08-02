@@ -184,9 +184,42 @@
 
 .progress-bar  { height: 4px; background: var(--bg-hover); border-radius: 2px; overflow: hidden; }
 .progress-fill { height: 100%; border-radius: 2px; transition: width 0.4s ease; }
-.progress-ok   { background: var(--success); }
+/* Azul, não verde: ficar dentro do limite é o esperado, não conquista — e
+   verde aqui competiria com o verde de receita. Classe compartilhada só entre
+   o card do Dashboard e a aba Orçamento, que devem ler igual. */
+.progress-ok   { background: var(--accent-primary); }
 .progress-warn { background: var(--warning); }
 .progress-over { background: var(--danger); }
+
+/* Fora de qualquer limite — sem barra de propósito: barra exige denominador e
+   aqui não há meta. É o bloco que faz o card fechar com o KPI de Despesas. */
+.orc-fora { border-top: 1px solid var(--border-strong); }
+.orc-fora .orcamento-cat { color: var(--text-primary); }
+.orc-fora-detalhe {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem;
+  font-size: 0.74rem; color: var(--text-muted); line-height: 1.5;
+}
+.orc-fora-item { font-size: 0.74rem; }
+.orc-split { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 0.35rem; }
+.orc-split-sep { color: var(--text-muted); }
+
+/* Link de texto, não botão: é atalho para a pendência, não ação primária. */
+.orc-link {
+  background: none; border: none; padding: 0; cursor: pointer;
+  font: inherit; font-size: 0.74rem; color: var(--accent-primary);
+  text-decoration: underline; text-underline-offset: 2px;
+}
+.orc-link:hover, .orc-link:focus-visible { color: var(--text-primary); outline: none; }
+.orc-link-atencao { color: var(--warning); }
+.orc-link-atencao:hover, .orc-link-atencao:focus-visible { color: var(--warning); filter: brightness(1.25); }
+
+.orc-reconcilia {
+  display: flex; justify-content: space-between; align-items: baseline; gap: 0.75rem;
+  padding: 0.6rem 1.25rem; border-top: 1px solid var(--border-soft);
+  font-size: 0.76rem; color: var(--text-muted);
+}
+.orc-reconcilia-val { font-family: var(--font-mono); color: var(--text-secondary); }
+.orc-fechamento { margin-top: 0.5rem; padding: 0; }
 
 .orcamento-editor { padding: 0.75rem 1.25rem; }
 .orcamento-input-row { display: flex; align-items: center; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid var(--border-soft); gap: 1rem; }

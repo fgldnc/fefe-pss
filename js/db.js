@@ -159,6 +159,10 @@ export function allExpensesOfMonth(month) {
       categoryId: t.categoryId || resolveCategoryId(t.category) || t.category || '',
       competenceMonth: month,
       paymentType: t.paymentType || 'extrato',
+      // Só de leitura, nunca gravado: a tela precisa saber para QUAL aba mandar
+      // o usuário quando o lançamento está sem categoria. paymentType não serve
+      // para isso — o extrato pode trazer o seu próprio.
+      _origem: 'extrato',
     }));
 
   return [...normais, ...doExtrato];

@@ -2,7 +2,7 @@
  * orcamento.js — Aba de orçamento mensal
  */
 
-import { state, esc, fmt, toast } from './utils.js';
+import { state, esc, fmt, toast, splitGastosPorLimite, renderForaDoLimite } from './utils.js';
 import { saveBudgets, allExpensesOfMonth } from './db.js';
 
 export function renderOrcamento() {
@@ -24,9 +24,13 @@ export function renderOrcamento() {
     return;
   }
 
-  // Total gasto por categoria no mês (inclui despesas de extrato bancário)
+  // Mesma partição do card do Dashboard, sobre a mesma base (despesas do mês
+  // sem investimento): o número dos dois tem de ser idêntico para o mesmo mês.
+  const txs   = allExpensesOfMonth(month).filter(t => !investIds.includes(t.categoryId));
+  const split = splitGastosPorLimite(txs, budgets, cats);
   const spentByCat = {};
-  for (const tx of allExpensesOfMonth(month)) {
+  for (const tx of txs) {
+    if (tx.type === 'transfer' || !tx.categoryId) continue;
     spentByCat[tx.categoryId] = (spentByCat[tx.categoryId] || 0) + (tx.amount || 0);
   }
 
@@ -55,7 +59,7 @@ export function renderOrcamento() {
           style="width:130px"
         />
       </div>`;
-  }).join('');
+  }).join('') + `<div class="orcamento-list orc-fechamento">${renderForaDoLimite(split, month)}</div>`;
 }
 
 // Salvar orçamento

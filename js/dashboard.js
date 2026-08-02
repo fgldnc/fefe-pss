@@ -10,7 +10,10 @@
  *  - Gráfico de evolução agora inclui barra de Investido separada
  */
 
-import { state, fmt, monthLabel, offsetMonth, esc, renderInsights, showKpiSkeleton } from './utils.js';
+import {
+  state, fmt, monthLabel, offsetMonth, esc, renderInsights, showKpiSkeleton,
+  splitGastosPorLimite, renderForaDoLimite, SEM_CATEGORIA_FILTRO,
+} from './utils.js';
 import { txOfMonth, allExpensesOfMonth, incomesOfMonth } from './db.js';
 
 let chartCategorias = null;
@@ -216,10 +219,26 @@ export function renderDashboard() {
     allExpensesOfMonth(m).filter(t => !investIds.includes(t.categoryId))
   );
 
-  renderChartCategorias(txExpenses);
+  // Categorias sem as de investimento: os dois cards abaixo precisam bater com
+  // o KPI de Despesas, que também exclui investimento.
+  const catsSemInvest = state.categories.filter(c => !investIds.includes(c.id));
+
+  // Erro de leitura não pode deixar número velho ao lado de dado novo: o card
+  // mantém o título e troca o corpo pela mensagem.
+  _guard('pizza-legend', () => renderChartCategorias(txExpenses));
   renderChartEvolucao();
   renderParcelasPrevisao();
-  renderOrcamentoDashboard(txExpenses, month);
+  _guard('orcamento-list', () => renderOrcamentoDashboard(txExpenses, month, catsSemInvest));
+}
+
+function _guard(elId, fn) {
+  try {
+    fn();
+  } catch (err) {
+    console.error(`Erro ao montar #${elId}:`, err);
+    const el = document.getElementById(elId);
+    if (el) el.innerHTML = `<p class="card-error">Não foi possível carregar estes dados.</p>`;
+  }
 }
 
 // ─── GRÁFICO DE CATEGORIAS (PIZZA COM TOTAL NO CENTRO) ─────────────────────
@@ -230,15 +249,27 @@ function renderChartCategorias(txs) {
   // Bucket próprio, com chave impossível de colidir com nome de categoria.
   const SEM_CAT = ' sem-categoria';
   const catMap = {};
+  // Contagem por origem: a legenda promete "N lançamentos" e o clique leva a
+  // uma aba que precisa mostrar exatamente esses N (ver semCategoriaLinksHTML).
+  const semCat = { total: 0, count: 0, countGastos: 0, countExtratos: 0 };
   for (const tx of txs) {
     const cat = tx.categoryId ? state.categories.find(c => c.id === tx.categoryId) : null;
-    const key = cat?.name || SEM_CAT;
+    // Id órfão (categoria apagada) NÃO é "sem categoria": vira resíduo. Se
+    // entrasse no balde de pendência, a contagem da legenda não bateria com o
+    // filtro do destino (`!t.categoryId`), que é justamente o que ela promete.
+    const key = cat?.name || (tx.categoryId ? 'Outras' : SEM_CAT);
     catMap[key] = (catMap[key] || 0) + (tx.amount || 0);
+    if (!tx.categoryId) {
+      semCat.count++;
+      if (tx._origem === 'extrato') semCat.countExtratos++;
+      else                          semCat.countGastos++;
+    }
   }
 
   // "Sem categoria" sai da disputa por espaço antes do corte, senão o resíduo
   // "Outras" o reabsorveria e o problema voltaria uma camada adiante.
   const semCatTotal = catMap[SEM_CAT] || 0;
+  semCat.total = semCatTotal;
   delete catMap[SEM_CAT];
 
   // Top 7 categorias + agrupa o resto em "Outras" — antes o slice(0,8)
@@ -266,6 +297,9 @@ function renderChartCategorias(txs) {
   if (totalEl) totalEl.textContent = fmt(total);
 
   const canvas = document.getElementById('chart-categorias');
+  // O anel cinza do skeleton só existe até o primeiro render; depois dele o
+  // canvas ocupa o mesmo espaço e a página não pula.
+  document.getElementById('pizza-skeleton-ring')?.remove();
   if (chartCategorias) chartCategorias.destroy();
 
   if (!values.length) {
@@ -307,20 +341,61 @@ function renderChartCategorias(txs) {
     },
   });
 
-  // Legenda customizada ao lado do gráfico
+  // Legenda customizada ao lado do gráfico. A fatia de "Sem categoria" segue
+  // neutra no canvas: a pizza não é editável, e âmbar sem porta de saída é
+  // alarme sem ação. Quem carrega o âmbar é a linha da legenda, que clica.
   const legend = document.getElementById('pizza-legend');
   if (legend) {
     legend.innerHTML = sorted.map(([name, val], i) => {
       const pct = ((val / total) * 100).toFixed(1);
+      if (name === 'Sem categoria') return _legendaSemCategoria(semCat, pct);
+      const clsNome = name === 'Outras' ? 'lg-name lg-resto' : 'lg-name';
       return `
-        <div style="display:flex;align-items:center;gap:0.6rem;padding:0.45rem 0;border-bottom:1px solid var(--border-soft)">
-          <span style="width:9px;height:9px;border-radius:50%;background:${colors[i]};flex-shrink:0"></span>
-          <span style="flex:1;font-size:0.83rem;color:var(--text-secondary)">${esc(name)}</span>
-          <span style="font-size:0.72rem;color:var(--text-muted)">${pct}%</span>
-          <span style="font-family:var(--font-mono);font-size:0.83rem;color:var(--text-primary);min-width:75px;text-align:right">${fmt(val)}</span>
+        <div class="lg-row">
+          <span class="lg-dot" style="background:${colors[i]}"></span>
+          <span class="${clsNome}">${esc(name)}</span>
+          <span class="lg-pct">${pct}%</span>
+          <span class="lg-val">${fmt(val)}</span>
         </div>`;
     }).join('');
   }
+}
+
+/**
+ * A linha de "Sem categoria" é a única acionável da legenda: é pendência, não
+ * navegação (drill-down geral é outra rodada). Some por inteiro quando não há
+ * pendência — silêncio é o sinal de que está tudo bem.
+ */
+function _legendaSemCategoria(sc, pct) {
+  const plural = sc.count === 1 ? 'lançamento' : 'lançamentos';
+  const rotulo = `Sem categoria · ${sc.count} ${plural}`;
+  const linha = `
+        <span class="lg-dot" style="background:#6b6b6b"></span>
+        <span class="lg-name mark-inferido">${esc(rotulo)}</span>
+        <span class="lg-pct">${pct}%</span>
+        <span class="lg-val">${fmt(sc.total)}</span>`;
+
+  // Duas origens: a linha inteira não pode clicar, porque nenhuma aba sozinha
+  // mostra os N do rótulo. O split abaixo leva cada parte ao seu destino.
+  if (sc.countGastos > 0 && sc.countExtratos > 0) {
+    return `
+      <div class="lg-row lg-sem">${linha}</div>
+      <div class="lg-split">
+        <button type="button" class="orc-link" data-goto="gastos" data-filtro-cat="${SEM_CATEGORIA_FILTRO}">${sc.countGastos} em Gastos</button>
+        <span class="orc-split-sep">·</span>
+        <button type="button" class="orc-link" data-goto="extratos">${sc.countExtratos} em Extratos</button>
+      </div>`;
+  }
+
+  const goto = sc.countExtratos > 0
+    ? `data-goto="extratos"`
+    : `data-goto="gastos" data-filtro-cat="${SEM_CATEGORIA_FILTRO}"`;
+  return `
+      <div class="lg-row lg-sem lg-sem-click" role="button" tabindex="0" ${goto}
+           title="Ver os lançamentos sem categoria">
+        ${linha}
+        <span class="lg-chevron" aria-hidden="true">›</span>
+      </div>`;
 }
 
 // ─── SÉRIE DE 6 MESES — FONTE ÚNICA ────────────────────────────────────────
@@ -401,7 +476,9 @@ function renderChartEvolucao() {
         tooltip: { callbacks: { label: ctx => `${ctx.dataset.label}: ${fmt(ctx.raw)}` } },
       },
       scales: {
-        x: { ticks: { color: '#a3a3a3', font: { family: 'Outfit', size: 10 } }, grid: { display: false } },
+        // size 9: em meia largura os 6 rótulos de mês encostavam um no outro.
+        // Reduzir o tick antes de mexer no layout — o layout é a decisão cara.
+        x: { ticks: { color: '#a3a3a3', font: { family: 'Outfit', size: 9 }, maxRotation: 0, autoSkip: false }, grid: { display: false } },
         y: {
           ticks: {
             color: '#a3a3a3', font: { family: 'JetBrains Mono', size: 9 },
@@ -443,10 +520,13 @@ function renderParcelasPrevisao() {
 }
 
 // ─── ORÇAMENTO × REAL ─────────────────────────────────────────────────────
-function renderOrcamentoDashboard(txs, month) {
-  const budgetMonth = state.budgets[month] || {};
+function renderOrcamentoDashboard(txs, month, categories) {
   const list = document.getElementById('orcamento-list');
-  if (!Object.keys(budgetMonth).length) {
+  const split = splitGastosPorLimite(txs, state.budgets[month] || {}, categories);
+
+  // Só o mês sem NADA — nem gasto, nem limite — merece o empty state. Antes,
+  // "sem orçamento definido" escondia o gasto inteiro do mês atrás de um ícone.
+  if (!split.porCategoria.length && split.total === 0) {
     list.innerHTML = `<div class="empty-state" style="padding:1.5rem">
       <div class="empty-state-icon">🎯</div>
       <div class="empty-state-title">Sem orçamento definido</div>
@@ -454,38 +534,25 @@ function renderOrcamentoDashboard(txs, month) {
     </div>`;
     return;
   }
-  const realMap = {};
-  for (const tx of txs) realMap[tx.categoryId] = (realMap[tx.categoryId]||0) + (tx.amount||0);
 
-  const rows = Object.entries(budgetMonth)
-    .filter(([,v]) => v > 0)
-    .map(([catId, target]) => {
-      const cat  = state.categories.find(c => c.id === catId);
-      if (!cat) return ''; // chave órfã sem categoria — não mostra slug cru
-      const real = realMap[catId] || 0;
-      const pct  = target > 0 ? Math.min((real/target)*100, 100) : 0;
-      const cls  = pct > 100 ? 'progress-over' : pct > 80 ? 'progress-warn' : 'progress-ok';
-      return `
+  const rows = split.porCategoria.map(({ cat, limite, real, pct, cls }) => `
         <div class="orcamento-item">
           <div class="orcamento-row">
             <span class="orcamento-cat">
-              <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${cat?.color||'#94a3b8'};margin-right:0.4rem"></span>
-              ${esc(cat?.name || catId)}
+              <span class="cat-dot" style="background:${esc(cat.color || '#94a3b8')}"></span>
+              ${esc(cat.name)}
             </span>
             <span class="orcamento-vals">
               <span class="orcamento-real">${fmt(real)}</span>
               <span class="orcamento-sep">/</span>
-              <span class="orcamento-tgt">${fmt(target)}</span>
+              <span class="orcamento-tgt">${fmt(limite)}</span>
             </span>
           </div>
           <div class="progress-bar">
-            <div class="progress-fill ${cls}" style="width:${pct.toFixed(1)}%"></div>
+            <div class="progress-fill ${cls}" style="width:${Math.min(pct, 100).toFixed(1)}%"></div>
           </div>
-        </div>`;
-    });
-  list.innerHTML = rows.join('') || `<div class="empty-state" style="padding:1.5rem">
-      <div class="empty-state-icon">🎯</div>
-      <div class="empty-state-title">Sem orçamento definido</div>
-      <div class="empty-state-text">Defina limites por categoria na aba Orçamento.</div>
-    </div>`;
+        </div>`).join('');
+
+  list.innerHTML = rows + renderForaDoLimite(split, month);
 }
+

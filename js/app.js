@@ -55,6 +55,24 @@ export async function switchTab(name) {
   }
 }
 
+/**
+ * Leva à aba pedida e, se houver, aplica o filtro de categoria. O filtro é
+ * aplicado DEPOIS do switchTab porque a opção sentinela só existe no <select>
+ * depois que renderGastos() o remonta; disparar 'change' reaproveita o listener
+ * que a própria aba já registrou, sem exportar nada novo.
+ */
+async function _goto(el) {
+  const tab = el.dataset.goto;
+  if (!tab) return;
+  await switchTab(tab);
+  const filtroCat = el.dataset.filtroCat;
+  if (!filtroCat) return;
+  const sel = document.getElementById('filter-categoria');
+  if (!sel) return;
+  sel.value = filtroCat;
+  sel.dispatchEvent(new Event('change', { bubbles: true }));
+}
+
 function updateMonthLabel() {
   const el = document.getElementById('month-label');
   if (el) el.textContent = monthLabel(state.currentMonth);
@@ -303,6 +321,24 @@ document.addEventListener('DOMContentLoaded', async () => {
     const btn = e.target.closest('[data-modal]');
     if (btn) document.getElementById(btn.dataset.modal)?.classList.add('hidden');
     if (e.target.classList.contains('modal-overlay')) e.target.classList.add('hidden');
+  });
+
+  // Navegação por [data-goto] — legenda da pizza e bloco "fora de qualquer
+  // limite". Delegado em document e registrado UMA vez: os cards são
+  // reinjetados por innerHTML a cada render, e ligar o listener no elemento
+  // duplicaria o handler a cada volta ao Dashboard.
+  // Mora aqui, e não no módulo da aba, porque só app.js pode chamar switchTab
+  // sem fechar o ciclo de import que o import() dinâmico existe para evitar.
+  document.addEventListener('click', e => {
+    const el = e.target.closest('[data-goto]');
+    if (el) _goto(el);
+  });
+  document.addEventListener('keydown', e => {
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+    const el = e.target.closest?.('[data-goto][role="button"]');
+    if (!el) return;
+    e.preventDefault();
+    _goto(el);
   });
 
   // Botões de empty-state que apenas reencaminham o clique para o botão real.

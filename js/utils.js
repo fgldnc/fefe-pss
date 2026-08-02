@@ -284,6 +284,152 @@ export function renderInsights(getExpenses = null) {
   ).join('');
 }
 
+// ─── ORÇAMENTO: PARTIÇÃO DO GASTO DO MÊS ───────────────────────────────────
+/**
+ * Divide as despesas do mês em três baldes que somam EXATAMENTE o total:
+ * categorias com limite, gasto sem categoria e gasto em categoria sem limite.
+ *
+ * Mora aqui, e não em db.js, porque é função pura — não lê `state`, não toca
+ * Firestore — e utils.js é o único módulo que dashboard.js e orcamento.js já
+ * importam sem criar ciclo. (utils.js não pode importar módulo do projeto;
+ * como a função recebe tudo por argumento, cabe sem violar a regra.)
+ *
+ * A identidade `porCategoria + semCategoria + semLimite === total` é o ponto
+ * da função: antes, o card iterava só sobre as categorias COM limite e o resto
+ * do gasto sumia da tela sem aviso.
+ *
+ * `txs` deve chegar já sem investimentos, para bater com o KPI de Despesas.
+ * `categories` também: categoria de investimento com limite entraria em
+ * porCategoria e quebraria a identidade contra o total.
+ */
+export function splitGastosPorLimite(txs, budgetMonth = {}, categories = []) {
+  const catById = new Map(categories.map(c => [c.id, c]));
+
+  // Só limite > 0 conta como "tem limite": zero é ausência de meta, não meta de
+  // zero — é assim que orcamento.js grava (só persiste val > 0).
+  const comLimite = new Map(
+    Object.entries(budgetMonth).filter(([id, v]) => v > 0 && catById.has(id))
+  );
+
+  const realPorCat  = new Map();
+  let total         = 0;
+  const semCategoria = { total: 0, count: 0, countGastos: 0, countExtratos: 0 };
+  const semLimite    = { total: 0, count: 0 };
+
+  for (const tx of txs) {
+    if (tx.type === 'transfer') continue; // transferência não é despesa
+    const val = tx.amount || 0;
+    total += val;
+
+    if (!tx.categoryId) {
+      semCategoria.total += val;
+      semCategoria.count++;
+      // Origem separada porque os dois destinos de clique são abas diferentes:
+      // a aba Gastos só enxerga state.transactions (db.js, txOfMonth).
+      if (tx._origem === 'extrato') semCategoria.countExtratos++;
+      else                          semCategoria.countGastos++;
+      continue;
+    }
+    if (comLimite.has(tx.categoryId)) {
+      realPorCat.set(tx.categoryId, (realPorCat.get(tx.categoryId) || 0) + val);
+    } else {
+      semLimite.total += val;
+      semLimite.count++;
+    }
+  }
+
+  const porCategoria = [...comLimite.entries()]
+    .map(([id, limite]) => {
+      const real = realPorCat.get(id) || 0;
+      const pct  = (real / limite) * 100;
+      return {
+        cat: catById.get(id),
+        limite, real, pct,
+        // Faixas iguais às da aba Orçamento. Azul (progress-ok) para "dentro
+        // do limite": é o esperado, não conquista — e verde competiria com o
+        // verde de receita.
+        cls: pct >= 100 ? 'progress-over' : pct >= 80 ? 'progress-warn' : 'progress-ok',
+      };
+    })
+    .sort((a, b) => b.real - a.real);
+
+  return { porCategoria, semCategoria, semLimite, total };
+}
+
+/**
+ * Links do bloco "fora de qualquer limite" / da legenda da pizza.
+ * Só devolve HTML: quem navega é o handler delegado de app.js, que lê
+ * `data-goto` (aba) e `data-filtro-cat` (filtro a aplicar na aba Gastos).
+ * Assim nenhum módulo de aba precisa importar app.js — o ciclo que o
+ * import() dinâmico existe para evitar.
+ */
+export function semCategoriaLinksHTML(sc) {
+  const n = sc.count;
+  const plural = n === 1 ? 'lançamento' : 'lançamentos';
+  const valor  = `${fmt(sc.total)} em ${n} ${plural} sem categoria`;
+
+  // As duas origens existem: o número total não bate com nenhuma aba sozinha,
+  // então ele não vira link — quem vira são os dois trechos, cada um com o
+  // número que a sua aba realmente mostra.
+  if (sc.countGastos > 0 && sc.countExtratos > 0) {
+    return `
+      <span class="orc-fora-item mark-inferido">${esc(valor)}</span>
+      <span class="orc-split">
+        <button type="button" class="orc-link" data-goto="gastos" data-filtro-cat="${SEM_CATEGORIA_FILTRO}">${sc.countGastos} em Gastos</button>
+        <span class="orc-split-sep">·</span>
+        <button type="button" class="orc-link" data-goto="extratos">${sc.countExtratos} em Extratos</button>
+      </span>`;
+  }
+
+  const soExtrato = sc.countExtratos > 0;
+  const goto = soExtrato
+    ? `data-goto="extratos"`
+    : `data-goto="gastos" data-filtro-cat="${SEM_CATEGORIA_FILTRO}"`;
+  return `<button type="button" class="orc-link orc-link-atencao" ${goto}>${esc(valor)} ›</button>`;
+}
+
+/**
+ * Bloco "fora de qualquer limite" + linha de reconciliação. É o que faz a conta
+ * fechar: categorias com limite + este bloco = total de despesas do mês =
+ * KPI de Despesas. Sem barra de progresso de propósito — barra exige
+ * denominador, e aqui não há meta. Compartilhado pelo card do Dashboard e pela
+ * aba Orçamento para não existirem duas verdades sobre o mesmo mês.
+ */
+export function renderForaDoLimite(split, month) {
+  const { semCategoria: sc, semLimite: sl } = split;
+  const foraTotal = sc.total + sl.total;
+
+  const partes = [];
+  if (sc.count > 0) partes.push(semCategoriaLinksHTML(sc));
+  if (sl.count > 0) {
+    partes.push(`<button type="button" class="orc-link" data-goto="orcamento">${esc(`${fmt(sl.total)} em categorias sem limite definido`)}</button>`);
+  }
+
+  // Cada causa some sozinha quando zera; o bloco inteiro some quando as duas
+  // zeram, sobrando só a reconciliação.
+  const bloco = partes.length ? `
+      <div class="orcamento-item orc-fora">
+        <div class="orcamento-row">
+          <span class="orcamento-cat">Fora de qualquer limite</span>
+          <span class="orcamento-vals"><span class="orcamento-real">${fmt(foraTotal)}</span></span>
+        </div>
+        <div class="orc-fora-detalhe">${partes.join('<span class="orc-split-sep">·</span>')}</div>
+      </div>` : '';
+
+  return `${bloco}
+      <div class="orc-reconcilia">
+        <span>Total de despesas de ${esc(monthLabel(month))}</span>
+        <span class="orc-reconcilia-val">${fmt(split.total)}</span>
+      </div>`;
+}
+
+/**
+ * Valor sentinela do filtro "sem categoria" da aba Gastos. Começa com `__` e
+ * termina com `__`: id de categoria é slug gerado a partir do nome (letras,
+ * dígitos e hífen), então nunca colide com um id real.
+ */
+export const SEM_CATEGORIA_FILTRO = '__sem-categoria__';
+
 // ─── REVISÃO DE IMPORTAÇÃO: BARRA DE RESUMO E FILTRO DE ATENÇÃO ─────────────
 /**
  * Monta a barra de resumo acima da tabela de preview (fatura e extrato usam a

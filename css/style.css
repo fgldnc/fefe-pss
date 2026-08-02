@@ -432,6 +432,39 @@ body {
 .dashboard-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
 .dashboard-row  { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem; }
 
+/* ── DISTRIBUIÇÃO DOS GASTOS (donut + legenda) ───────────────── */
+.pizza-wrap   { display: flex; align-items: center; gap: 1.25rem; flex-wrap: wrap; }
+.pizza-donut  { position: relative; width: 168px; height: 168px; flex-shrink: 0; }
+#pizza-legend { flex: 1; min-width: 190px; }
+.pizza-skeleton-ring {
+  position: absolute; inset: 0; border-radius: 50%;
+  border: 26px solid var(--bg-hover);
+}
+
+.lg-row {
+  display: flex; align-items: center; gap: 0.55rem;
+  padding: 0.42rem 0; border-bottom: 1px solid var(--border-soft);
+}
+.lg-row:last-child { border-bottom: none; }
+.lg-dot  { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+.lg-name { flex: 1; min-width: 0; font-size: 0.82rem; color: var(--text-secondary); }
+/* "Outras" é resíduo aceito, não pendência: cinza, sem contagem, sem clique. */
+.lg-resto { color: var(--text-muted); }
+.lg-pct  { font-size: 0.72rem; color: var(--text-muted); flex-shrink: 0; }
+.lg-val  { font-family: var(--font-mono); font-size: 0.82rem; color: var(--text-primary); min-width: 72px; text-align: right; flex-shrink: 0; }
+
+/* Pendência: separada do resto da legenda por uma linha, e âmbar só aqui —
+   a fatia do gráfico segue neutra, porque a pizza não é editável. */
+.lg-sem { border-top: 1px solid var(--border-strong); margin-top: 0.3rem; }
+.lg-sem .lg-name { flex: 1; }
+.lg-sem-click { cursor: pointer; }
+.lg-sem-click:hover, .lg-sem-click:focus-visible { background: var(--warning-dim); outline: none; }
+.lg-chevron { color: var(--warning); font-size: 0.95rem; line-height: 1; flex-shrink: 0; }
+.lg-split { display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem; padding: 0.1rem 0 0.45rem 1.1rem; }
+
+.card-subtitle { font-size: 0.72rem; color: var(--text-muted); margin-left: 0.5rem; }
+.card-error { padding: 1.25rem; font-size: 0.82rem; color: var(--text-muted); }
+
 /* Insights */
 .insights-strip {
   display: flex; flex-wrap: wrap; gap: 0.6rem;
@@ -634,9 +667,17 @@ body {
 @media (max-width: 1200px) {
   .kpi-grid       { grid-template-columns: repeat(2, 1fr); }
   .dashboard-grid { grid-template-columns: 1fr; }
-  .dashboard-row  { grid-template-columns: 1fr; }
+  /* .dashboard-row só colapsa em 900px: acima disso os dois pares (distribuição
+     × orçamento, parcelas × evolução) ainda cabem lado a lado e é a comparação
+     entre eles que justifica o par. */
 }
 @media (max-width: 900px) {
+  .dashboard-row { grid-template-columns: 1fr; }
+  /* Coluna única: donut centralizado e legenda abaixo, senão a legenda fica
+     espremida na sobra da largura. */
+  .pizza-wrap   { flex-direction: column; align-items: stretch; gap: 1rem; }
+  .pizza-donut  { align-self: center; }
+  #pizza-legend { width: 100%; }
   /* Duas colunas; o hero atravessa a linha inteira — ele é o número que manda. */
   #kpi-grid { grid-template-columns: 1fr 1fr; }
   #kpi-grid .kpi-hero, #kpi-grid .kpi-skeleton.sk-hero { grid-column: 1 / -1; }
@@ -675,7 +716,14 @@ body {
   .filter-bar { flex-direction: column; }
   .filter-select, .filter-input { width: 100%; }
   .page-header { flex-direction: column; align-items: flex-start; }
+  /* O percentual é o primeiro a sair: nome e valor são o que se lê. Valor
+     monetário nunca é abreviado nem truncado. */
+  .lg-pct { display: none; }
+  .orc-fora-detalhe { flex-direction: column; align-items: flex-start; gap: 0.15rem; }
+  .orc-fora-detalhe > .orc-split-sep { display: none; }
 }
 @media (max-width: 360px) {
   .spark { width: 52px; height: 22px; }
+  .pizza-donut { width: 148px; height: 148px; }
+  .pizza-skeleton-ring { border-width: 23px; }
 }

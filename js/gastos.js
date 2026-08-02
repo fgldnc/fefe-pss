@@ -2,7 +2,7 @@
  * gastos.js — Aba de gastos: tabela, lançamento manual, importação PDF
  */
 
-import { state, fmt, toast, esc } from './utils.js';
+import { state, fmt, toast, esc, SEM_CATEGORIA_FILTRO } from './utils.js';
 import { txOfMonth, saveTx, deleteTx, addAporteToAsset } from './db.js';
 import { initPdfImport } from './pdf-import.js';
 
@@ -28,7 +28,10 @@ function _renderTable() {
   const filterTipo  = document.getElementById('filter-tipo-gasto')?.value || '';
   const filterBusca = (document.getElementById('filter-busca')?.value || '').toLowerCase().trim();
 
-  if (filterCat)   txs = txs.filter(t => t.categoryId === filterCat);
+  // Sentinela: é o destino do clique em "Sem categoria" no Dashboard. Sem ela,
+  // a linha da legenda prometia N lançamentos e não tinha para onde levar.
+  if (filterCat === SEM_CATEGORIA_FILTRO) txs = txs.filter(t => !t.categoryId);
+  else if (filterCat)                     txs = txs.filter(t => t.categoryId === filterCat);
   if (filterTipo)  txs = txs.filter(t => t.paymentType === filterTipo);
   if (filterBusca) txs = txs.filter(t => t.description?.toLowerCase().includes(filterBusca));
 
@@ -114,7 +117,8 @@ function _populateCategorySelects() {
   // Filtro
   const filterCat = document.getElementById('filter-categoria');
   const prev = filterCat.value;
-  filterCat.innerHTML = '<option value="">Todas as categorias</option>' + opts;
+  filterCat.innerHTML = '<option value="">Todas as categorias</option>' + opts
+    + `<option value="${SEM_CATEGORIA_FILTRO}">Sem categoria</option>`;
   filterCat.value = prev;
 
   // Modal

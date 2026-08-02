@@ -178,24 +178,40 @@
         <div class="kpi-skeleton"><div class="skeleton sk-title"></div><div class="skeleton sk-value"></div><div class="skeleton sk-text" style="width:60%"></div></div>
       </div>
 
-      <!-- Evolução mensal — sozinho na linha, compacto -->
-      <div class="card" style="margin-bottom:1rem;padding:1.25rem">
-        <div style="position:relative;height:260px">
-          <canvas id="chart-evolucao"></canvas>
-        </div>
-      </div>
-
-      <!-- Distribuição dos gastos (pizza com total no centro + legenda ao lado) -->
-      <div class="card" style="margin-bottom:1rem;padding:1.5rem">
-        <div style="display:flex;align-items:center;gap:2rem;flex-wrap:wrap">
-          <div style="position:relative;width:200px;height:200px;flex-shrink:0">
-            <canvas id="chart-categorias"></canvas>
-            <div id="pizza-total-center" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;pointer-events:none">
-              <div style="font-size:0.65rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px">Total</div>
-              <div style="font-size:1.05rem;font-weight:700;color:var(--text-primary);font-family:var(--font-mono)" id="pizza-total-value">R$ 0</div>
+      <!-- Distribuição × Orçamento: as duas leituras do MESMO total do mês,
+           lado a lado. A evolução desceu para a linha de baixo porque o
+           sparkline de cada KPI já entrega a tendência nos primeiros segundos. -->
+      <div class="dashboard-row">
+        <div class="card" style="padding:1.5rem">
+          <div class="card-header" style="padding:0 0 0.9rem"><span class="card-title">Distribuição dos gastos</span><span class="card-subtitle" id="chart-cat-month"></span></div>
+          <div class="pizza-wrap">
+            <div class="pizza-donut">
+              <canvas id="chart-categorias"></canvas>
+              <div id="pizza-skeleton-ring" class="pizza-skeleton-ring"></div>
+              <div id="pizza-total-center" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;pointer-events:none">
+                <div style="font-size:0.65rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px">Total</div>
+                <div style="font-size:1.05rem;font-weight:700;color:var(--text-primary);font-family:var(--font-mono)" id="pizza-total-value">R$ 0</div>
+              </div>
+            </div>
+            <!-- Skeleton com a altura final das 5 linhas, para a página não pular -->
+            <div id="pizza-legend">
+              <div class="lg-row"><span class="skeleton sk-text" style="width:100%"></span></div>
+              <div class="lg-row"><span class="skeleton sk-text" style="width:100%"></span></div>
+              <div class="lg-row"><span class="skeleton sk-text" style="width:100%"></span></div>
+              <div class="lg-row"><span class="skeleton sk-text" style="width:100%"></span></div>
+              <div class="lg-row"><span class="skeleton sk-text" style="width:100%"></span></div>
             </div>
           </div>
-          <div id="pizza-legend" style="flex:1;min-width:240px"></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">Orçamento × Real</span></div>
+          <div id="orcamento-list" class="orcamento-list">
+            <div class="empty-state">
+              <div class="empty-state-icon">🎯</div>
+              <div class="empty-state-title">Sem orçamento definido</div>
+              <div class="empty-state-text">Defina limites por categoria na aba Orçamento.</div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -210,14 +226,10 @@
             </div>
           </div>
         </div>
-        <div class="card">
-          <div class="card-header"><span class="card-title">Orçamento × Real</span></div>
-          <div id="orcamento-list" class="orcamento-list">
-            <div class="empty-state">
-              <div class="empty-state-icon">🎯</div>
-              <div class="empty-state-title">Sem orçamento definido</div>
-              <div class="empty-state-text">Defina limites por categoria na aba Orçamento.</div>
-            </div>
+        <div class="card" style="padding:1.25rem">
+          <div class="card-header" style="padding:0 0 0.6rem"><span class="card-title">Evolução — 6 meses</span></div>
+          <div style="position:relative;height:220px">
+            <canvas id="chart-evolucao"></canvas>
           </div>
         </div>
       </div>
