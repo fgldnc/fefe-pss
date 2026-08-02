@@ -126,12 +126,22 @@ function removeToast(el) {
 export function showKpiSkeleton() {
   const grid = document.getElementById('kpi-grid');
   if (!grid) return;
-  grid.innerHTML = Array(4).fill(`
+  // O primeiro skeleton acompanha a proporção do hero (card mais largo e mais
+  // alto do dashboard). Quatro esqueletos iguais fariam a tela "pular" no
+  // momento em que o render real os substitui.
+  const apoio = `
     <div class="kpi-skeleton">
       <div class="skeleton sk-title" style="width:55%"></div>
       <div class="skeleton sk-value" style="margin-top:8px"></div>
       <div class="skeleton sk-text" style="width:50%;margin-top:8px"></div>
-    </div>`).join('');
+    </div>`;
+  grid.innerHTML = `
+    <div class="kpi-skeleton sk-hero">
+      <div class="skeleton sk-title" style="width:45%"></div>
+      <div class="skeleton sk-value" style="margin-top:10px;height:34px"></div>
+      <div class="skeleton sk-text" style="width:100%;margin-top:12px;height:8px"></div>
+      <div class="skeleton sk-text" style="width:80%;margin-top:10px"></div>
+    </div>` + Array(3).fill(apoio).join('');
 }
 
 export function showTableSkeleton(tbodyId, cols = 6) {

@@ -366,6 +366,55 @@ body {
 .kpi-delta.up   { color: var(--success); }
 .kpi-delta.down { color: var(--danger); }
 
+/* ─── DASHBOARD: hero + apoios (rodada 3) ──────────────────────────────
+   TUDO escopado em #kpi-grid ou em classe nova. `.kpi-grid`/`.kpi-card`/
+   `.kpi-icon` são compartilhados com a aba Patrimônio, que está resolvida e
+   não pode mudar. Nada aqui pode vazar para fora do dashboard. */
+#kpi-grid { grid-template-columns: 1.55fr 1fr 1fr 1fr; align-items: stretch; }
+#kpi-grid .kpi-card { gap: 0.55rem; justify-content: flex-start; }
+
+/* Peso maior por tamanho e por fundo, nunca por cor: azul é navegação e
+   quantidade neutra; verde/vermelho carregam juízo e ficam só no delta. */
+.kpi-hero { background: var(--bg-card-raised); padding: 1.15rem 1.3rem; }
+.kpi-hero .kpi-label { color: var(--text-primary); }
+.kpi-hero .kpi-value { font-size: 2.1rem; font-weight: 600; }
+
+.hero-bar { height: 8px; border-radius: var(--radius-sm); background: var(--bg-hover); overflow: hidden; display: flex; }
+.hero-bar i { display: block; height: 100%; }
+.hero-bar .seg-real { background: var(--accent-primary); }
+.hero-bar .seg-proj { background: var(--accent-primary); opacity: 0.38; }
+
+.hero-legend { display: flex; gap: 1.1rem; flex-wrap: wrap; font-size: 0.72rem; color: var(--text-secondary); }
+.hero-legend span { display: flex; align-items: center; gap: 0.35rem; }
+.hero-legend .num { font-family: var(--font-mono); color: var(--text-primary); font-weight: 500; }
+.hero-legend .dot { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; }
+.hero-legend .dot.real  { background: var(--accent-primary); }
+.hero-legend .dot.proj  { background: var(--accent-primary); opacity: 0.38; }
+.hero-legend .dot.livre { background: var(--bg-hover); border: 1px solid var(--border-soft); }
+
+.kpi-foot { font-size: 0.75rem; color: var(--text-muted); margin-top: auto; }
+
+.hero-cta {
+  align-self: flex-start; background: transparent; border: 1px solid var(--border-strong);
+  color: var(--accent-primary); font-family: var(--font-sans); font-size: 0.74rem; font-weight: 500;
+  border-radius: var(--radius-sm); padding: 0.32rem 0.65rem; cursor: pointer;
+  transition: background var(--transition);
+}
+.hero-cta:hover { background: var(--accent-dim); }
+
+/* Delta + sparkline empurrados para a base, para os três apoios alinharem
+   entre si mesmo com valores de altura diferente. */
+.kpi-trend { display: flex; align-items: flex-end; justify-content: space-between; gap: 0.6rem; margin-top: auto; }
+#kpi-grid .kpi-delta { display: inline; margin-top: 0; font-family: var(--font-mono); font-size: 0.73rem; font-weight: 500; white-space: nowrap; }
+#kpi-grid .kpi-delta.up-good { color: var(--success); }
+#kpi-grid .kpi-delta.up-bad  { color: var(--danger); }
+#kpi-grid .kpi-delta.flat    { color: var(--text-muted); }
+.spark { flex-shrink: 0; opacity: 0.85; }
+
+/* Skeleton do hero acompanha a proporção do card final, senão a tela "pula"
+   quando o render substitui o esqueleto. */
+#kpi-grid .kpi-skeleton.sk-hero { grid-column: 1; }
+
 /* ═══════════════════════════════════════════════════════════════
    DASHBOARD GRID
 ════════════════════════════════════════════════════════════════ */
@@ -577,6 +626,9 @@ body {
   .dashboard-row  { grid-template-columns: 1fr; }
 }
 @media (max-width: 900px) {
+  /* Duas colunas; o hero atravessa a linha inteira — ele é o número que manda. */
+  #kpi-grid { grid-template-columns: 1fr 1fr; }
+  #kpi-grid .kpi-hero, #kpi-grid .kpi-skeleton.sk-hero { grid-column: 1 / -1; }
   .receitas-grid { grid-template-columns: 1fr; }
   .config-grid   { grid-template-columns: 1fr; }
   .extratos-grid { grid-template-columns: 1fr; }
@@ -593,7 +645,23 @@ body {
 }
 @media (max-width: 480px) {
   .kpi-grid { grid-template-columns: 1fr; }
+  /* Hero em largura total, apoios em 2×2. O terceiro fica sozinho na última
+     linha — está certo, é o menos importante dos três. */
+  #kpi-grid { grid-template-columns: 1fr 1fr; gap: 0.6rem; }
+  #kpi-grid .kpi-card { padding: 0.85rem 0.9rem; }
+  #kpi-grid .kpi-value { font-size: 1.15rem; }
+  .kpi-hero .kpi-value { font-size: 1.7rem; }
+  /* Colapsa para "Livre": escondido, não reflowado — reflow empilharia três
+     linhas e empurraria o rodapé para fora do primeiro olhar. */
+  .hero-legend .leg-real, .hero-legend .leg-proj { display: none; }
+  /* Delta + sparkline não cabem lado a lado em card de ~145px. Quebra em duas
+     linhas em vez de truncar: o sparkline desce, nada some e nada é cortado. */
+  #kpi-grid .kpi-trend { flex-wrap: wrap; row-gap: 0.3rem; }
+  #kpi-grid .spark { margin-left: auto; }
   .filter-bar { flex-direction: column; }
   .filter-select, .filter-input { width: 100%; }
   .page-header { flex-direction: column; align-items: flex-start; }
+}
+@media (max-width: 360px) {
+  .spark { width: 52px; height: 22px; }
 }

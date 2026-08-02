@@ -7,7 +7,7 @@ App de **controle financeiro pessoal** (nome exibido: "Radar", `index.html:6` = 
 - **JavaScript puro com ES modules**, servido direto do disco. Sem build step, sem `npm install`, sem `package.json`.
 - Hospedado na **Vercel** (`vercel.json` só define headers de segurança + CSP; sem regras de cache).
 - **Firebase Auth** com login Google (`signInWithPopup`) + **Firestore** para os dados.
-- O Firebase é inicializado num `<script type="module">` inline em `index.html:14-46` e exposto como `window._FB`; nenhum módulo JS importa o SDK do Firebase diretamente — todos passam por `window._FB` (ver `js/db.js:29` `fb()`).
+- O Firebase é inicializado em **`js/firebase-init.js`**, carregado como `<script type="module" src="js/firebase-init.js">` em `index.html:14`, e exposto como `window._FB`; nenhum outro módulo JS importa o SDK do Firebase diretamente — todos passam por `window._FB` (ver `js/db.js:29` `fb()`). *Já foi um script inline; foi extraído para arquivo próprio para permitir remover `'unsafe-inline'` do `script-src` da CSP.*
 - Dados ficam sob `users/{uid}/` nas coleções: `transactions`, `incomes`, `budgets`, `assets`, `goals`, `categories`, `rules`.
 - `index.html` é o shell único: todas as telas, todos os modais e o `<tbody>` de cada tabela vivem lá; os módulos só preenchem via `innerHTML`.
 
@@ -26,6 +26,8 @@ App de **controle financeiro pessoal** (nome exibido: "Radar", `index.html:6` = 
 |---|---|
 | `app.js` | Bootstrap: `DOMContentLoaded`, auth, roteamento `switchTab()` com `import()` dinâmico, navegação de mês, command palette (Ctrl/Cmd+K), onboarding. |
 | `auth.js` | Login Google, `getUid()`, espera `window._FB` aparecer (timeout 5 s). |
+| `firebase-init.js` | Inicializa o SDK do Firebase (app, auth, firestore) e publica `window._FB`. Carregado direto pelo `index.html`, não importado por nenhum módulo. |
+| `extratos.js` | Aba Extratos: importação de extrato bancário (CSV/OFX/PDF), histórico de lotes, modal de revisão/preview editável com marcação de duplicata e de campo inferido, `_recomputeAtencaoExtrato()`. |
 | `db.js` | Toda leitura/escrita do Firestore, `loadAllData()`, derivados de mês, backup/restore JSON, `wipeCollection`. |
 | `utils.js` | `state` global, `esc`, `fmt`, helpers de mês, `toast`, skeletons, `resolveCategoryId` e o motor de insights do dashboard. |
 | `dashboard.js` | KPIs, gráfico de categorias e de evolução (Chart.js), próximas parcelas, maiores gastos. |
@@ -154,4 +156,16 @@ prompt ficam em `PROMPT-rodada-N.md`.
 
 ## Contexto pendente
 
-`RELATORIO-AUDITORIA.md` (02/08/2026) lista 13 achados abertos. Ler antes de mexer em parsing de PDF, dedupe ou segurança — mas conferir contra o código: `js/pdf-import.fixed.js` e `js/parsers/pdf-layout.js` **já foram ativados** (o "fixed" virou `js/pdf-import.js`), e o achado 6 (dedupe ignorando o tipo) já foi corrigido. Continua aberto: `firestore.rules` não publicado.
+`RELATORIO-AUDITORIA.md` (02/08/2026) lista 13 achados. Ler antes de mexer em
+parsing de PDF, dedupe ou segurança — **mas conferir contra o código antes de
+agir**, porque parte já foi fechada:
+
+- **Fechados:** `js/pdf-import.fixed.js` e `js/parsers/pdf-layout.js` foram
+  ativados (o "fixed" virou `js/pdf-import.js`); achado 6 (dedupe por bucket de
+  5 centavos e ignorando o tipo) corrigido na rodada 2 — hoje é centavo exato;
+  achado 8 (`'unsafe-inline'` no `script-src`) fechado com a extração de
+  `js/firebase-init.js` — a CSP em `vercel.json:24` já não tem `unsafe-inline`
+  em `script-src` (segue em `style-src`, o que é outro item).
+- **Aberto e não verificável pelo código:** `firestore.rules` existe no
+  repositório, mas se está **publicado** no console do Firebase só dá para
+  confirmar fora do repositório. Tratar como aberto até confirmação.

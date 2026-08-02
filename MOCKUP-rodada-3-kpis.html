@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mockup rodada 3 — parte 1: faixa de KPIs do Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* Tokens — cópia do :root de css/style.css. Nenhuma cor nova. */
+:root{
+  --bg-main:#161616; --bg-card:#1F1F1F; --bg-card-raised:#262626; --bg-hover:#2C2C2C;
+  --accent-primary:#3982F7; --accent-secondary:#345CEA; --accent-bright:#3EC2FC; --accent-magenta:#C01888;
+  --text-primary:#F5F5F5; --text-secondary:#A3A3A3; --text-muted:#6B6B6B;
+  --success:#1EB11B; --danger:#F87171; --warning:#FBBF24; --info:#A78BFA;
+  --border-soft:rgba(255,255,255,0.07); --border-strong:#3982F7;
+  --radius-sm:6px; --radius-md:10px; --radius-xl:20px;
+  --font:'Outfit',system-ui,sans-serif; --font-mono:'JetBrains Mono',monospace;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg-main);color:var(--text-primary);font-family:var(--font);padding:2rem 1.5rem 4rem}
+.wrap{max-width:1180px;margin:0 auto}
+
+/* ── andaime do mockup (não faz parte do app) ───────────────────── */
+.doc-h1{font-size:1.35rem;font-weight:600;margin:0 0 .25rem}
+.doc-sub{color:var(--text-secondary);font-size:.88rem;margin:0 0 2.5rem;max-width:70ch;line-height:1.55}
+.doc-sec{margin:3rem 0 1rem;padding-top:1.5rem;border-top:1px solid var(--border-soft)}
+.doc-sec h2{font-size:1rem;font-weight:600;margin:0 0 .3rem}
+.doc-sec p{color:var(--text-secondary);font-size:.83rem;margin:0;max-width:78ch;line-height:1.6}
+.doc-tag{display:inline-block;font-size:.68rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--accent-bright);border:1px solid rgba(62,194,252,.3);border-radius:var(--radius-sm);padding:.15rem .45rem;margin-bottom:.6rem}
+.doc-note{font-size:.78rem;color:var(--text-muted);margin-top:.9rem;line-height:1.6;max-width:78ch}
+.doc-note b{color:var(--text-secondary);font-weight:500}
+
+/* ── faixa de KPIs — a proposta ─────────────────────────────────── */
+.kpi-grid{display:grid;grid-template-columns:1.55fr 1fr 1fr 1fr;gap:.85rem;align-items:stretch}
+
+.kpi-card{background:var(--bg-card);border:1px solid var(--border-soft);border-radius:var(--radius-md);
+  padding:1rem 1.1rem;display:flex;flex-direction:column;gap:.55rem;min-height:148px}
+
+/* card principal — peso maior por tamanho e por fundo, não por cor */
+.kpi-hero{background:var(--bg-card-raised);grid-row:span 1;padding:1.15rem 1.3rem}
+.kpi-label{font-size:.72rem;font-weight:500;letter-spacing:.04em;text-transform:uppercase;color:var(--text-secondary)}
+.kpi-hero .kpi-label{color:var(--text-primary)}
+.kpi-value{font-family:var(--font-mono);font-weight:600;font-size:1.45rem;line-height:1.1;letter-spacing:-.01em}
+.kpi-hero .kpi-value{font-size:2.1rem;font-weight:600}
+.kpi-foot{font-size:.75rem;color:var(--text-muted);display:flex;align-items:center;gap:.4rem;margin-top:auto}
+.num{font-family:var(--font-mono)}
+
+/* barra do hero */
+.hero-bar{height:8px;border-radius:var(--radius-sm);background:#2C2C2C;overflow:hidden;display:flex}
+.hero-bar i{display:block;height:100%}
+.hero-bar .seg-real{background:var(--accent-primary)}
+.hero-bar .seg-proj{background:var(--accent-primary);opacity:.38}
+.hero-legend{display:flex;gap:1.1rem;font-size:.72rem;color:var(--text-secondary);flex-wrap:wrap}
+.hero-legend span{display:flex;align-items:center;gap:.35rem}
+.dot{width:8px;height:8px;border-radius:2px;flex-shrink:0}
+.dot.real{background:var(--accent-primary)}
+.dot.proj{background:var(--accent-primary);opacity:.38}
+.dot.livre{background:#2C2C2C;border:1px solid var(--border-soft)}
+
+/* delta + sparkline */
+.kpi-trend{display:flex;align-items:flex-end;justify-content:space-between;gap:.6rem;margin-top:auto}
+.kpi-delta{font-size:.73rem;white-space:nowrap;font-family:var(--font-mono);font-weight:500}
+.up-good{color:var(--success)} .up-bad{color:var(--danger)} .flat{color:var(--text-muted)}
+.spark{flex-shrink:0;opacity:.85}
+
+/* marca de dedução — vocabulário da rodada 2, reusado */
+.mark-inferido{display:inline-flex;align-items:center;gap:.28rem;font-size:.72rem;color:var(--warning)}
+.mark-inferido::before{content:'◇';font-size:.8rem;line-height:1}
+.hero-cta{align-self:flex-start;background:transparent;border:1px solid var(--border-strong);color:var(--accent-primary);
+  font-family:var(--font);font-size:.74rem;font-weight:500;border-radius:var(--radius-sm);padding:.3rem .6rem;cursor:pointer}
+
+/* ── comparativo: como é hoje ───────────────────────────────────── */
+.old-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:.85rem}
+.old-card{background:var(--bg-card);border:1px solid var(--border-soft);border-radius:var(--radius-md);padding:1rem 1.1rem;min-height:112px;
+  display:flex;flex-direction:column;gap:.5rem}
+.old-head{display:flex;align-items:center;justify-content:space-between}
+.old-val{font-family:var(--font-mono);font-size:1.4rem;font-weight:600}
+.pos{color:var(--success)} .neg{color:var(--danger)} .gold{color:var(--warning)}
+.old-foot{font-size:.73rem;color:var(--text-muted)}
+
+/* ── moldura de celular ─────────────────────────────────────────── */
+.phone{width:360px;border:1px solid var(--border-soft);border-radius:var(--radius-xl);padding:1rem .75rem;background:var(--bg-main)}
+.phone .kpi-grid{grid-template-columns:1fr 1fr;gap:.6rem}
+.phone .kpi-hero{grid-column:1 / -1;min-height:0}
+.phone .kpi-card{min-height:118px;padding:.8rem .85rem}
+.phone .kpi-hero .kpi-value{font-size:1.7rem}
+.phone .kpi-value{font-size:1.15rem}
+
+@media (max-width:900px){
+  .kpi-grid{grid-template-columns:1fr 1fr}
+  .kpi-hero{grid-column:1 / -1}
+  .old-grid{grid-template-columns:1fr 1fr}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1 class="doc-h1">Rodada 3 · parte 1 — faixa de KPIs do Dashboard</h1>
+  <p class="doc-sub">
+    Valores fictícios. Só tokens do <code>:root</code>. Duas telas: o mês em andamento e o dia 1,
+    que é onde o Dashboard erra hoje. A parte 2 (pizza, evolução, orçamento) vem depois desta ser aprovada.
+  </p>
+
+  <!-- ══════════ 1. PROPOSTA — mês em andamento ══════════ -->
+  <div class="doc-sec">
+    <span class="doc-tag">Proposta · dia 18 de agosto</span>
+    <h2>Um número manda, três apoiam</h2>
+    <p>O card grande responde “como está o mês?” sozinho. Os três menores viram contexto, não concorrentes.</p>
+  </div>
+
+  <div class="kpi-grid">
+    <!-- HERO -->
+    <div class="kpi-card kpi-hero">
+      <span class="kpi-label">Comprometido de agosto</span>
+      <span class="kpi-value">R$ 4.318,70</span>
+      <div class="hero-bar" aria-hidden="true">
+        <i class="seg-real" style="width:53%"></i>
+        <i class="seg-proj" style="width:13%"></i>
+      </div>
+      <div class="hero-legend">
+        <span><i class="dot real"></i>Já gasto <b class="num" style="color:var(--text-primary);font-weight:500">R$&nbsp;3.462,10</b></span>
+        <span><i class="dot proj"></i>Parcelas previstas <b class="num" style="color:var(--text-primary);font-weight:500">R$&nbsp;856,60</b></span>
+        <span><i class="dot livre"></i>Livre <b class="num" style="color:var(--text-primary);font-weight:500">R$&nbsp;2.181,30</b></span>
+      </div>
+      <div class="kpi-foot">66% da receita de R$ 6.500,00 · 13 dias restantes</div>
+    </div>
+
+    <!-- RECEITAS -->
+    <div class="kpi-card">
+      <span class="kpi-label">Receitas</span>
+      <span class="kpi-value">R$ 6.500,00</span>
+      <div class="kpi-trend">
+        <span class="kpi-delta flat">= mês anterior</span>
+        <svg class="spark" width="66" height="26" viewBox="0 0 66 26" role="img" aria-label="Receitas estáveis nos últimos 6 meses">
+          <polyline points="2,13 14,13 26,12 38,13 50,13 62,13" fill="none" stroke="#6B6B6B" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="62" cy="13" r="2.4" fill="#6B6B6B"/>
+        </svg>
+      </div>
+    </div>
+
+    <!-- DESPESAS -->
+    <div class="kpi-card">
+      <span class="kpi-label">Despesas</span>
+      <span class="kpi-value">R$ 3.462,10</span>
+      <div class="kpi-trend">
+        <span class="kpi-delta up-bad">▲ 12%</span>
+        <svg class="spark" width="66" height="26" viewBox="0 0 66 26" role="img" aria-label="Despesas subindo no último mês">
+          <polyline points="2,17 14,15 26,18 38,14 50,15 62,7" fill="none" stroke="#F87171" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="62" cy="7" r="2.4" fill="#F87171"/>
+        </svg>
+      </div>
+    </div>
+
+    <!-- INVESTIDO -->
+    <div class="kpi-card">
+      <span class="kpi-label">Investido</span>
+      <span class="kpi-value">R$ 900,00</span>
+      <div class="kpi-trend">
+        <span class="kpi-delta up-good">▲ 20%</span>
+        <svg class="spark" width="66" height="26" viewBox="0 0 66 26" role="img" aria-label="Investimento subindo no último mês">
+          <polyline points="2,20 14,19 26,17 38,18 50,15 62,9" fill="none" stroke="#1EB11B" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="62" cy="9" r="2.4" fill="#1EB11B"/>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <p class="doc-note">
+    <b>O que muda.</b> “Saldo livre” deixa de ser card e vira a terceira parcela da barra do hero — o mesmo
+    número, num lugar onde ele se explica. <b>Sparkline de 6 meses</b> reaproveita a série que
+    <code>renderChartEvolucao()</code> já monta. <b>Delta encurtado</b> para “▲ 12%”: “vs mês anterior” repetido
+    quatro vezes é ruído; a informação vai para o <code>title</code>. <b>Ícones emoji removidos</b> — 💰💳📊📈 não
+    carregam informação e brigam com a tipografia. <b>Cor</b>: azul só na barra (é navegação/quantidade);
+    verde e vermelho só no delta, onde há juízo de valor. Sparkline de receita fica em <code>--text-muted</code>
+    quando o delta é “=”, para não sugerir juízo onde não há.
+  </p>
+
+  <!-- ══════════ 2. PROPOSTA — dia 1 ══════════ -->
+  <div class="doc-sec">
+    <span class="doc-tag">Proposta · dia 1 de setembro</span>
+    <h2>O dia 1 não anuncia mais número negativo</h2>
+    <p>Hoje o app abre dizendo “Saldo livre −R$ 4.318,70” porque a receita ainda não foi cadastrada. É aritmética, não fato.</p>
+  </div>
+
+  <div class="kpi-grid">
+    <div class="kpi-card kpi-hero">
+      <span class="kpi-label">Comprometido de setembro</span>
+      <span class="kpi-value">R$ 1.204,40</span>
+      <div class="hero-bar" aria-hidden="true">
+        <i class="seg-proj" style="width:100%"></i>
+      </div>
+      <div class="hero-legend">
+        <span><i class="dot proj"></i>Tudo em parcelas já contratadas</span>
+      </div>
+      <span class="mark-inferido">Receita de setembro ainda não cadastrada — sem base de comparação</span>
+      <button class="hero-cta" type="button">Cadastrar receita</button>
+    </div>
+
+    <div class="kpi-card">
+      <span class="kpi-label">Receitas</span>
+      <span class="kpi-value" style="color:var(--text-muted)">R$ 0,00</span>
+      <div class="kpi-trend">
+        <span class="kpi-delta flat">nada lançado ainda</span>
+        <svg class="spark" width="66" height="26" viewBox="0 0 66 26" role="img" aria-label="Sem receita lançada no mês corrente">
+          <polyline points="2,13 14,13 26,12 38,13 50,13" fill="none" stroke="#6B6B6B" stroke-width="1.6" stroke-linecap="round"/>
+          <circle cx="62" cy="13" r="2.4" fill="none" stroke="#6B6B6B" stroke-width="1.2" stroke-dasharray="2 2"/>
+        </svg>
+      </div>
+    </div>
+
+    <div class="kpi-card">
+      <span class="kpi-label">Despesas</span>
+      <span class="kpi-value">R$ 0,00</span>
+      <div class="kpi-trend">
+        <span class="kpi-delta flat">média dos 6 meses: R$ 3.140</span>
+        <svg class="spark" width="66" height="26" viewBox="0 0 66 26" role="img" aria-label="Despesa do mês ainda em zero, com média histórica de referência">
+          <polyline points="2,17 14,15 26,18 38,14 50,15" fill="none" stroke="#6B6B6B" stroke-width="1.6" stroke-linecap="round"/>
+          <circle cx="62" cy="22" r="2.4" fill="none" stroke="#6B6B6B" stroke-width="1.2" stroke-dasharray="2 2"/>
+        </svg>
+      </div>
+    </div>
+
+    <div class="kpi-card">
+      <span class="kpi-label">Investido</span>
+      <span class="kpi-value">R$ 0,00</span>
+      <div class="kpi-trend">
+        <span class="kpi-delta flat">no mês</span>
+        <svg class="spark" width="66" height="26" viewBox="0 0 66 26" role="img" aria-label="Investimento do mês ainda em zero">
+          <polyline points="2,20 14,19 26,17 38,18 50,15" fill="none" stroke="#6B6B6B" stroke-width="1.6" stroke-linecap="round"/>
+          <circle cx="62" cy="20" r="2.4" fill="none" stroke="#6B6B6B" stroke-width="1.2" stroke-dasharray="2 2"/>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <p class="doc-note">
+    <b>Nenhum número inventado.</b> Zero continua sendo zero — o que muda é que o zero não vira conta negativa
+    anunciada em vermelho. <b>Âmbar e o losango ◇</b> são o vocabulário da rodada 2, reusado sem símbolo novo:
+    aqui significa a mesma coisa de sempre — falta um dado e existe uma ação para corrigir, que é o botão logo
+    abaixo. <b>Ponto tracejado</b> na ponta do sparkline = mês corrente ainda incompleto, não queda.
+  </p>
+
+  <!-- ══════════ 3. COMO É HOJE ══════════ -->
+  <div class="doc-sec">
+    <span class="doc-tag">Hoje · para comparar</span>
+    <h2>O que está no ar (dia 1)</h2>
+    <p>Quatro cards de mesmo peso, três em zero, e o quarto anunciando um negativo que não existe.</p>
+  </div>
+
+  <div class="old-grid">
+    <div class="old-card"><div class="old-head"><span class="kpi-label">Receitas</span><span>💰</span></div>
+      <span class="old-val pos">R$ 0,00</span><span class="old-foot">mês Setembro</span></div>
+    <div class="old-card"><div class="old-head"><span class="kpi-label">Despesas</span><span>💳</span></div>
+      <span class="old-val neg">R$ 0,00</span><span class="old-foot">excluindo investimentos</span></div>
+    <div class="old-card"><div class="old-head"><span class="kpi-label">Saldo livre</span><span>📊</span></div>
+      <span class="old-val neg">−R$ 1.204,40</span><span class="old-foot">Cadastre suas receitas</span></div>
+    <div class="old-card"><div class="old-head"><span class="kpi-label">Investido</span><span>📈</span></div>
+      <span class="old-val gold">R$ 0,00</span><span class="old-foot">no mês</span></div>
+  </div>
+
+  <!-- ══════════ 4. CELULAR ══════════ -->
+  <div class="doc-sec">
+    <span class="doc-tag">360px</span>
+    <h2>Celular</h2>
+    <p>Hero ocupa a largura toda; os três apoios viram 2×2 abaixo. Sparkline sobrevive — 66×26px cabe.</p>
+  </div>
+
+  <div class="phone">
+    <div class="kpi-grid">
+      <div class="kpi-card kpi-hero">
+        <span class="kpi-label">Comprometido de agosto</span>
+        <span class="kpi-value">R$ 4.318,70</span>
+        <div class="hero-bar" aria-hidden="true"><i class="seg-real" style="width:53%"></i><i class="seg-proj" style="width:13%"></i></div>
+        <div class="hero-legend"><span><i class="dot livre"></i>Livre <b class="num" style="color:var(--text-primary);font-weight:500">R$&nbsp;2.181,30</b></span></div>
+        <div class="kpi-foot">66% da receita · 13 dias restantes</div>
+      </div>
+      <div class="kpi-card"><span class="kpi-label">Receitas</span><span class="kpi-value">R$ 6.500,00</span>
+        <div class="kpi-trend"><span class="kpi-delta flat">=</span>
+          <svg class="spark" width="52" height="22" viewBox="0 0 66 26" aria-hidden="true"><polyline points="2,13 14,13 26,12 38,13 50,13 62,13" fill="none" stroke="#6B6B6B" stroke-width="1.8" stroke-linecap="round"/></svg></div></div>
+      <div class="kpi-card"><span class="kpi-label">Despesas</span><span class="kpi-value">R$ 3.462,10</span>
+        <div class="kpi-trend"><span class="kpi-delta up-bad">▲ 12%</span>
+          <svg class="spark" width="52" height="22" viewBox="0 0 66 26" aria-hidden="true"><polyline points="2,17 14,15 26,18 38,14 50,15 62,7" fill="none" stroke="#F87171" stroke-width="1.8" stroke-linecap="round"/></svg></div></div>
+      <div class="kpi-card"><span class="kpi-label">Investido</span><span class="kpi-value">R$ 900,00</span>
+        <div class="kpi-trend"><span class="kpi-delta up-good">▲ 20%</span>
+          <svg class="spark" width="52" height="22" viewBox="0 0 66 26" aria-hidden="true"><polyline points="2,20 14,19 26,17 38,18 50,15 62,9" fill="none" stroke="#1EB11B" stroke-width="1.8" stroke-linecap="round"/></svg></div></div>
+      <div class="kpi-card" style="grid-column:1/-1;min-height:0;background:transparent;border:0;padding:.2rem 0">
+        <span class="doc-note" style="margin:0">A legenda completa do hero (gasto / previsto / livre) colapsa em “Livre” abaixo de 480px; o resto fica no toque.</span>
+      </div>
+    </div>
+  </div>
+
+  <p class="doc-note" style="margin-top:2.5rem">
+    <b>Pendências herdadas que esta parte NÃO resolve, de propósito:</b> a cor da fatia “Sem categoria” na pizza
+    e o gasto sem categoria sumindo do Orçamento × Real. Ambas vivem na parte 2 do mockup, porque dependem do
+    espaço que sobrar abaixo desta faixa.
+  </p>
+
+</div>
+</body>
+</html>

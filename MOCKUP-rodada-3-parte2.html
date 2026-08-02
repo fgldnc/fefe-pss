@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mockup rodada 3 — parte 2: distribuição e orçamento</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg-main:#161616; --bg-card:#1F1F1F; --bg-card-raised:#262626; --bg-hover:#2C2C2C;
+  --accent-primary:#3982F7; --accent-secondary:#345CEA; --accent-bright:#3EC2FC; --accent-magenta:#C01888;
+  --text-primary:#F5F5F5; --text-secondary:#A3A3A3; --text-muted:#6B6B6B;
+  --success:#1EB11B; --danger:#F87171; --warning:#FBBF24; --info:#A78BFA;
+  --border-soft:rgba(255,255,255,0.07); --border-md:rgba(255,255,255,0.12); --border-strong:#3982F7;
+  --radius-sm:6px; --radius-md:10px; --radius-lg:14px; --radius-xl:20px;
+  --font:'Outfit',system-ui,sans-serif; --font-mono:'JetBrains Mono',monospace;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg-main);color:var(--text-primary);font-family:var(--font);padding:2rem 1.5rem 4rem}
+.wrap{max-width:1180px;margin:0 auto}
+.doc-h1{font-size:1.35rem;font-weight:600;margin:0 0 .25rem}
+.doc-sub{color:var(--text-secondary);font-size:.88rem;margin:0 0 2.5rem;max-width:72ch;line-height:1.55}
+.doc-sec{margin:3rem 0 1rem;padding-top:1.5rem;border-top:1px solid var(--border-soft)}
+.doc-sec h2{font-size:1rem;font-weight:600;margin:0 0 .3rem}
+.doc-sec p{color:var(--text-secondary);font-size:.83rem;margin:0;max-width:78ch;line-height:1.6}
+.doc-tag{display:inline-block;font-size:.68rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--accent-bright);border:1px solid rgba(62,194,252,.3);border-radius:var(--radius-sm);padding:.15rem .45rem;margin-bottom:.6rem}
+.doc-note{font-size:.78rem;color:var(--text-muted);margin-top:.9rem;line-height:1.6;max-width:80ch}
+.doc-note b{color:var(--text-secondary);font-weight:500}
+
+.card{background:var(--bg-card);border:1px solid var(--border-soft);border-radius:var(--radius-lg);padding:1.25rem}
+.card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;gap:1rem}
+.card-title{font-size:.9rem;font-weight:600}
+.card-sub{font-size:.72rem;color:var(--text-muted)}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:1rem;align-items:start}
+.num{font-family:var(--font-mono)}
+
+/* ── pizza ─────────────────────────────────────────────── */
+.pizza-wrap{display:flex;gap:1.4rem;align-items:center}
+.pizza-hole{position:relative;width:168px;height:168px;flex-shrink:0}
+.pizza-center{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center}
+.pizza-center small{display:block;font-size:.62rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px}
+.pizza-center b{font-family:var(--font-mono);font-size:1rem;font-weight:600}
+.legend{flex:1;min-width:0}
+.lg-row{display:flex;align-items:center;gap:.6rem;padding:.4rem 0;border-bottom:1px solid var(--border-soft);font-size:.82rem}
+.lg-row:last-child{border-bottom:0}
+.lg-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.lg-name{flex:1;color:var(--text-secondary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lg-pct{font-size:.71rem;color:var(--text-muted);font-family:var(--font-mono)}
+.lg-val{font-family:var(--font-mono);font-size:.82rem;min-width:78px;text-align:right}
+.lg-row.residuo .lg-name{color:var(--text-muted)}
+/* linha de ação — a única em âmbar */
+.lg-row.acao{border-top:1px solid var(--border-soft);margin-top:.3rem;padding-top:.6rem;cursor:pointer}
+.lg-row.acao .lg-name{color:var(--warning);display:flex;align-items:center;gap:.35rem}
+.lg-row.acao .lg-name::before{content:'◇';font-size:.85rem}
+.lg-row.acao .lg-val{color:var(--warning)}
+.lg-row.acao .chev{color:var(--warning);font-size:.8rem}
+
+/* ── orçamento ─────────────────────────────────────────── */
+.orc-item{margin-bottom:.85rem}
+.orc-row{display:flex;align-items:baseline;justify-content:space-between;gap:.6rem;margin-bottom:.3rem;font-size:.82rem}
+.orc-cat{display:flex;align-items:center;gap:.45rem;color:var(--text-secondary);min-width:0}
+.orc-cat i{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.orc-vals{font-family:var(--font-mono);font-size:.78rem;white-space:nowrap}
+.orc-vals .sep,.orc-vals .tgt{color:var(--text-muted)}
+.bar{height:6px;border-radius:var(--radius-sm);background:#2C2C2C;overflow:hidden}
+.bar i{display:block;height:100%}
+.ok{background:var(--accent-primary)} .warn{background:var(--warning)} .over{background:var(--danger)}
+.orc-fora{margin-top:1rem;padding-top:.85rem;border-top:1px solid var(--border-soft)}
+.orc-fora-head{display:flex;align-items:center;justify-content:space-between;gap:.6rem;font-size:.8rem;margin-bottom:.45rem}
+.orc-fora-head span:first-child{display:flex;align-items:center;gap:.35rem;color:var(--warning)}
+.orc-fora-head span:first-child::before{content:'◇';font-size:.85rem}
+.orc-fora-head .num{color:var(--warning)}
+.orc-fora-detail{font-size:.74rem;color:var(--text-muted);line-height:1.7}
+.orc-fora-detail b{color:var(--text-secondary);font-weight:500}
+.link{color:var(--accent-primary);text-decoration:none;border-bottom:1px solid rgba(57,130,247,.35);cursor:pointer}
+.reconc{margin-top:.9rem;padding-top:.7rem;border-top:1px solid var(--border-soft);
+  display:flex;justify-content:space-between;font-size:.78rem;color:var(--text-secondary)}
+.reconc .num{color:var(--text-primary);font-weight:500}
+
+.phone{width:360px;border:1px solid var(--border-soft);border-radius:var(--radius-xl);padding:1rem .75rem;background:var(--bg-main)}
+.phone .row2{grid-template-columns:1fr}
+.phone .pizza-wrap{flex-direction:column;align-items:stretch;gap:1rem}
+.phone .pizza-hole{align-self:center}
+.phone .card{padding:1rem}
+@media(max-width:900px){.row2{grid-template-columns:1fr}.pizza-wrap{flex-direction:column;align-items:stretch}.pizza-hole{align-self:center}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1 class="doc-h1">Rodada 3 · parte 2 — distribuição dos gastos e Orçamento × Real</h1>
+<p class="doc-sub">
+  Valores fictícios. Só tokens do <code>:root</code>. Fecha as duas pendências que a rodada 1 deixou:
+  a fatia “Sem categoria” e o gasto sem categoria sumindo do Orçamento × Real.
+</p>
+
+<!-- ══════ 1. PIZZA ══════ -->
+<div class="doc-sec">
+  <span class="doc-tag">Proposta · distribuição</span>
+  <h2>“Sem categoria” vira linha de ação, não fatia colorida</h2>
+  <p>Hoje ela é <code>#6b6b6b</code> — o mesmo cinza de “Outras”. Duas coisas opostas com a mesma cara: “Outras” é resíduo que você aceitou; “Sem categoria” é trabalho pendente.</p>
+</div>
+
+<div class="row2">
+  <div class="card">
+    <div class="card-header"><span class="card-title">Distribuição dos gastos</span><span class="card-sub">agosto</span></div>
+    <div class="pizza-wrap">
+      <div class="pizza-hole">
+        <svg viewBox="0 0 42 42" width="168" height="168" role="img" aria-label="Distribuição dos gastos por categoria em agosto">
+          <!-- donut por stroke-dasharray; circunferência = 100 -->
+          <circle cx="21" cy="21" r="15.915" fill="none" stroke="#2C2C2C" stroke-width="5"/>
+          <circle cx="21" cy="21" r="15.915" fill="none" stroke="#3982F7" stroke-width="5" stroke-dasharray="31 69" stroke-dashoffset="25" stroke-linecap="butt"/>
+          <circle cx="21" cy="21" r="15.915" fill="none" stroke="#345CEA" stroke-width="5" stroke-dasharray="22 78" stroke-dashoffset="-6" stroke-linecap="butt"/>
+          <circle cx="21" cy="21" r="15.915" fill="none" stroke="#3EC2FC" stroke-width="5" stroke-dasharray="15 85" stroke-dashoffset="-28" stroke-linecap="butt"/>
+          <circle cx="21" cy="21" r="15.915" fill="none" stroke="#C01888" stroke-width="5" stroke-dasharray="11 89" stroke-dashoffset="-43" stroke-linecap="butt"/>
+          <circle cx="21" cy="21" r="15.915" fill="none" stroke="#6B6B6B" stroke-width="5" stroke-dasharray="12 88" stroke-dashoffset="-54" stroke-linecap="butt"/>
+          <circle cx="21" cy="21" r="15.915" fill="none" stroke="#FBBF24" stroke-width="5" stroke-dasharray="9 91" stroke-dashoffset="-66" stroke-linecap="butt"/>
+        </svg>
+        <div class="pizza-center"><small>Total</small><b>R$ 3.462,10</b></div>
+      </div>
+      <div class="legend">
+        <div class="lg-row"><i class="lg-dot" style="background:#3982F7"></i><span class="lg-name">Alimentação</span><span class="lg-pct">31%</span><span class="lg-val">R$ 1.073,25</span></div>
+        <div class="lg-row"><i class="lg-dot" style="background:#345CEA"></i><span class="lg-name">Moradia</span><span class="lg-pct">22%</span><span class="lg-val">R$ 761,66</span></div>
+        <div class="lg-row"><i class="lg-dot" style="background:#3EC2FC"></i><span class="lg-name">Transporte</span><span class="lg-pct">15%</span><span class="lg-val">R$ 519,32</span></div>
+        <div class="lg-row"><i class="lg-dot" style="background:#C01888"></i><span class="lg-name">Compras</span><span class="lg-pct">11%</span><span class="lg-val">R$ 380,83</span></div>
+        <div class="lg-row residuo"><i class="lg-dot" style="background:#6B6B6B"></i><span class="lg-name">Outras</span><span class="lg-pct">12%</span><span class="lg-val">R$ 415,45</span></div>
+        <div class="lg-row acao" role="button" tabindex="0">
+          <span class="lg-name">Sem categoria · 7 lançamentos</span><span class="lg-pct">9%</span>
+          <span class="lg-val">R$ 311,59</span><span class="chev">›</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><span class="card-title">Distribuição dos gastos</span><span class="card-sub">tudo classificado</span></div>
+    <div class="pizza-wrap">
+      <div class="pizza-hole">
+        <svg viewBox="0 0 42 42" width="168" height="168" role="img" aria-label="Distribuição dos gastos, todos classificados">
+          <circle cx="21" cy="21" r="15.915" fill="none" stroke="#2C2C2C" stroke-width="5"/>
+          <circle cx="21" cy="21" r="15.915" fill="none" stroke="#3982F7" stroke-width="5" stroke-dasharray="34 66" stroke-dashoffset="25"/>
+          <circle cx="21" cy="21" r="15.915" fill="none" stroke="#345CEA" stroke-width="5" stroke-dasharray="25 75" stroke-dashoffset="-9"/>
+          <circle cx="21" cy="21" r="15.915" fill="none" stroke="#3EC2FC" stroke-width="5" stroke-dasharray="17 83" stroke-dashoffset="-34"/>
+          <circle cx="21" cy="21" r="15.915" fill="none" stroke="#C01888" stroke-width="5" stroke-dasharray="12 88" stroke-dashoffset="-51"/>
+          <circle cx="21" cy="21" r="15.915" fill="none" stroke="#6B6B6B" stroke-width="5" stroke-dasharray="12 88" stroke-dashoffset="-63"/>
+        </svg>
+        <div class="pizza-center"><small>Total</small><b>R$ 3.462,10</b></div>
+      </div>
+      <div class="legend">
+        <div class="lg-row"><i class="lg-dot" style="background:#3982F7"></i><span class="lg-name">Alimentação</span><span class="lg-pct">34%</span><span class="lg-val">R$ 1.177,11</span></div>
+        <div class="lg-row"><i class="lg-dot" style="background:#345CEA"></i><span class="lg-name">Moradia</span><span class="lg-pct">25%</span><span class="lg-val">R$ 865,52</span></div>
+        <div class="lg-row"><i class="lg-dot" style="background:#3EC2FC"></i><span class="lg-name">Transporte</span><span class="lg-pct">17%</span><span class="lg-val">R$ 588,55</span></div>
+        <div class="lg-row"><i class="lg-dot" style="background:#C01888"></i><span class="lg-name">Compras</span><span class="lg-pct">12%</span><span class="lg-val">R$ 415,45</span></div>
+        <div class="lg-row residuo"><i class="lg-dot" style="background:#6B6B6B"></i><span class="lg-name">Outras</span><span class="lg-pct">12%</span><span class="lg-val">R$ 415,47</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<p class="doc-note">
+  <b>A fatia continua neutra; quem fica âmbar é a linha da legenda.</b> A pizza não é editável — âmbar
+  no desenho seria alarme sem porta de saída. Na legenda o âmbar cabe, porque ali a linha <b>é clicável</b>
+  e leva à aba Gastos já filtrada pelos lançamentos sem categoria. Âmbar só onde existe ação, que é a
+  regra fechada na rodada 2.
+  <br><b>“Sem categoria” ganha contagem</b> (“7 lançamentos”) e some por inteiro quando é zero — silêncio é
+  o sinal de que está tudo bem. À direita, a mesma tela com tudo classificado: nenhuma marca sobra.
+  <br><b>“Outras” continua em <code>--text-muted</code></b> e sem contagem: é resíduo aceito, não pendência.
+  A distinção entre as duas passa a ser a cor <i>da linha</i> e o clique, não a cor da fatia — que é
+  igual nas duas por serem, no gráfico, a mesma coisa: sobra.
+</p>
+
+<!-- ══════ 2. ORÇAMENTO ══════ -->
+<div class="doc-sec">
+  <span class="doc-tag">Proposta · Orçamento × Real</span>
+  <h2>O card passa a fechar com o KPI de Despesas</h2>
+  <p>Hoje ele só desenha categorias que têm limite definido. Gasto sem categoria e gasto em categoria sem limite simplesmente não aparecem — e a soma do card não bate com o KPI logo acima, em silêncio.</p>
+</div>
+
+<div class="row2">
+  <div class="card">
+    <div class="card-header"><span class="card-title">Orçamento × Real</span><span class="card-sub">agosto</span></div>
+
+    <div class="orc-item">
+      <div class="orc-row"><span class="orc-cat"><i style="background:#3982F7"></i>Alimentação</span>
+        <span class="orc-vals"><b>R$ 1.073,25</b> <span class="sep">/</span> <span class="tgt">R$ 1.200,00</span></span></div>
+      <div class="bar"><i class="ok" style="width:89%"></i></div>
+    </div>
+    <div class="orc-item">
+      <div class="orc-row"><span class="orc-cat"><i style="background:#345CEA"></i>Moradia</span>
+        <span class="orc-vals"><b>R$ 761,66</b> <span class="sep">/</span> <span class="tgt">R$ 900,00</span></span></div>
+      <div class="bar"><i class="ok" style="width:85%"></i></div>
+    </div>
+    <div class="orc-item">
+      <div class="orc-row"><span class="orc-cat"><i style="background:#3EC2FC"></i>Transporte</span>
+        <span class="orc-vals"><b>R$ 519,32</b> <span class="sep">/</span> <span class="tgt">R$ 400,00</span></span></div>
+      <div class="bar"><i class="over" style="width:100%"></i></div>
+    </div>
+
+    <div class="orc-fora">
+      <div class="orc-fora-head">
+        <span>Fora de qualquer limite</span><span class="num">R$ 1.107,87</span>
+      </div>
+      <div class="orc-fora-detail">
+        <b>R$ 311,59</b> em 7 lançamentos <a class="link">sem categoria</a> ·
+        <b>R$ 796,28</b> em categorias <a class="link">sem limite definido</a>
+      </div>
+    </div>
+
+    <div class="reconc">
+      <span>Total de despesas de agosto</span><span class="num">R$ 3.462,10</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><span class="card-title">Orçamento × Real</span><span class="card-sub">como é hoje</span></div>
+    <div class="orc-item">
+      <div class="orc-row"><span class="orc-cat"><i style="background:#3982F7"></i>Alimentação</span>
+        <span class="orc-vals"><b>R$ 1.073,25</b> <span class="sep">/</span> <span class="tgt">R$ 1.200,00</span></span></div>
+      <div class="bar"><i class="ok" style="width:89%"></i></div>
+    </div>
+    <div class="orc-item">
+      <div class="orc-row"><span class="orc-cat"><i style="background:#345CEA"></i>Moradia</span>
+        <span class="orc-vals"><b>R$ 761,66</b> <span class="sep">/</span> <span class="tgt">R$ 900,00</span></span></div>
+      <div class="bar"><i class="ok" style="width:85%"></i></div>
+    </div>
+    <div class="orc-item">
+      <div class="orc-row"><span class="orc-cat"><i style="background:#3EC2FC"></i>Transporte</span>
+        <span class="orc-vals"><b>R$ 519,32</b> <span class="sep">/</span> <span class="tgt">R$ 400,00</span></span></div>
+      <div class="bar"><i class="over" style="width:100%"></i></div>
+    </div>
+    <p class="doc-note" style="margin-top:1.1rem">
+      Soma visível: <b class="num">R$ 2.354,23</b>. KPI de Despesas do mesmo mês:
+      <b class="num">R$ 3.462,10</b>. <b>R$ 1.107,87 não aparecem em lugar nenhum</b> e nada na tela avisa.
+    </p>
+  </div>
+</div>
+
+<p class="doc-note">
+  <b>O bloco “Fora de qualquer limite” é o conserto.</b> Ele não é um orçamento — não tem barra nem meta,
+  de propósito: barra exige denominador, e aqui não há. É uma prestação de contas do que sobrou, com as
+  duas causas separadas, porque a ação é diferente em cada uma: uma se resolve classificando lançamento,
+  a outra definindo limite.
+  <br><b>A linha de reconciliação no rodapé</b> é o que impede o erro de voltar: se
+  <code>categorias + fora = total de despesas</code> aparece na tela, qualquer divergência futura fica
+  visível em vez de silenciosa.
+  <br><b>Quando não há nada fora</b>, o bloco âmbar some inteiro e sobra só a linha de reconciliação.
+  <br><b>Barra da categoria:</b> azul até 80%, âmbar de 80 a 99%, vermelho a partir de 100% — mantém as
+  faixas que <code>orcamento.js:37</code> já usa. Azul no lugar de verde porque “dentro do limite” não é
+  conquista, é o esperado; verde aqui competiria com o verde de receita.
+</p>
+
+<!-- ══════ 3. ORDEM DA PÁGINA ══════ -->
+<div class="doc-sec">
+  <span class="doc-tag">Proposta · ordem</span>
+  <h2>Pizza e Orçamento sobem para a mesma linha</h2>
+  <p>Hoje a página é: evolução (260px, largura inteira) → pizza (largura inteira, com o donut ocupando 200px de 1180) → parcelas + orçamento. Três blocos de largura inteira empilhados fazem rolar para chegar ao que decide.</p>
+</div>
+
+<div class="card" style="padding:1.1rem 1.25rem">
+  <div style="display:grid;grid-template-columns:1fr;gap:.55rem;font-size:.82rem;color:var(--text-secondary)">
+    <div style="display:flex;gap:.7rem;align-items:center"><span class="num" style="color:var(--text-muted);font-size:.72rem">1</span> Faixa de KPIs <span style="color:var(--text-muted);font-size:.74rem">— parte 1, já aprovada</span></div>
+    <div style="display:flex;gap:.7rem;align-items:center"><span class="num" style="color:var(--text-muted);font-size:.72rem">2</span> <b style="color:var(--text-primary);font-weight:500">Distribuição dos gastos</b> <span style="color:var(--text-muted);font-size:.74rem">| lado a lado com</span> <b style="color:var(--text-primary);font-weight:500">Orçamento × Real</b></div>
+    <div style="display:flex;gap:.7rem;align-items:center"><span class="num" style="color:var(--text-muted);font-size:.72rem">3</span> Parcelas previstas <span style="color:var(--text-muted);font-size:.74rem">| lado a lado com</span> Evolução (6 meses)</div>
+  </div>
+</div>
+
+<p class="doc-note">
+  <b>Por que a evolução desce.</b> Ela responde “como venho me comportando”, que é contexto, não decisão do
+  mês. E o sparkline de cada KPI, aprovado na parte 1, já entrega a tendência nos primeiros 30 segundos —
+  manter o gráfico grande no topo passou a ser repetir a mesma informação duas vezes, a segunda ocupando
+  260px de altura. Ela continua na tela inteira? <b>Não:</b> vai para meia largura, ao lado de Parcelas.
+  Se você achar que perde legibilidade com 3 séries × 6 meses em meia largura, é o ponto para recusar —
+  a alternativa é manter largura inteira e aceitar a rolagem.
+</p>
+
+<!-- ══════ 4. CELULAR ══════ -->
+<div class="doc-sec">
+  <span class="doc-tag">360px</span>
+  <h2>Celular</h2>
+  <p>Tudo em coluna única, na mesma ordem. O donut centraliza e a legenda vai abaixo dele.</p>
+</div>
+
+<div class="phone">
+  <div class="card">
+    <div class="card-header"><span class="card-title">Distribuição dos gastos</span><span class="card-sub">agosto</span></div>
+    <div class="pizza-wrap">
+      <div class="pizza-hole" style="width:148px;height:148px">
+        <svg viewBox="0 0 42 42" width="148" height="148" aria-hidden="true">
+          <circle cx="21" cy="21" r="15.915" fill="none" stroke="#2C2C2C" stroke-width="5"/>
+          <circle cx="21" cy="21" r="15.915" fill="none" stroke="#3982F7" stroke-width="5" stroke-dasharray="31 69" stroke-dashoffset="25"/>
+          <circle cx="21" cy="21" r="15.915" fill="none" stroke="#345CEA" stroke-width="5" stroke-dasharray="22 78" stroke-dashoffset="-6"/>
+          <circle cx="21" cy="21" r="15.915" fill="none" stroke="#3EC2FC" stroke-width="5" stroke-dasharray="15 85" stroke-dashoffset="-28"/>
+          <circle cx="21" cy="21" r="15.915" fill="none" stroke="#C01888" stroke-width="5" stroke-dasharray="11 89" stroke-dashoffset="-43"/>
+          <circle cx="21" cy="21" r="15.915" fill="none" stroke="#6B6B6B" stroke-width="5" stroke-dasharray="12 88" stroke-dashoffset="-54"/>
+          <circle cx="21" cy="21" r="15.915" fill="none" stroke="#FBBF24" stroke-width="5" stroke-dasharray="9 91" stroke-dashoffset="-66"/>
+        </svg>
+        <div class="pizza-center"><small>Total</small><b>R$ 3.462,10</b></div>
+      </div>
+      <div class="legend">
+        <div class="lg-row"><i class="lg-dot" style="background:#3982F7"></i><span class="lg-name">Alimentação</span><span class="lg-val">R$ 1.073,25</span></div>
+        <div class="lg-row"><i class="lg-dot" style="background:#345CEA"></i><span class="lg-name">Moradia</span><span class="lg-val">R$ 761,66</span></div>
+        <div class="lg-row"><i class="lg-dot" style="background:#3EC2FC"></i><span class="lg-name">Transporte</span><span class="lg-val">R$ 519,32</span></div>
+        <div class="lg-row"><i class="lg-dot" style="background:#C01888"></i><span class="lg-name">Compras</span><span class="lg-val">R$ 380,83</span></div>
+        <div class="lg-row residuo"><i class="lg-dot" style="background:#6B6B6B"></i><span class="lg-name">Outras</span><span class="lg-val">R$ 415,45</span></div>
+        <div class="lg-row acao" role="button" tabindex="0"><span class="lg-name">Sem categoria · 7</span><span class="lg-val">R$ 311,59</span><span class="chev">›</span></div>
+      </div>
+    </div>
+  </div>
+  <div style="height:.8rem"></div>
+  <div class="card">
+    <div class="card-header"><span class="card-title">Orçamento × Real</span></div>
+    <div class="orc-item">
+      <div class="orc-row"><span class="orc-cat"><i style="background:#3EC2FC"></i>Transporte</span>
+        <span class="orc-vals"><b>R$ 519,32</b> <span class="sep">/</span> <span class="tgt">R$ 400,00</span></span></div>
+      <div class="bar"><i class="over" style="width:100%"></i></div>
+    </div>
+    <div class="orc-fora">
+      <div class="orc-fora-head"><span>Fora de qualquer limite</span><span class="num">R$ 1.107,87</span></div>
+      <div class="orc-fora-detail"><b>R$ 311,59</b> sem categoria · <b>R$ 796,28</b> sem limite</div>
+    </div>
+    <div class="reconc"><span>Total de despesas</span><span class="num">R$ 3.462,10</span></div>
+  </div>
+  <p class="doc-note">Percentual da legenda some abaixo de 480px; sobram nome e valor. O bloco âmbar quebra em duas linhas.</p>
+</div>
+
+<!-- ══════ 5. ESTADOS ══════ -->
+<div class="doc-sec">
+  <span class="doc-tag">Estados</span>
+  <h2>Vazio, carregando e erro</h2>
+  <p>Nenhum dos três pode cair no caso feliz.</p>
+</div>
+<p class="doc-note" style="margin-top:0">
+  <b>Sem gasto no mês:</b> donut vira anel cinza cheio (<code>#2C2C2C</code>) e a legenda some, substituída por
+  “Sem gastos neste mês” — é o que <code>dashboard.js:171-181</code> já faz; mantém.
+  <b>Sem orçamento definido, mas com gasto:</b> o card não mostra mais só o empty state — mostra o bloco
+  “Fora de qualquer limite” com o total do mês inteiro e o convite a definir limites. Hoje ele esconde
+  o gasto inteiro atrás de um 🎯.
+  <b>Carregando:</b> skeleton de donut (círculo cinza) + 5 linhas de legenda, na altura final, para a
+  página não pular. <b>Erro de leitura:</b> o card mantém título e mostra a mensagem em
+  <code>--text-muted</code>, sem número — número velho com dado novo é pior que nenhum.
+</p>
+
+</div>
+</body>
+</html>

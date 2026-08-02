@@ -4,9 +4,12 @@ Documento de estado entre sessões. Quem abrir uma sessão nova sobre design do
 Radar lê este arquivo primeiro e continua daqui, sem precisar refazer o
 diagnóstico.
 
-**Última atualização:** 02/08/2026 · rodadas 0, 1 e 2 concluídas. Próximo passo:
-**diagnóstico e mockup da rodada 3** (Dashboard) — ainda não há prompt escrito,
-e não deve haver antes da aprovação do mockup.
+**Última atualização:** 02/08/2026 · rodadas 0, 1 e 2 concluídas, **rodada 3
+parte 1 (faixa de KPIs do Dashboard) concluída e conferida**. Divergências
+entre documento e código reconferidas nesta data (ver o fim do arquivo).
+Próximo passo: **rodada 3, parte 2** (pizza "Sem categoria", Orçamento × Real) —
+mockup aprovado (`MOCKUP-rodada-3-parte2.html`) e prompt escrito
+(`PROMPT-rodada-3-parte2.md`).
 
 ---
 
@@ -274,8 +277,119 @@ de duplicata sem que o lançamento esteja na base, o `title` da tag agora mostra
 contra qual registro ela bateu — é o dado que falta para fechar o diagnóstico.
 
 ### Rodada 3 — Recorte do Dashboard e micro-contexto nos KPIs
-**Estado: PRÓXIMA. Desbloqueada — 1 e 2 concluídas. Falta o diagnóstico e o
-mockup; não escrever prompt antes da aprovação.**
+**Estado: parte 1 CONCLUÍDA e conferida em 02/08/2026.** Mockup
+`MOCKUP-rodada-3-kpis.html`, prompt em `PROMPT-rodada-3.md`. Arquivos tocados:
+`js/dashboard.js`, `css/style.css`, `js/utils.js` (skeleton), `index.html`
+(skeleton estático). **Parte 2 (pizza, Orçamento × Real) segue pendente.**
+
+**Como o comprometido é calculado (o ponto que o prompt mandava verificar):**
+`allExpensesOfMonth()` filtra `state.transactions` só por competência
+(`db.js:151`, `isOfMonth`) — **não** exclui `isProjected`. Logo a parcela
+projetada do mês corrente **já está dentro** de `totalExpense`. Portanto
+`comprometido === totalExpense`, e a faixa `seg-real` é
+`totalExpense − projetadas`, um recorte de dentro, nunca uma soma por cima.
+Somar daria dupla contagem. Registrado em comentário no código.
+`transfer` já ficava de fora: `db.js:154` só aceita `type === 'expense'` do
+extrato, e transação normal não tem tipo de transferência — nenhuma mudança
+foi necessária.
+
+**Conferência feita (harness temporário com `state` sintético, descartado):**
+com receita 6.500 e mês de 3.000 efetivos + 800 projetados,
+`já gasto + parcelas previstas = comprometido` e
+`já gasto + previstas + livre = receita` fecharam exatamente; investido (500)
+ficou fora do comprometido; rodapé "58% da receita … · 29 dias restantes".
+Mês futuro sem receita: **nenhum valor negativo na tela**, `.mark-inferido`
+presente, rodapé de percentual omitido, ponta do sparkline cheia (não é o mês
+corrente) contra vazada no mês corrente. Zero emoji e zero classe `gold` na
+faixa. **Regressão de Patrimônio testada em iframes lado a lado (CSS antigo ×
+novo, após `fonts.ready`): 25 elementos, 21 propriedades + caixa, zero
+diferença.** 35 testes de `node --test test/*.mjs` seguem passando.
+
+**Desvios do prompt, decididos durante a execução:**
+
+- **≤480px: `.kpi-trend` passa a `flex-wrap: wrap`**, com o sparkline caindo
+  para a segunda linha alinhado à direita. O prompt pedia "sparkline ao lado do
+  delta" e "sem texto truncado"; em card de ~143px o delta mais longo
+  (`= mês anterior`, 92px) + sparkline (52px) + gap davam 154px e estouravam o
+  card. Entre truncar texto e quebrar a linha, quebrou-se a linha — nada some,
+  que era a restrição declarada ("nada some além da legenda").
+- **Sparkline termina em `x = w − 4`, não `w − 2`.** O círculo da ponta tem
+  raio 2.4 e encostava na borda do `viewBox`. Mantém os pontos do mockup
+  (2 … 62 em 66px de largura).
+- **`--gold` do card Investido:** o valor foi para `--text-primary` como o
+  prompt pedia (remoção da classe só no HTML gerado; `.kpi-value.gold`
+  intacto no CSS).
+
+**Decisões de design fechadas na aprovação do mockup (parte 1):**
+
+- **"Saldo livre" deixa de ser card** e vira a terceira faixa da barra do card
+  principal ("Comprometido do mês"). Mesmo número, num lugar onde ele se
+  explica — e o negativo do dia 1 desaparece sem inventar dado.
+- **Hierarquia por tamanho e fundo, não por cor.** Hero em `--bg-card-raised`,
+  ~1,55× de largura; os três apoios ficam iguais entre si.
+- **Emoji fora dos KPIs do Dashboard** (💰💳📊📈). Não carregam informação.
+  `.kpi-icon` permanece no CSS porque a aba Patrimônio usa (💎).
+- **Delta encurtado** para `▲ 12%`, com "vs mês anterior" no `title`. Repetido
+  em quatro cards vira ruído. Cor do delta mantém `goodWhenUp`.
+- **Sparkline é SVG inline gerado em string, não Chart.js** — 6 pontos em
+  66×26px não justificam três instâncias de gráfico com destroy/recreate a cada
+  troca de mês. Sendo SVG no DOM, resolve `var(--…)` normalmente: a regra do hex
+  literal continua valendo só para canvas.
+- **Ponta do sparkline vazada quando o mês exibido é o corrente.** Ponto cheio
+  num mês incompleto lê como queda.
+- **Âmbar do dia 1 é o `.mark-inferido` da rodada 2**, reusado sem símbolo novo,
+  com o botão de ação logo abaixo — a marca só aparece onde há o que corrigir.
+
+**Parte 2 — mockup `MOCKUP-rodada-3-parte2.html` aprovado em 02/08/2026, prompt
+em `PROMPT-rodada-3-parte2.md`. Decisões fechadas:**
+
+- **A fatia "Sem categoria" continua neutra (`#6b6b6b`); quem fica âmbar é a
+  linha da legenda.** Resolve a pendência herdada da rodada 1. A pizza não é
+  editável — âmbar no desenho seria alarme sem porta de saída. Na legenda cabe,
+  porque a linha é clicável e leva ao lugar onde se corrige. Ganha contagem de
+  lançamentos e some inteira quando é zero.
+- **"Outras" continua em `--text-muted`, sem contagem e sem clique** — resíduo
+  aceito não é pendência. A distinção entre as duas passa a ser a cor da linha e
+  o clique, não a cor da fatia.
+- **Bloco "Fora de qualquer limite" + linha de reconciliação** no card
+  Orçamento × Real e na aba Orçamento. Sem barra de progresso, de propósito:
+  barra exige denominador e ali não há meta.
+- **Barra da categoria fica azul abaixo de 80%**, não verde: estar dentro do
+  limite é o esperado, não conquista, e verde competiria com o verde de receita.
+- **Evolução mensal desce para meia largura**, ao lado de Parcelas. O sparkline
+  dos KPIs (parte 1) já entrega a tendência; manter o gráfico grande no topo
+  virou repetir a mesma informação em 260px de altura.
+
+**Achado da parte 2, mais grave do que o roteiro registrava:** o card
+Orçamento × Real não esconde só o gasto **sem categoria** — esconde também todo
+gasto em **categoria sem limite definido**, porque `dashboard.js:315` itera sobre
+`Object.entries(budgetMonth)`. A soma visível do card é menor que o KPI de
+Despesas logo acima e nada avisa. Mesmo padrão em `orcamento.js:30` e `:33`.
+A identidade `categorias + fora = total de despesas` virou critério de pronto.
+
+**Armadilha registrada no prompt da parte 2 — universos diferentes:** a pizza do
+Dashboard mede `allExpensesOfMonth()` (transações **+** extrato, `db.js:150`); a
+aba Gastos mede `txOfMonth()` (**só** transações, `db.js:140`). Um clique que
+anuncie "7 sem categoria" e leve a uma tela com 5 linhas parece bug. Por isso a
+linha quebra por origem (`N em Gastos · M em Extratos`) quando as duas existem.
+**Corrigido em relação ao que foi dito na aprovação do mockup**, onde o clique
+tinha sido descrito como indo simplesmente para Gastos.
+
+**Descoberto ao escrever o prompt da parte 1, não estava no diagnóstico:**
+
+- **`--gold` e `--warning` são o mesmo hex** (`#fbbf24`, `style.css:40` e `:44`).
+  `.kpi-value.gold` pinta "Investido" decorativamente; com o âmbar do
+  `.mark-inferido` entrando na mesma faixa, a cor passaria a ter dois
+  significados lado a lado. **Decidido:** o valor de "Investido" vai para
+  `--text-primary` e quem carrega cor no card é o delta. `.kpi-value.gold`
+  permanece no CSS, só sai do Dashboard.
+- **`.kpi-grid` / `.kpi-card` são compartilhados com a aba Patrimônio**
+  (`index.html:235`), que o roteiro marca como "não mexer". Todo seletor novo é
+  escopado em `#kpi-grid` ou usa classe nova. É a regressão mais provável da
+  rodada, e virou item do critério de pronto.
+- **`showKpiSkeleton()`** (`utils.js:126`) monta 4 skeletons iguais; com o hero
+  mais largo o layout pula na carga. Ajustar junto — e o skeleton estático de
+  `index.html:174-178` também.
 
 Herda três pendências que precisam ser resolvidas dentro dela:
 
@@ -295,9 +409,24 @@ Seta de tendência e sparkline vs. mês anterior; revisão do que merece ser KPI
 no dia 1 do mês. Depois de 1 e 2 porque tendência sobre número contaminado é
 pior que número sem tendência.
 
-**Pré-requisito de cálculo:** série do mês anterior por KPI. Se `dashboard.js`
-só calcula o mês corrente, isso é mudança de cálculo, não design — sinalizar,
-não embutir na rodada.
+**Pré-requisito de cálculo — reavaliado em 02/08/2026, escopo menor do que o
+roteiro supunha.** `dashboard.js:56-59` **já** calcula o mês anterior
+(`offsetMonth(month,-1)`) e `_delta()` (linhas 62-70) já renderiza ▲/▼ com o
+percentual. Mas:
+
+- Só **Receitas** e **Despesas** recebem delta. **Saldo livre** e **Investido**
+  mostram texto fixo (`kpi-taxa`, `kpi-investido-total`), sem comparação.
+- `_delta()` devolve string vazia quando `prev <= 0`, e o card cai num texto
+  genérico. No primeiro mês de uso todos os quatro cards ficam sem contexto.
+- **Não existe sparkline em lugar nenhum** do projeto (`grep sparkline` em `js/`
+  e `css/` não retorna nada) — componente nasce do zero.
+- A série de 6 meses para o sparkline **já é montada** em
+  `renderChartEvolucao()` (`dashboard.js:228-234`), por mês, para receita,
+  despesa e investido. Reaproveitar essa montagem em vez de recalcular: é a
+  mesma conta, e duas contas separadas divergem com o tempo.
+
+Ou seja: estender a série aos 4 KPIs e desenhar o sparkline é design em cima de
+cálculo existente. Só vira mudança de cálculo se algum KPI novo for proposto.
 
 Fecha também o formato de KPI que a rodada 5 vai reusar e o layout que a
 rodada 6 vai tornar clicável.
@@ -373,11 +502,12 @@ Cole numa sessão nova:
 
 > Estou retomando o redesign do Radar Financeiro. Leia `ROTEIRO-REDESIGN.md`,
 > `CLAUDE.md` e `RELATORIO-AUDITORIA.md` na raiz do repositório. Rodadas 0, 1 e 2
-> estão concluídas; a próxima é a **rodada 3 (Dashboard)**, que ainda está na
-> etapa de diagnóstico e mockup — não escreva prompt de implementação antes de eu
-> aprovar o mockup. Diga o que a rodada 3 herda de pendência, antes de propor
-> qualquer coisa. Se algum achado do roteiro não bater mais com o código, aponte
-> a divergência em vez de seguir o roteiro.
+> estão concluídas, e a **rodada 3 parte 1** (faixa de KPIs do Dashboard) já está
+> no ar. A próxima é a **rodada 3 parte 2** (fatia "Sem categoria" da pizza e
+> Orçamento × Real), com mockup já aprovado e prompt em
+> `PROMPT-rodada-3-parte2.md`. Antes de propor qualquer coisa, diga o que a parte
+> 2 herda de pendência da parte 1. Se algum achado do roteiro não bater mais com
+> o código, aponte a divergência em vez de seguir o roteiro.
 
 ---
 
@@ -391,5 +521,15 @@ Cole numa sessão nova:
 - **`js/pdf-import.legacy.js` é código morto.** Ainda referencia
   `#pdf-info-text`, elemento que a rodada 2 removeu do `index.html`. Remover
   numa rodada que já toque no fluxo de fatura — limpeza, não design.
-- `RELATORIO-AUDITORIA.md` (02/08/2026) lista 13 achados abertos. Ler antes de
-  mexer em parsing de PDF, dedupe ou segurança. Achado aberto ≠ item de design.
+- `RELATORIO-AUDITORIA.md` (02/08/2026) lista 13 achados. Ler antes de mexer em
+  parsing de PDF, dedupe ou segurança. Achado aberto ≠ item de design.
+  **Não são mais 13 abertos:** o achado 6 (dedupe) foi fechado na rodada 2 e o
+  achado 8 (`'unsafe-inline'` no `script-src`) foi fechado com a extração de
+  `js/firebase-init.js` — `vercel.json:24` já não tem `unsafe-inline` em
+  `script-src`. O achado 2 (`firestore.rules`) mudou de natureza: o arquivo
+  **existe** no repositório; o que segue sem confirmação é a publicação no
+  console do Firebase, que não dá para verificar pelo código.
+- ~~`CLAUDE.md` descrevia o Firebase como script inline em `index.html:14-46`.~~
+  **Resolvido em 02/08/2026:** hoje é `js/firebase-init.js`, carregado em
+  `index.html:14`. O mapa de arquivos de `CLAUDE.md` também não listava
+  `js/extratos.js` nem `js/firebase-init.js` — corrigido.
