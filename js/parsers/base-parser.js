@@ -92,12 +92,36 @@ export function detectDuplicates(newItems, existingTransactions) {
  * Parseia valor monetário brasileiro ou americano
  */
 export function parseMoney(raw) {
-  if (!raw) return 0;
-  const s = String(raw).trim().replace(/\s/g, '');
-  // Formato BR: "1.234,56" OU "3200,56" (sem separador de milhar)
-  if (/^\-?\d+(\.\d{3})*,\d{2}$/.test(s))
-    return parseFloat(s.replace(/\./g, '').replace(',', '.'));
-  return parseFloat(s.replace(/[^0-9.\-]/g, '')) || 0;
+  if (raw === null || raw === undefined || raw === '') return 0;
+
+  let s = String(raw).trim().replace(/\s/g, '').replace(/^R\$/i, '');
+  // Negativo por sinal OU por parênteses contábeis: "(1.234,56)"
+  const negative = /^-/.test(s) || /^\(.*\)$/.test(s) || /-$/.test(s);
+  s = s.replace(/[()]/g, '').replace(/[^0-9.,]/g, '');
+  if (!s) return 0;
+
+  const lastComma = s.lastIndexOf(',');
+  const lastDot   = s.lastIndexOf('.');
+  let normalized;
+
+  if (lastComma > lastDot) {
+    // Decimal é a vírgula (BR): "1.234,56" → 1234.56
+    normalized = s.replace(/\./g, '').replace(',', '.');
+  } else if (lastDot > lastComma) {
+    const decimals = s.length - lastDot - 1;
+    // "1.234" (3 casas depois do ponto, sem vírgula) em documento BR é
+    // separador de MILHAR, não decimal. Antes virava 1.234 — erro de R$ 1.232,77
+    // num lançamento de mil reais.
+    normalized = (decimals === 3 && lastComma === -1)
+      ? s.replace(/\./g, '')
+      : s.replace(/,/g, '');
+  } else {
+    normalized = s; // só dígitos
+  }
+
+  const v = parseFloat(normalized);
+  if (!isFinite(v)) return 0;
+  return negative ? -Math.abs(v) : v;
 }
 
 /**

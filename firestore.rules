@@ -1,0 +1,131 @@
+rules_version = '2';
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Regras COMPLETAS do Firestore — app de finanças pessoais (single-user por uid)
+//
+// Princípio: nada fora de /users/{uid} é acessível, e cada usuário só enxerga
+// o próprio ramo. Sem esta regra, o padrão de projeto novo do Firebase é
+// "allow read, write: if true" por 30 dias (banco aberto) ou negar tudo.
+//
+// Publicar com:  firebase deploy --only firestore:rules
+// (ou colar em Console → Firestore → Regras)
+// ─────────────────────────────────────────────────────────────────────────────
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── Helpers ────────────────────────────────────────────────────────────
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+
+    // Verifica que o e-mail do Google foi verificado (contas Google já vêm
+    // verificadas; a checagem impede provedores futuros sem verificação).
+    function verified() {
+      return request.auth.token.email_verified == true;
+    }
+
+    function isNumberInRange(v, minV, maxV) {
+      return v is number && v >= minV && v <= maxV;
+    }
+
+    function shortString(v, maxLen) {
+      return v is string && v.size() <= maxLen;
+    }
+
+    // ── Documento raiz do usuário ─────────────────────────────────────────
+    match /users/{uid} {
+      allow read, write: if isOwner(uid) && verified();
+
+      // ── Transações (gastos, parcelas projetadas, extratos importados) ───
+      match /transactions/{txId} {
+        allow read, delete: if isOwner(uid) && verified();
+        allow create, update: if isOwner(uid) && verified()
+          && isNumberInRange(request.resource.data.amount, -10000000, 10000000)
+          && (!('description' in request.resource.data)
+              || shortString(request.resource.data.description, 500))
+          && (!('competenceMonth' in request.resource.data)
+              || request.resource.data.competenceMonth is string)
+          && request.resource.data.keys().size() <= 40;
+      }
+
+      // ── Receitas ───────────────────────────────────────────────────────
+      match /incomes/{incId} {
+        allow read, delete: if isOwner(uid) && verified();
+        allow create, update: if isOwner(uid) && verified()
+          && isNumberInRange(request.resource.data.amount, -10000000, 10000000)
+          && (!('description' in request.resource.data)
+              || shortString(request.resource.data.description, 500))
+          && request.resource.data.keys().size() <= 40;
+      }
+
+      // ── Orçamentos ─────────────────────────────────────────────────────
+      match /budgets/{budgetId} {
+        allow read, delete: if isOwner(uid) && verified();
+        allow create, update: if isOwner(uid) && verified()
+          && isNumberInRange(request.resource.data.amount, 0, 10000000)
+          && request.resource.data.month is string;
+      }
+
+      // ── Patrimônio ─────────────────────────────────────────────────────
+      match /assets/{assetId} {
+        allow read, delete: if isOwner(uid) && verified();
+        allow create, update: if isOwner(uid) && verified()
+          && (!('currentValue' in request.resource.data)
+              || isNumberInRange(request.resource.data.currentValue, -1000000000, 1000000000))
+          && (!('contributions' in request.resource.data)
+              || request.resource.data.contributions.size() <= 5000);
+      }
+
+      // ── Metas ──────────────────────────────────────────────────────────
+      match /goals/{goalId} {
+        allow read, delete: if isOwner(uid) && verified();
+        allow create, update: if isOwner(uid) && verified()
+          && (!('targetAmount' in request.resource.data)
+              || isNumberInRange(request.resource.data.targetAmount, 0, 1000000000))
+          && (!('contributions' in request.resource.data)
+              || request.resource.data.contributions.size() <= 5000);
+      }
+
+      // ── Categorias ─────────────────────────────────────────────────────
+      match /categories/{catId} {
+        allow read, delete: if isOwner(uid) && verified();
+        allow create, update: if isOwner(uid) && verified()
+          && shortString(request.resource.data.name, 60);
+      }
+
+      // ── Regras de classificação da importação ──────────────────────────
+      match /rules/{ruleId} {
+        allow read, delete: if isOwner(uid) && verified();
+        allow create, update: if isOwner(uid) && verified()
+          && shortString(request.resource.data.pattern, 300);
+      }
+
+      // ── Faturas já importadas (fingerprint anti-reimportação) ──────────
+      match /importedInvoices/{fingerprint} {
+        allow read, delete: if isOwner(uid) && verified();
+        allow create, update: if isOwner(uid) && verified()
+          && shortString(request.resource.data.fingerprint, 128);
+      }
+
+      // ── Configurações ──────────────────────────────────────────────────
+      match /settings/{docId} {
+        allow read, write: if isOwner(uid) && verified();
+      }
+
+      // ATENÇÃO: NÃO adicione aqui um `match /{document=**}` liberando tudo.
+      // As regras do Firestore são avaliadas em OR — um curinga permissivo
+      // anula todas as validações de campo acima. Ao criar uma subcoleção
+      // nova, acrescente um bloco `match` explícito para ela.
+    }
+
+    // ── Tudo o mais é negado explicitamente ────────────────────────────────
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

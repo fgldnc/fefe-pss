@@ -41,7 +41,7 @@ function docRef(colName, id) {
 }
 
 /** Lê todos os documentos de uma coleção */
-async function getAll(colName) {
+export async function getAll(colName) {
   const { getDocs } = fb();
   const snap = await getDocs(colRef(colName));
   return snap.docs.map(d => ({ id: d.id, ...d.data() }));
