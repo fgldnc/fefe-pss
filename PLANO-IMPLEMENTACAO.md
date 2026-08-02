@@ -71,17 +71,44 @@ Não mexa em nenhuma outra propriedade do firebaseConfig — a apiKey do Firebas
 
 Sem isso, os limiares de `pdf-layout.js` são um chute educado. Faça o dump antes de trocar o arquivo.
 
-**Passo manual.** Publique a branch na Vercel (ou rode local), abra o app, abra o modal de importar fatura, selecione o PDF, e rode no console do browser:
+**Não precisa de console.** Existe uma página de diagnóstico pronta em `ferramentas/dump-fatura.html`. Ela lê a fatura só no seu navegador — nada é enviado para servidor e nada entra no Firestore.
 
-```js
-const { dumpPageItems } = await import('/js/parsers/pdf-layout.js');
-const buf = await document.getElementById('pdf-file-input').files[0].arrayBuffer();
-const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
-const dump = await dumpPageItems(await pdf.getPage(2));
-copy(JSON.stringify(dump, null, 1));   // vai pro clipboard
+### 2.1 — Antes de tudo: subir a correção da CSP
+
+O erro vermelho que apareceu no seu console (`worker-src ... blob:`) é um bug de verdade, não do seu comando. O `vercel.json` não autorizava o PDF.js a criar o worker dele, então o navegador cai num "fake worker" que processa tudo na thread principal — lento, e capaz de travar a aba numa fatura grande. Já corrigi o `vercel.json`.
+
+1. Faça commit e push da branch. A Vercel publica sozinha.
+2. Espere o deploy terminar (painel da Vercel, bolinha verde).
+
+### 2.2 — Abrir a página de diagnóstico
+
+Abra no navegador, trocando pela URL do seu deploy:
+
+```
+https://fefe-pss.vercel.app/ferramentas/dump-fatura.html
 ```
 
-Cole o resultado num arquivo `tmp-dump-pagina2.json` na raiz (o `.gitignore` já ignora `*.json` — confirme que ele não vai pro commit). Então:
+Precisa ser pela URL da Vercel. Abrir o arquivo com duplo clique na pasta não funciona: o navegador bloqueia módulos JavaScript em arquivo local.
+
+### 2.3 — Rodar
+
+1. Clique na área tracejada e escolha o PDF da fatura.
+2. A página processa sozinha e já abre na página 2 (onde ficam os lançamentos no Itaú).
+3. Leia a faixa colorida no meio da tela:
+   - **verde** — as colunas foram separadas certo. Pode ir para o passo 4.
+   - **vermelha** — ainda tem linha misturando as duas colunas.
+   - **amarela** — só uma coluna encontrada.
+4. Confira nas duas caixas pretas: a **Coluna 1** deve ter os lançamentos (data, estabelecimento, valor) e a **Coluna 2** deve ter "próximas faturas" e "limites de crédito". Se estiver invertido ou embaralhado, é caso de ajuste.
+5. Clique em **Baixar dump para o Claude Code**. O arquivo `dump-fatura-pagina2.json` vai para a sua pasta de Downloads.
+6. Mova esse arquivo para a raiz do projeto (`C:\Users\fefe\Downloads\github\fefe-pss\`) e renomeie para `tmp-dump-pagina2.json`.
+
+Esse arquivo tem nome de estabelecimento e valor reais. O `.gitignore` já ignora `*.json`, então ele não vai para o commit — mas confirme com `git status` antes de commitar.
+
+**Se a faixa vier verde**, pule direto para a etapa 2.5. Os limiares acertaram e não há o que calibrar.
+
+**Se vier vermelha ou amarela**, use o prompt abaixo.
+
+### 2.4 — Calibrar (só se a faixa não veio verde)
 
 ```
 Leia js/parsers/pdf-layout.js e o arquivo tmp-dump-pagina2.json na raiz. O JSON é o dump real de page.getTextContent() da página 2 de uma fatura de cartão do Itaú, com as colunas x, y, w (largura do item), pageWidth e str.
@@ -99,7 +126,11 @@ Restrições:
 - scripts/tmp-calibrar.mjs é temporário; adicione-o ao .gitignore.
 ```
 
-Depois de calibrado, se algum cabeçalho não casou:
+Depois de rodar esse prompt, volte à página `ferramentas/dump-fatura.html`, recarregue (Ctrl+Shift+R) e reprocesse a fatura. Repita até a faixa ficar verde.
+
+### 2.5 — Conferir os cabeçalhos de seção
+
+Rode este prompt mesmo que a faixa tenha vindo verde. Separar as colunas é metade do problema; a outra metade é reconhecer os títulos das seções.
 
 ```
 Em js/pdf-import.fixed.js, ajuste os regex de SECTION_HEADERS para casarem com a grafia exata dos cabeçalhos que você encontrou no dump da fatura. Mantenha os regex tolerantes a acento e a variação de espaço, no mesmo estilo dos existentes.

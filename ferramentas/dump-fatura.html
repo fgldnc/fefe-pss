@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Radar — Diagnóstico de fatura PDF</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<style>
+  :root {
+    --bg-main: #161616; --bg-card: #1F1F1F; --bg-card-raised: #262626;
+    --text-primary: #F5F5F5; --text-secondary: #A3A3A3; --text-muted: #6B6B6B;
+    --accent-primary: #3982F7; --accent-bright: #3EC2FC;
+    --success: #1EB11B; --danger: #F87171; --warning: #FBBF24;
+    --border: #2C2C2C; --radius-md: 10px; --radius-sm: 6px;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 2rem 1.25rem; background: var(--bg-main); color: var(--text-primary);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif; font-size: 15px; line-height: 1.55;
+  }
+  .wrap { max-width: 980px; margin: 0 auto; }
+  h1 { font-size: 1.3rem; margin: 0 0 .25rem; }
+  h1 .sym { color: var(--accent-bright); margin-right: .4rem; }
+  .sub { color: var(--text-secondary); margin: 0 0 1.75rem; font-size: .9rem; }
+  .card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 1.25rem; margin-bottom: 1rem; }
+  .drop {
+    border: 2px dashed var(--border); border-radius: var(--radius-md); padding: 2.5rem 1rem;
+    text-align: center; cursor: pointer; transition: .15s;
+  }
+  .drop:hover, .drop.over { border-color: var(--accent-primary); background: var(--bg-card-raised); }
+  .drop p { margin: 0; color: var(--text-secondary); }
+  .drop strong { color: var(--accent-bright); }
+  .row { display: flex; gap: .6rem; align-items: center; flex-wrap: wrap; margin-top: 1rem; }
+  label.inline { color: var(--text-secondary); font-size: .85rem; }
+  select, button {
+    background: var(--bg-card-raised); color: var(--text-primary); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); padding: .5rem .85rem; font-size: .88rem; font-family: inherit; cursor: pointer;
+  }
+  button.primary { background: var(--accent-primary); border-color: var(--accent-primary); color: #fff; font-weight: 600; }
+  button:disabled { opacity: .45; cursor: not-allowed; }
+  .verdict { padding: .85rem 1rem; border-radius: var(--radius-sm); margin: 1rem 0 0; font-weight: 600; }
+  .verdict.ok   { background: rgba(30,177,27,.14);  color: var(--success); border: 1px solid rgba(30,177,27,.4); }
+  .verdict.bad  { background: rgba(248,113,113,.14); color: var(--danger);  border: 1px solid rgba(248,113,113,.4); }
+  .verdict.warn { background: rgba(251,191,36,.14);  color: var(--warning); border: 1px solid rgba(251,191,36,.4); }
+  .col-title { font-size: .82rem; color: var(--accent-bright); text-transform: uppercase; letter-spacing: .04em; margin: 1.25rem 0 .5rem; }
+  pre {
+    background: #101010; border: 1px solid var(--border); border-radius: var(--radius-sm);
+    padding: .85rem; overflow-x: auto; font-family: ui-monospace, "SF Mono", Consolas, monospace;
+    font-size: .76rem; line-height: 1.5; color: var(--text-secondary); margin: 0; max-height: 340px;
+  }
+  .hint { color: var(--text-muted); font-size: .8rem; margin-top: .4rem; }
+  .hidden { display: none; }
+  ol { padding-left: 1.2rem; color: var(--text-secondary); font-size: .88rem; }
+  ol li { margin-bottom: .35rem; }
+  code { background: var(--bg-card-raised); padding: .1rem .35rem; border-radius: 4px; font-size: .85em; color: var(--accent-bright); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1><span class="sym">◈</span>Diagnóstico de fatura PDF</h1>
+  <p class="sub">
+    Ferramenta de uso interno. Lê a fatura só no seu navegador — nada é enviado para servidor nenhum
+    e nada é salvo no Firestore.
+  </p>
+
+  <div class="card">
+    <div class="drop" id="drop">
+      <p>Arraste a fatura em PDF aqui, ou <strong>clique para escolher o arquivo</strong></p>
+      <input type="file" id="file" accept="application/pdf" class="hidden" />
+    </div>
+
+    <div class="row hidden" id="controls">
+      <label class="inline" for="page">Página:</label>
+      <select id="page"></select>
+      <button id="btn-download">Baixar dump para o Claude Code</button>
+      <button class="primary" id="btn-reset">Trocar arquivo</button>
+    </div>
+
+    <div id="verdict"></div>
+    <div id="output"></div>
+  </div>
+
+  <div class="card">
+    <strong style="font-size:.9rem">Como usar</strong>
+    <ol style="margin-top:.6rem;margin-bottom:0">
+      <li>Escolha a fatura. A página processa e mostra o resultado sozinha.</li>
+      <li>Olhe a faixa colorida: verde significa que as colunas foram separadas certo.</li>
+      <li>Confira nas caixas abaixo se a <strong>Coluna 1</strong> tem os lançamentos e a <strong>Coluna 2</strong> tem "próximas faturas" / "limites" — e se nenhuma linha mistura as duas.</li>
+      <li>Clique em <strong>Baixar dump</strong>. O arquivo cai na sua pasta de Downloads.</li>
+      <li>Mova o arquivo para a raiz do projeto e siga a etapa 2 do plano.</li>
+    </ol>
+  </div>
+
+</div>
+
+<script type="module">
+import { detectColumnBands, linesOfBand, dumpPageItems } from '../js/parsers/pdf-layout.js';
+
+pdfjsLib.GlobalWorkerOptions.workerSrc =
+  'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+const el = id => document.getElementById(id);
+const drop = el('drop'), fileInput = el('file'), pageSel = el('page');
+const controls = el('controls'), verdict = el('verdict'), output = el('output');
+
+let pdfDoc = null;
+let lastDump = null;
+let lastFileName = '';
+
+// ── Seleção de arquivo ────────────────────────────────────────────────────
+drop.addEventListener('click', () => fileInput.click());
+drop.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('over'); });
+drop.addEventListener('dragleave', () => drop.classList.remove('over'));
+drop.addEventListener('drop', e => {
+  e.preventDefault(); drop.classList.remove('over');
+  const f = e.dataTransfer.files[0];
+  if (f?.type === 'application/pdf') load(f);
+  else setVerdict('bad', 'Esse arquivo não é um PDF.');
+});
+fileInput.addEventListener('change', e => { if (e.target.files[0]) load(e.target.files[0]); });
+
+el('btn-reset').addEventListener('click', () => location.reload());
+el('btn-download').addEventListener('click', download);
+pageSel.addEventListener('change', () => analisar(parseInt(pageSel.value, 10)));
+
+// ── Carrega o PDF ─────────────────────────────────────────────────────────
+async function load(file) {
+  lastFileName = file.name;
+  setVerdict('warn', 'Lendo a fatura…');
+  output.innerHTML = '';
+  try {
+    const buf = await file.arrayBuffer();
+    pdfDoc = await pdfjsLib.getDocument({ data: buf }).promise;
+
+    pageSel.innerHTML = '';
+    for (let i = 1; i <= pdfDoc.numPages; i++) {
+      const o = document.createElement('option');
+      o.value = i;
+      o.textContent = `${i} de ${pdfDoc.numPages}`;
+      pageSel.appendChild(o);
+    }
+    // Página 2 é onde ficam os lançamentos na fatura do Itaú
+    const alvo = pdfDoc.numPages >= 2 ? 2 : 1;
+    pageSel.value = alvo;
+    controls.classList.remove('hidden');
+    drop.classList.add('hidden');
+    await analisar(alvo);
+  } catch (err) {
+    console.error(err);
+    setVerdict('bad', 'Não consegui abrir esse PDF. Ele pode estar protegido por senha ou ser uma imagem escaneada.');
+  }
+}
+
+// ── Analisa uma página ────────────────────────────────────────────────────
+async function analisar(numPagina) {
+  const page = await pdfDoc.getPage(numPagina);
+  const viewport = page.getViewport({ scale: 1 });
+  const content = await page.getTextContent();
+
+  const bands = detectColumnBands(content.items, viewport.width);
+  lastDump = {
+    arquivo: lastFileName,
+    pagina: numPagina,
+    larguraPagina: Math.round(viewport.width),
+    colunasDetectadas: bands.map(b => ({
+      x0: b.x0 === -Infinity ? null : Math.round(b.x0),
+      x1: b.x1 === Infinity ? null : Math.round(b.x1),
+    })),
+    itens: await dumpPageItems(page),
+  };
+
+  render(bands, content.items);
+}
+
+// ── Mostra o resultado ────────────────────────────────────────────────────
+const RE_LANC   = /lan[çc]amentos/i;
+const RE_DIREITA = /pr[óo]ximas\s+faturas|limites?\s+de\s+cr[ée]dito|total\s+dos\s+lan[çc]amentos\s+atuais/i;
+
+function render(bands, items) {
+  output.innerHTML = '';
+
+  if (bands.length < 2) {
+    setVerdict('warn',
+      'Só encontrei UMA coluna nesta página. Se a fatura tem duas colunas lado a lado, ' +
+      'os limiares precisam de ajuste — baixe o dump e me mande.');
+  }
+
+  const colunas = bands.map(b => linesOfBand(items, b));
+  let misturadas = 0;
+
+  colunas.forEach((linhas, i) => {
+    linhas.forEach(l => { if (RE_LANC.test(l) && RE_DIREITA.test(l)) misturadas++; });
+
+    const t = document.createElement('div');
+    t.className = 'col-title';
+    t.textContent = `Coluna ${i + 1} — ${linhas.length} linhas`;
+    output.appendChild(t);
+
+    const pre = document.createElement('pre');
+    pre.textContent = linhas.slice(0, 45).join('\n') || '(vazia)';
+    output.appendChild(pre);
+
+    const h = document.createElement('div');
+    h.className = 'hint';
+    h.textContent = linhas.length > 45
+      ? `mostrando as 45 primeiras de ${linhas.length} linhas — o dump completo tem todas`
+      : 'todas as linhas desta coluna';
+    output.appendChild(h);
+  });
+
+  if (bands.length >= 2 && misturadas === 0) {
+    setVerdict('ok', `✓ ${bands.length} colunas separadas, nenhuma linha misturando conteúdo das duas. Pode baixar o dump.`);
+  } else if (misturadas > 0) {
+    setVerdict('bad', `✕ ${misturadas} linha(s) ainda misturam as duas colunas. Baixe o dump e me mande para eu ajustar os limiares.`);
+  }
+}
+
+function setVerdict(tipo, texto) {
+  verdict.className = 'verdict ' + tipo;
+  verdict.textContent = texto;
+}
+
+// ── Download do dump ──────────────────────────────────────────────────────
+function download() {
+  if (!lastDump) return;
+  const blob = new Blob([JSON.stringify(lastDump, null, 1)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `dump-fatura-pagina${lastDump.pagina}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  setVerdict('ok', 'Dump baixado. Está na sua pasta de Downloads.');
+}
+</script>
+</body>
+</html>
