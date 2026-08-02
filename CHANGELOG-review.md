@@ -62,6 +62,43 @@
 - Empty-states padronizados (ícone+título+texto) em Parcelas e Orçamento×Real.
 - Month picker: clicar no nome do mês no topo abre o seletor nativo (pular vários meses de uma vez).
 
+## Rodada 6 — Correções da auditoria de 02/08/2026 (`RELATORIO-AUDITORIA.md`)
+
+### Bug
+- Segmentação por coluna antes de montar as linhas do PDF (`js/parsers/pdf-layout.js` + `js/pdf-import.js`) → lançamento da coluna esquerda não é mais fundido com valor da tabela de próximas faturas; o `pdf-import.js` antigo virou `js/pdf-import.legacy.js`.
+- Máquina de estados de seção na fatura → só "Lançamentos" vira transação; "Compras parceladas – próximas faturas" passou a ser usada só para conferir as projeções, nunca para criar lançamento.
+- Tolerância de centavos proporcional ao número de parcelas (`_tolerancia`, piso R$ 0,02 / teto R$ 1,00) → parcela de compra parcelada deixa de entrar duplicada por diferença de arredondamento.
+- Fingerprint SHA-256 do conjunto de lançamentos gravado em `importedInvoices` → reimportar a mesma fatura (mesmo renomeada) passa a pedir confirmação explícita.
+- `parseMoney` unificado em `base-parser.js` e consumido pelo import de fatura → `1.234` volta a ser mil duzentos e trinta e quatro, e o sinal negativo (hífen ou parênteses contábeis) para de ser descartado.
+- `dedupKey` passou a incluir o `type` e a arredondar o valor em bucket de 5 centavos → estorno não é mais escondido como duplicata da compra, e 1 centavo de divergência não cria linha repetida.
+- Regex do parser genérico ancorado por linha em `pdf-import.js` e em `pdf-statement-parser.js` (`GENERIC_LINE_RE`) → linha de limite de crédito e de resumo da fatura não viram mais lançamento.
+- `_eventsBound` único + delegação no `tbody` em `js/pdf-import.js` e `js/extratos.js` → abrir o modal N vezes não dispara mais N processamentos do mesmo arquivo.
+- Critério único de competência (`competenceOf`/`isOfMonth` em `js/utils.js`), adotado por `db.js`, `saldos.js`, `calendario.js`, `relatorios.js` e `receitas.js` → dashboard, gastos e relatórios param de divergir entre gasto de cartão e gasto de extrato.
+- `saveBudgets` reescrito com `writeBatch` → salvar o orçamento do mês virou uma operação atômica, sem deixar o mês pela metade se falhar no meio.
+
+### Segurança
+- `'unsafe-inline'` removido do `script-src` da CSP; bloco inline do Firebase extraído para `js/firebase-init.js` e `onclick` inline do empty-state de extratos trocado por listener → a CSP volta a barrar script injetado. (`style-src` mantém `'unsafe-inline'` de propósito — o app usa `style="..."` em dezenas de pontos.)
+- `firestore.rules` versionado na raiz (acesso restrito a `request.auth.uid`, exigência de `email_verified`, validação de campo por coleção, negação global no fim) → as regras deixam de existir só dentro do console.
+- `databaseURL` removido da config do Firebase → o Realtime Database, que o app nunca usou, não fica mais pendurado em regras que ninguém revisa.
+- `.gitignore` trocou o `*.json` genérico por `financas-backup-*.json` / `*-backup-*.json` → backup pessoal continua fora do repositório sem esconder JSON de configuração.
+
+### Performance
+- Troca de mês passou a só re-renderizar (`rerenderCurrentTab`), em vez de rodar `loadAllData()` → deixa de reler as 7 coleções inteiras do Firestore a cada clique de mês anterior/próximo. Redução de leituras por construção; **latência não foi medida**.
+- `saveBudgets` deixou de fazer 1 leitura + N deletes + N writes em série, passando a um único `writeBatch` → menos round-trips por salvamento; **tempo não medido**.
+- Headers `Cache-Control: no-cache, must-revalidate` para `/index.html`, `/js/*` e `/css/*` no `vercel.json` → some o risco de módulo antigo em cache contra `index.html` novo; o custo é uma revalidação (304), **não é ganho de velocidade**.
+
+### Acessibilidade
+- `aria-label` nos botões que só têm símbolo (✎/✕) em gastos, receitas, metas, patrimônio, configurações e extratos → o leitor de tela anuncia a ação e o item, não só o caractere.
+- `aria-label` em cada célula editável do preview de fatura e de extrato → checkbox, descrição, categoria e valor deixam de ser campos sem rótulo.
+- `role="dialog"`, `aria-modal="true"` e `aria-labelledby` nos 9 modais + `Escape` global fechando o modal aberto (com prioridade para o command palette) → o modal é anunciado como diálogo e dá para sair pelo teclado.
+- `scope="col"` nos 37 `<th>` do `index.html` → navegação por leitor de tela associa a célula ao cabeçalho certo.
+
+### Verificação — o que foi de fato testado
+- Suíte `node --test "test/*.test.mjs"` (32 casos, sem dependência): `parseMoney`, `parseDate`, `dedupKey`/`detectDuplicates`, `autoClassify`, `GENERIC_LINE_RE`, `detectColumnBands` (itens sintéticos) e `_tolerancia`.
+- `detectColumnBands` foi calibrado contra o dump real de `getTextContent()` da pág. 2 de uma fatura (`ferramentas/dump-fatura.html` + `scripts/tmp-calibrar.mjs`); os três defeitos medidos estão documentados no cabeçalho de `js/parsers/pdf-layout.js`.
+- A unificação de competência foi conferida antes com `scripts/tmp-diagnostico-competencia.mjs` sobre um backup real, em modo somente leitura.
+- **Não verificado nesta rodada:** importação de uma fatura de ponta a ponta no app publicado; publicação efetiva do `firestore.rules` no projeto Firebase; qualquer medição de tempo ou de cota de leitura.
+
 ## Nota de migração
 1. Regras antigas criadas na memória não existem — recrie na aba Regras (agora salvam de verdade).
 2. Receitas órfãs de lotes excluídos antes do fix: Configurações → Zona de risco → wipe de `incomes` + reimport, ou exclusão manual na aba Receitas.

@@ -50,7 +50,34 @@ Arquivos entregues nesta auditoria:
 
 ## 2. Achados
 
+> **Situação em 02/08/2026 (rodada de correção).** Cada achado abaixo recebeu uma linha
+> `Status:` logo após o título. Nenhum achado foi removido — o texto original permanece
+> como estava, inclusive as instruções que já não se aplicam.
+>
+> | # | Achado | Status |
+> |---|---|---|
+> | 1 | Fatura de duas colunas lida como uma só | **RESOLVIDO** |
+> | 2 | Regras do Firestore fora do repositório | **PARCIAL** |
+> | 3 | `parseMoney` transforma R$ 1.234 em R$ 1,23 | **RESOLVIDO** |
+> | 4 | Listeners empilham a cada abertura do modal | **RESOLVIDO** |
+> | 5 | Recarga total do Firestore a cada clique de mês | **RESOLVIDO** |
+> | 6 | Dedupe sensível a centavo e cego ao tipo | **RESOLVIDO** |
+> | 7 | `_parseGenerico` sem âncora | **RESOLVIDO** |
+> | 8 | `unsafe-inline` no `script-src` | **RESOLVIDO** |
+> | 9 | `vercel.json` sem regras de cache | **RESOLVIDO** |
+> | 10 | `saveBudgets` sem batch | **RESOLVIDO** |
+> | 11 | Três critérios de competência | **RESOLVIDO** |
+> | 12 | Acessibilidade das telas | **PARCIAL** |
+> | 13 | `.gitignore` ignora todo `*.json` | **RESOLVIDO** |
+>
+> Sobre evidência: os itens de parsing têm cobertura em `test/*.test.mjs` e, no caso da
+> segmentação por coluna, calibração contra o dump real da pág. 2 de uma fatura. Nada nesta
+> rodada foi validado por uma importação completa no app publicado, e nenhum ganho de tempo
+> ou de cota foi medido.
+
 ### Achado 1 — CRÍTICO — Fatura de duas colunas é lida como uma coluna só
+
+**Status: RESOLVIDO.** `js/pdf-import.js` agora monta as linhas por coluna via `extractColumnStreams` de `js/parsers/pdf-layout.js`, com máquina de seção, `_tolerancia` proporcional e fingerprint anti-reimportação; o arquivo antigo foi preservado como `js/pdf-import.legacy.js`. A validação pedida no fim deste achado foi feita com o dump real da pág. 2 (`ferramentas/dump-fatura.html` + `scripts/tmp-calibrar.mjs`) e os três defeitos medidos estão documentados no cabeçalho de `pdf-layout.js` — mas uma importação completa no app publicado não foi refeita nesta rodada.
 
 **Arquivo:** `js/pdf-import.js`, `_processPdf`, linhas 106–115.
 
@@ -133,6 +160,8 @@ Me mande esse dump (pode trocar a coluna `str` por `<texto>` se quiser preservar
 
 ### Achado 2 — ALTO — Regras do Firestore não existem no repositório
 
+**Status: PARCIAL.** `firestore.rules` está versionado na raiz e o `databaseURL` saiu da config do Firebase; a publicação no projeto (`firebase deploy --only firestore:rules`) não é verificável pelo repositório e não há `firebase.json` — enquanto isso não for confirmado no console, o risco de exposição continua de pé.
+
 **Arquivo:** nenhum. Não há `firestore.rules` nem `firebase.json` versionados.
 
 **O que está errado.** As regras vivem só no console do Firebase. Não há revisão, histórico nem forma de saber se o banco está fechado. Um projeto criado em modo teste fica aberto por 30 dias e depois nega tudo — em nenhum dos dois estados isso é aceitável para um banco com dados financeiros pessoais.
@@ -146,6 +175,8 @@ O `databaseURL` do Realtime Database está na config mas o app nunca usa RTDB. R
 ---
 
 ### Achado 3 — ALTO — `parseMoney` transforma R$ 1.234 em R$ 1,23
+
+**Status: RESOLVIDO.** `parseMoney` corrigido em `js/parsers/base-parser.js` e importado por `js/pdf-import.js` (cópia divergente eliminada); coberto por `test/base-parser.test.mjs`, inclusive o caso `1.234` → 1234 e os negativos por sinal e por parênteses.
 
 **Arquivo:** `js/parsers/base-parser.js` (linhas 94–101, antes da correção) e a cópia divergente em `js/pdf-import.js` (linhas 279–286).
 
@@ -191,6 +222,8 @@ export function parseMoney(raw) {
 
 ### Achado 4 — ALTO — Listeners empilham a cada abertura do modal de fatura
 
+**Status: RESOLVIDO.** `js/pdf-import.js` e `js/extratos.js` usam um único guard `_eventsBound` com delegação no `tbody`; não resta nenhum `cloneNode/replaceChild` em `extratos.js`. Verificado por leitura do código, não por sessão longa no app.
+
 **Arquivo:** `js/pdf-import.js`, `_attachEvents` (linhas 45–74) e `_showPreview` (linhas 405–415).
 
 **O que está errado.** `initPdfImport` é chamado toda vez que o botão "Importar fatura" é clicado (`js/gastos.js:139`). Dentro de `_attachEvents`, só `pdf-file-input` e `btn-confirmar-pdf` são clonados para limpar handlers; `pdf-drop-zone` e `pdf-check-all` recebem `addEventListener` novo a cada chamada, sem remoção. Em `_showPreview`, os dois `tbody.addEventListener` são registrados a cada preview, e o `tbody` nunca é recriado — só o `innerHTML`.
@@ -214,6 +247,8 @@ function _attachEvents() {
 ---
 
 ### Achado 5 — MÉDIO — Recarga total do Firestore a cada clique de mês
+
+**Status: RESOLVIDO.** A navegação de mês chama `rerenderCurrentTab()` (só re-render) nas três chamadas; `reloadAndRerender()` existe exportado para escrita externa, mas hoje não é chamado por ninguém — o restore já refaz `loadAllData()` dentro de `js/db.js`. A redução de leituras é por construção; latência e cota não foram medidas.
 
 **Arquivo:** `js/app.js`, `refreshCurrentTab` (linhas 63–68), chamada pelos botões de mês anterior/próximo e pelo month picker.
 
@@ -251,6 +286,8 @@ e trocar as três chamadas de `refreshCurrentTab()` (linhas 252, 259, 265) por `
 ---
 
 ### Achado 6 — MÉDIO — Deduplicação de extrato é sensível a centavo e ignora o tipo
+
+**Status: RESOLVIDO.** `dedupKey` recebe `type` e arredonda o valor em bucket de 5 centavos, e `detectDuplicates` repassa o tipo dos dois lados; coberto por `test/base-parser.test.mjs`, incluindo entrada×saída de mesmo valor e a diferença de 1 centavo.
 
 **Arquivo:** `js/parsers/base-parser.js`, `dedupKey`/`detectDuplicates` (linhas 71–89).
 
@@ -293,6 +330,8 @@ O bucket de 5 centavos é uma escolha, não uma verdade: se você importa muitos
 
 ### Achado 7 — MÉDIO — `_parseGenerico` roda sobre o texto inteiro sem âncora
 
+**Status: RESOLVIDO.** Os dois pontos foram ancorados: `RE_LINE`/`RE_LINE_PARC` em `js/pdf-import.js` usam `^…$` por linha, e `js/parsers/pdf-statement-parser.js` exporta `GENERIC_LINE_RE` ancorado — com teste rejeitando linha de limite de crédito e de resumo de fatura.
+
 **Arquivo:** `js/pdf-import.js`, linhas 256–276.
 
 ```js
@@ -317,6 +356,8 @@ Note que `js/parsers/pdf-statement-parser.js:117` tem exatamente o mesmo problem
 ---
 
 ### Achado 8 — MÉDIO — `unsafe-inline` no `script-src` da CSP
+
+**Status: RESOLVIDO.** Os três passos foram feitos: bloco inline movido para `js/firebase-init.js`, nenhum `onclick=` restante em `js/` ou `index.html`, e `unsafe-inline` fora do `script-src` no `vercel.json`. Mantido em `style-src`, deliberadamente, como o próprio achado recomenda.
 
 **Arquivo:** `vercel.json`, linha 24.
 
@@ -352,6 +393,8 @@ container.querySelector('#btn-empty-import')
 
 ### Achado 9 — MÉDIO — `vercel.json` sem regras de cache, com ES modules sem versão
 
+**Status: RESOLVIDO.** `vercel.json` traz os três blocos `Cache-Control: no-cache, must-revalidate` para `/index.html`, `/js/(.*)` e `/css/(.*)`. É correção de consistência de cache, não ganho de velocidade — o custo continua sendo um round-trip de revalidação.
+
 **Arquivo:** `vercel.json` — só há bloco `headers` de segurança.
 
 **O que está errado.** `index.html` e os `js/*.js` são servidos com o default da Vercel. Como os módulos são importados por caminho fixo (`./gastos.js`), um browser que cacheou `gastos.js` pode ficar com uma versão antiga enquanto o `index.html` já é novo — combinação que produz erro de import ou, pior, comportamento inconsistente sem erro.
@@ -378,6 +421,8 @@ container.querySelector('#btn-empty-import')
 ---
 
 ### Achado 10 — BAIXO — `saveBudgets` faz N leituras e N escritas sem batch
+
+**Status: RESOLVIDO.** `saveBudgets` em `js/db.js` monta um `writeBatch` único (delete dos docs do mês + set dos novos) e commita de uma vez, tornando o salvamento atômico. O número de round-trips cai por construção; tempo não medido.
 
 **Arquivo:** `js/db.js`, linhas 222–241.
 
@@ -418,6 +463,8 @@ export async function saveBudgets(month, budgetMap) {
 
 ### Achado 11 — BAIXO — Competência: três critérios diferentes convivendo
 
+**Status: RESOLVIDO.** `competenceOf`/`isOfMonth` vivem em `js/utils.js` e são usados por `db.js`, `saldos.js`, `calendario.js`, `relatorios.js` e `receitas.js`. O impacto nos totais históricos foi conferido antes com `scripts/tmp-diagnostico-competencia.mjs` sobre um backup real, em modo somente leitura.
+
 **Arquivos:** `js/db.js` `allExpensesOfMonth` (150–165), `incomesOfMonth` (194–201), `js/utils.js` `_expensesFallback` (126–137).
 
 **O que está errado.** Gasto de cartão é classificado por `competenceMonth`; gasto de extrato, por `date.slice(0,7)`; receita aceita `month`, `competenceMonth` ou `date`, nessa ordem. Três regras para a mesma pergunta "este lançamento é deste mês?".
@@ -442,6 +489,8 @@ e trocar os três filtros por `isOfMonth(t, month)`. Isso não muda o dado no Fi
 
 ### Achado 12 — BAIXO — Acessibilidade das telas
 
+**Status: PARCIAL.** Itens 1, 2 e 4 resolvidos (`aria-label` nos botões de símbolo e nas células editáveis de preview; `scope="col"` nos 37 `<th>`) e o item 3 resolvido pela metade: os 9 modais têm `role="dialog"`, `aria-modal` e `aria-labelledby`, e o `Escape` global fecha o modal aberto, mas **não há trap de foco** — o Tab ainda escapa do diálogo para o conteúdo atrás. O item 5 permanece intencionalmente como está.
+
 **Arquivos:** `index.html`, `js/gastos.js` (89–90), `js/configuracoes.js` (166–167), `js/extratos.js` (465–474).
 
 Pontos concretos, do mais barato ao mais caro:
@@ -465,6 +514,8 @@ Pontos concretos, do mais barato ao mais caro:
 ---
 
 ### Achado 13 — BAIXO — `.gitignore` ignora todo `*.json`
+
+**Status: RESOLVIDO.** O `*.json` genérico saiu do `.gitignore`, substituído por `financas-backup-*.json` e `*-backup-*.json` (mais `tmp-*.json` e `scripts/tmp-*.mjs` para os arquivos de calibração).
 
 **Arquivo:** `.gitignore`, linha 8.
 
