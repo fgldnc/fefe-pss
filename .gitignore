@@ -12,6 +12,9 @@
 Thumbs.db
 desktop.ini
 
+# Scripts temporários de calibração/diagnóstico
+scripts/tmp-*.mjs
+
 # Editores
 .vscode/
 .idea/
