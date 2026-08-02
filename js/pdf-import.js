@@ -558,7 +558,13 @@ function _showPreview(items, filename, proximasFaturas) {
 
     const marks = [
       anoDeduzido ? `<span class="mark-inferido">ano deduzido</span>` : '',
-      item.isDuplicate ? `<span class="tag-duplicata">Possível duplicata</span>` : '',
+      item.isDuplicate
+        ? `<span class="tag-duplicata" title="${esc(item.duplicateWhy || '')}">${
+            item.installmentTotal > 1
+              ? `Parcela ${item.installmentCurrent}/${item.installmentTotal} já registrada`
+              : `Já existe · ${item.amount.toFixed(2)} em ${esc(item.date || '')}`
+          }</span>`
+        : '',
     ].filter(Boolean).join('');
 
     // A linha duplicada da fatura continua MARCADA para importar — diverge do
@@ -624,9 +630,25 @@ function _classificarEDetectarDuplicatas(items) {
     item._categoryId          = resolveCategoryId(cls.category);
     item.classificationOrigin = cls.origin;
 
-    item.isDuplicate = item.installmentTotal > 1
-      ? _parcelaJaExiste(item.description, item.amount, item.installmentCurrent, item.installmentTotal)
-      : (semTipo[i].isDuplicate || comTipo[i].isDuplicate);
+    if (item.installmentTotal > 1) {
+      // Parcela compara por descrição + nº de parcela + valor dentro da
+      // tolerância de centavos; a DATA é ignorada de propósito, porque a
+      // parcela projetada tem data futura. Regra distinta, motivo distinto.
+      item.isDuplicate  = _parcelaJaExiste(item.description, item.amount, item.installmentCurrent, item.installmentTotal);
+      item.duplicateOf  = null;
+      item.duplicateWhy = item.isDuplicate
+        ? `A parcela ${item.installmentCurrent}/${item.installmentTotal} desta compra já está registrada, `
+          + `com valor dentro de R$ ${_tolerancia(item.installmentTotal).toFixed(2)} de diferença.`
+        : '';
+    } else {
+      const hit = semTipo[i].duplicateOf || comTipo[i].duplicateOf;
+      item.isDuplicate  = !!hit;
+      item.duplicateOf  = hit || null;
+      item.duplicateWhy = hit
+        ? `Já existe um lançamento de ${hit.amount.toFixed(2)} em ${hit.date} com esta descrição. `
+          + `Data, valor e descrição batem exatamente.`
+        : '';
+    }
   });
 }
 

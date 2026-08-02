@@ -84,28 +84,39 @@ export function normalizeDesc(str) {
  * Gera chave de deduplicação.
  * `type` entra na chave porque entrada e saída de mesmo valor/data/descrição são
  * um cenário real (transferência entre contas próprias) e não podem colidir.
- * O valor é arredondado num bucket de 5 centavos para absorver diferença de
- * arredondamento entre o extrato e o que já está gravado.
+ * O valor entra em CENTAVOS EXATOS. Antes era um bucket de 5 centavos, para
+ * absorver arredondamento — mas as duas pontas vêm do mesmo dado do banco, não
+ * há arredondamento a absorver, e o bucket só criava falso positivo: quem
+ * recebe salário, VA e VT no mesmo dia tem três lançamentos de mesma data e
+ * mesma descrição em que a ÚNICA diferença é o valor.
  * `type` é opcional para manter compatibilidade com chamadas antigas.
  */
 export function dedupKey(date, amount, normalizedDesc, type = '') {
-  const bucket = (Math.round(Math.abs(amount) * 20) / 20).toFixed(2);
-  return `${date}|${type}|${bucket}|${normalizedDesc.slice(0, 40)}`;
+  const cents = (Math.abs(Math.round((Number(amount) || 0) * 100)) / 100).toFixed(2);
+  return `${date}|${type}|${cents}|${normalizedDesc.slice(0, 40)}`;
 }
 
 /**
- * Detecta duplicatas contra lista de transações existentes
+ * Detecta duplicatas contra lista de transações existentes.
+ * Devolve também `duplicateOf` — o registro que bateu — para a tela de revisão
+ * poder DIZER contra o quê bateu. Aviso sem evidência vira ruído: o usuário
+ * não tem como julgar se é engano ou se o lançamento já está mesmo lá.
  */
 export function detectDuplicates(newItems, existingTransactions) {
-  const existingKeys = new Set(
-    existingTransactions.map(t =>
-      dedupKey(t.date || '', t.amount || 0, normalizeDesc(t.description || ''), t.type || '')
-    )
-  );
+  const existing = new Map();
+  for (const t of existingTransactions) {
+    const k = dedupKey(t.date || '', t.amount || 0, normalizeDesc(t.description || ''), t.type || '');
+    if (!existing.has(k)) existing.set(k, t);
+  }
 
   return newItems.map(item => {
     const key = dedupKey(item.date, item.amount, normalizeDesc(item.description), item.type || '');
-    return { ...item, isDuplicate: existingKeys.has(key) };
+    const hit = existing.get(key);
+    return {
+      ...item,
+      isDuplicate: !!hit,
+      duplicateOf: hit ? { date: hit.date || '', amount: hit.amount || 0, description: hit.description || '' } : null,
+    };
   });
 }
 

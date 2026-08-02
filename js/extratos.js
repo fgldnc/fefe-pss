@@ -492,8 +492,11 @@ function _showReview(items, bank, format) {
       <option value="income"   ${tx.type === 'income'   ? 'selected' : ''}>Entrada</option>
       <option value="transfer" ${tx.type === 'transfer' ? 'selected' : ''}>Transferência</option>`;
 
+    // A tag diz contra o QUE bateu. Sem isso o aviso é inauditável: o usuário
+    // não distingue "já importei este extrato" de "a regra é burra".
     const dupBadge = tx.isDuplicate
-      ? `<span class="tag-duplicata">Possível duplicata</span>` : '';
+      ? `<span class="tag-duplicata" title="${esc(_motivoDuplicata(tx))}">Já existe · ${esc(fmt(tx.amount))} em ${esc(tx.date || '')}</span>`
+      : '';
 
     // Coluna 5: categoria (saída) ou tipo de receita (entrada)
     const col5 = isIncome
@@ -557,6 +560,19 @@ function _showReview(items, bank, format) {
       }
     });
   });
+}
+
+/**
+ * Frase de evidência da duplicata: data, valor e descrição do registro que já
+ * está na base. Só bate quando os três coincidem — data, valor em centavos
+ * exatos e descrição —, então valores diferentes no mesmo dia (salário, VA, VT)
+ * nunca caem aqui.
+ */
+function _motivoDuplicata(tx) {
+  const d = tx.duplicateOf;
+  if (!d) return 'Lançamento igual já registrado.';
+  return `Já existe um lançamento de ${fmt(d.amount)} em ${d.date} com esta descrição: "${d.description}". `
+       + `Data, valor e descrição batem exatamente.`;
 }
 
 /**

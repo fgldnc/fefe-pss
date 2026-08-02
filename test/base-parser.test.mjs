@@ -100,21 +100,26 @@ test('entrada e saída de mesmo valor não colidem', () => {
   assert.notEqual(saida, entrada);
 });
 
-test('diferença de 1 centavo cai no mesmo bucket de 5 centavos', () => {
+test('1 centavo de diferença é transação distinta', () => {
+  // O bucket de 5 centavos foi removido: as duas pontas vêm do mesmo dado do
+  // banco, e o bucket só juntava lançamentos legitimamente diferentes.
   const desc = normalizeDesc('MERCADO FICTICIO LTDA');
-  const a = dedupKey('2026-07-10', 100.00, desc, 'expense');
-  const b = dedupKey('2026-07-10', 100.01, desc, 'expense');
-  assert.equal(a, b);
+  assert.notEqual(
+    dedupKey('2026-07-10', 100.00, desc, 'expense'),
+    dedupKey('2026-07-10', 100.01, desc, 'expense'),
+  );
 });
 
-test('o bucket de 5 centavos não é uma tolerância simétrica', () => {
-  // Comportamento conhecido e aceito: o bucket absorve arredondamento, mas
-  // 1 centavo pode cruzar a fronteira do bucket (100,02 → 100,00 / 100,03 → 100,05).
-  const desc = normalizeDesc('ESTABELECIMENTO A');
-  assert.notEqual(
-    dedupKey('2026-07-10', 100.02, desc, 'expense'),
-    dedupKey('2026-07-10', 100.03, desc, 'expense'),
-  );
+test('mesma data e mesma descrição, valores diferentes: não colidem', () => {
+  // Caso real: salário, vale-alimentação e vale-transporte creditados no mesmo
+  // dia com a mesma descrição do banco — só o valor os distingue.
+  const desc = normalizeDesc('CREDITO EM CONTA');
+  const chaves = new Set([
+    dedupKey('2026-07-05', 10, desc, 'income'),
+    dedupKey('2026-07-05', 20, desc, 'income'),
+    dedupKey('2026-07-05', 30, desc, 'income'),
+  ]);
+  assert.equal(chaves.size, 3);
 });
 
 test('detectDuplicates separa entrada de saída de mesmo valor', () => {
@@ -126,8 +131,21 @@ test('detectDuplicates separa entrada de saída de mesmo valor', () => {
     { date: '2026-07-10', amount:  250.00, description: 'Transferencia Loja Exemplo', type: 'income'  },
   ];
   const r = detectDuplicates(novos, existentes);
-  assert.equal(r[0].isDuplicate, true);   // 1 centavo de diferença = mesma transação
+  assert.equal(r[0].isDuplicate, false);  // 1 centavo de diferença = outro lançamento
   assert.equal(r[1].isDuplicate, false);  // sentido oposto = transação distinta
+});
+
+test('detectDuplicates devolve o registro que bateu, para a tela explicar', () => {
+  const existentes = [
+    { date: '2026-07-10', amount: 42, description: 'Estabelecimento A', type: 'expense' },
+  ];
+  const r = detectDuplicates(
+    [{ date: '2026-07-10', amount: 42, description: 'Estabelecimento A', type: 'expense' },
+     { date: '2026-07-10', amount: 43, description: 'Estabelecimento A', type: 'expense' }],
+    existentes,
+  );
+  assert.equal(r[0].duplicateOf.amount, 42);
+  assert.equal(r[1].duplicateOf, null);
 });
 
 test('detectDuplicates não marca data ou descrição diferente', () => {
