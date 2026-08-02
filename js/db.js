@@ -215,22 +215,61 @@ export async function deleteIncome(id) {
 
 // ─── BUDGETS ───────────────────────────────────────────────────────────────
 
-/** Salva todos os orçamentos de um mês (batch) */
-export async function saveBudgets(month, budgetMap) {
-  const { getDocs, deleteDoc, addDoc } = fb();
+/** ID determinístico do orçamento: um doc por (mês, categoria) → set() vira upsert */
+function budgetDocId(month, categoryId) {
+  return `${month}__${categoryId}`;
+}
 
-  // Remove orçamentos antigos do mês
-  const existing = await getAll('budgets');
-  const toDelete = existing.filter(b => b.month === month);
-  for (const b of toDelete) {
-    await removeDoc('budgets', b.id);
+/**
+ * Salva todos os orçamentos de um mês em writeBatch.
+ *
+ * Com ID determinístico o set() atualiza no lugar, então o delete só é
+ * necessário para (a) categorias removidas do mapa e (b) docs legados do mês
+ * com ID auto-gerado, que existem de antes desta mudança e precisam sumir
+ * para não duplicar o mesmo (mês, categoria) na leitura.
+ */
+export async function saveBudgets(month, budgetMap) {
+  const uid = getUid();
+  if (!uid) throw new Error('Usuário não autenticado — não foi possível salvar o orçamento.');
+
+  const { db, getDocs, writeBatch, doc, collection } = fb();
+  const path = `users/${uid}/budgets`;
+  const col  = collection(db, path);
+
+  const snap = await getDocs(col);
+
+  // IDs que o novo estado vai gravar (só valores > 0 viram documento)
+  const keep = new Set();
+  const writes = [];
+  for (const [categoryId, amount] of Object.entries(budgetMap)) {
+    const value = Number(amount);
+    if (!(value > 0)) continue;
+    const id = budgetDocId(month, categoryId);
+    keep.add(id);
+    writes.push([id, { month, categoryId, amount: value }]);
   }
 
-  // Insere novos
-  for (const [categoryId, amount] of Object.entries(budgetMap)) {
-    if (amount > 0) {
-      await saveDoc('budgets', { month, categoryId, amount: Number(amount) });
+  const deletes = snap.docs
+    .filter(d => d.data().month === month && !keep.has(d.id))
+    .map(d => d.id);
+
+  // Operações em lotes de até 450 (margem sob o limite de 500 do Firestore),
+  // mesmo esquema de wipeCollection. Deletes primeiro: se um doc legado e um
+  // determinístico da mesma categoria caírem em lotes diferentes, o legado
+  // some antes de o novo entrar.
+  const ops = [
+    ...deletes.map(id => ['delete', id, null]),
+    ...writes.map(([id, data]) => ['set', id, data]),
+  ];
+
+  for (let i = 0; i < ops.length; i += 450) {
+    const batch = writeBatch(db);
+    for (const [kind, id, data] of ops.slice(i, i + 450)) {
+      const ref = doc(db, path, id);
+      if (kind === 'delete') batch.delete(ref);
+      else batch.set(ref, data);
     }
+    await batch.commit();
   }
 
   // Atualiza state
