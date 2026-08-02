@@ -4,8 +4,9 @@ Documento de estado entre sessões. Quem abrir uma sessão nova sobre design do
 Radar lê este arquivo primeiro e continua daqui, sem precisar refazer o
 diagnóstico.
 
-**Última atualização:** 02/08/2026 · rodadas 0 e 1 concluídas, rodada 2 com
-mockup aprovado e prompt escrito, aguardando execução.
+**Última atualização:** 02/08/2026 · rodadas 0, 1 e 2 concluídas. Próximo passo:
+**diagnóstico e mockup da rodada 3** (Dashboard) — ainda não há prompt escrito,
+e não deve haver antes da aprovação do mockup.
 
 ---
 
@@ -185,8 +186,7 @@ pré-existente, mas que a rodada 1 tornou mais frequente. **Decidir na rodada 3.
 Bloqueava as rodadas 2 e 3 — desbloqueadas.
 
 ### Rodada 2 — Sinalização visual da revisão de importação
-**Estado: mockup aprovado em 02/08/2026. Prompt em `PROMPT-rodada-2.md`,
-aguardando execução do Claude Code.**
+**Estado: CONCLUÍDA e conferida em 02/08/2026.** Prompt em `PROMPT-rodada-2.md`.
 
 Decisões de design fechadas na aprovação do mockup:
 
@@ -221,8 +221,75 @@ hoje só tem bloqueio da fatura inteira via fingerprint.
 
 Mockup obrigatório. Componente definido aqui é consumido pelas rodadas 3 e 6.
 
+**Conferência da entrega:**
+
+- Vocabulário em `css/components.css`, logo abaixo de `.batch-stat-out`:
+  `.mark-inferido` (losango via `::before`), `.field-inferido`, `.field-editado`,
+  `.row-atencao`, `.row-hidden-filter`, `.row-marks`, `.import-summary-bar`,
+  `.btn-atencao`. Só tokens do `:root`.
+- Helpers compartilhados pelos dois modais ficaram em `js/utils.js`, no fim do
+  arquivo: `renderImportSummary`, `updateImportSummary`, `toggleImportFilter`,
+  `updateImportConfirmButton`. Foi para lá porque `utils.js` não importa nenhum
+  módulo do projeto — é o único lugar comum aos dois fluxos sem criar ciclo.
+- A barra de resumo mantém os contadores sempre no DOM, escondidos em zero, e
+  só troca o texto. Recriar o `innerHTML` a cada recálculo apagaria o estado
+  ligado/desligado do botão de filtro.
+- `pdf-import.js`: `_classificarEDetectarDuplicatas()` roda antes de montar o
+  HTML (a marca precisa da procedência no momento em que a linha é escrita) e
+  `_recomputeAtencao()` relê o DOM a cada mudança de checkbox ou categoria.
+  `extratos.js` tem o par simétrico `_recomputeAtencaoExtrato()`.
+- 35 testes passam (`node --test test/*.mjs`).
+
+**Desvios do prompt, decididos durante a execução:**
+
+1. **A coluna "Status" do preview de extrato foi removida** e a `.tag-duplicata`
+   passou para junto da descrição. Manter a coluna contrariava o princípio da
+   própria rodada — marca longe do campo — e ela ficaria vazia em toda linha sem
+   duplicata. `index.html` e a variante de `thead` montada em `_showReview()`
+   quando há receitas foram ajustados juntos: são **duas** definições do mesmo
+   cabeçalho, quem mexer numa precisa mexer na outra.
+2. **Largura do modal.** `modal-lg` (740px) truncava a descrição. Os dois modais
+   de importação passaram a usar `.modal-import`
+   (`max-width: min(1400px, 98vw)`), com padding de célula da tabela de preview
+   reduzido para `0.45rem` e `select` elástico (`width:100%`), sobrepondo o
+   `max-width:140px` do `.select-inline`. Sem isso a tabela exigia scroll
+   lateral mesmo com o modal largo.
+3. **`dedupKey` foi alterado — furando a restrição "só design".** Pedido
+   explícito da Fefe depois de ver falso positivo de duplicata na tela. O valor
+   entrava num *bucket de 5 centavos*, o que juntava lançamentos legitimamente
+   distintos do mesmo estabelecimento no mesmo dia (ex.: 594,04 e 594,06). Agora
+   entra em **centavos exatos**. Verificado antes de mexer: mesma data + mesma
+   descrição + valores diferentes **nunca** colidiram — a hipótese de "a regra só
+   olha o nome" não se sustentou.
+4. **`detectDuplicates` passou a devolver `duplicateOf`**, o registro que bateu,
+   e a tag deixou de ser um "Possível duplicata" genérico: diz o valor e a data
+   do lançamento que já existe, com a frase completa no `title`. Aviso sem
+   evidência é ruído — o usuário não consegue distinguir "já importei este
+   arquivo" de "a regra errou". Na fatura a tag de parcelado tem texto próprio
+   (`Parcela x/y já registrada`), porque a regra é outra: compara nº de parcela e
+   ignora a data, já que a parcela projetada tem data futura.
+
+**Pendente que a rodada 2 não resolveu:** se uma linha continuar sendo acusada
+de duplicata sem que o lançamento esteja na base, o `title` da tag agora mostra
+contra qual registro ela bateu — é o dado que falta para fechar o diagnóstico.
+
 ### Rodada 3 — Recorte do Dashboard e micro-contexto nos KPIs
-**Estado: não iniciada. Depende de 1 e 2.**
+**Estado: PRÓXIMA. Desbloqueada — 1 e 2 concluídas. Falta o diagnóstico e o
+mockup; não escrever prompt antes da aprovação.**
+
+Herda três pendências que precisam ser resolvidas dentro dela:
+
+1. **A fatia "Sem categoria" da pizza** (`dashboard.js`, correção aplicada na
+   rodada 1) está em `#6b6b6b` como tratamento provisório. A rodada 2 fechou que
+   âmbar significa "exige ação" — decidir se a fatia herda isso ou continua
+   neutra. Cuidado: no Dashboard o âmbar ainda não tem esse significado, e a
+   pizza não é editável, então a marca ali não leva a lugar nenhum.
+2. **Lançamento sem categoria some do Orçamento × Real** (`orcamento.js` agrupa
+   por `categoryId` e simplesmente não casa). Comportamento pré-existente que a
+   rodada 1 tornou mais frequente.
+3. **Vocabulário da rodada 2 no Dashboard.** `.mark-inferido`, `.row-atencao` e
+   `.btn-atencao` existem e são de uso geral. Se o Dashboard precisar sinalizar
+   dado deduzido, reusa — não inventa outro símbolo.
 
 Seta de tendência e sparkline vs. mês anterior; revisão do que merece ser KPI
 no dia 1 do mês. Depois de 1 e 2 porque tendência sobre número contaminado é
@@ -279,7 +346,10 @@ Só faz sentido desenhar o vazio depois que o cheio estiver certo.
   `--radius-xl` (20px) modal. Sem valores intermediários.
 - **Só design.** Não reescrever parser, regra de classificação ou projeção de
   parcela dentro de uma rodada de design. Dependência disso vira pré-requisito
-  declarado.
+  declarado. **Exceção com precedente (rodada 2):** correção de regra pedida
+  explicitamente pela Fefe depois de ver o erro na tela entra na rodada, mas
+  precisa ser (a) verificada no código antes — a hipótese de quem reporta pode
+  não ser a causa —, (b) coberta por teste e (c) registrada como desvio aqui.
 - **Dado financeiro real nunca aparece** em mockup, exemplo ou prompt. Valores
   fictícios e estabelecimentos genéricos.
 - **Nenhuma credencial** em código de exemplo.
@@ -302,8 +372,10 @@ Só faz sentido desenhar o vazio depois que o cheio estiver certo.
 Cole numa sessão nova:
 
 > Estou retomando o redesign do Radar Financeiro. Leia `ROTEIRO-REDESIGN.md`,
-> `CLAUDE.md` e `RELATORIO-AUDITORIA.md` na raiz do repositório. Diga em que
-> rodada estamos, o que ficou pendente e qual é o próximo passo, antes de propor
+> `CLAUDE.md` e `RELATORIO-AUDITORIA.md` na raiz do repositório. Rodadas 0, 1 e 2
+> estão concluídas; a próxima é a **rodada 3 (Dashboard)**, que ainda está na
+> etapa de diagnóstico e mockup — não escreva prompt de implementação antes de eu
+> aprovar o mockup. Diga o que a rodada 3 herda de pendência, antes de propor
 > qualquer coisa. Se algum achado do roteiro não bater mais com o código, aponte
 > a divergência em vez de seguir o roteiro.
 
@@ -311,9 +383,13 @@ Cole numa sessão nova:
 
 ## Registro de divergências conhecidas
 
-- `CLAUDE.md` cita `js/pdf-import.fixed.js` como arquivo entregue e não ativado.
-  No repositório existem `js/pdf-import.js` e `js/pdf-import.legacy.js` — o
-  "fixed" aparenta ter sido promovido a principal e o antigo virado legado.
-  **Verificar e atualizar o `CLAUDE.md`**; não assumir pelo nome do arquivo.
+- ~~`CLAUDE.md` cita `js/pdf-import.fixed.js` como arquivo entregue e não
+  ativado.~~ **Resolvido em 02/08/2026:** o "fixed" foi promovido a
+  `js/pdf-import.js` (o cabeçalho do arquivo ainda descreve a promoção) e o
+  antigo virou `js/pdf-import.legacy.js`, que não é importado por ninguém.
+  `js/parsers/pdf-layout.js` está em uso de verdade. `CLAUDE.md` atualizado.
+- **`js/pdf-import.legacy.js` é código morto.** Ainda referencia
+  `#pdf-info-text`, elemento que a rodada 2 removeu do `index.html`. Remover
+  numa rodada que já toque no fluxo de fatura — limpeza, não design.
 - `RELATORIO-AUDITORIA.md` (02/08/2026) lista 13 achados abertos. Ler antes de
   mexer em parsing de PDF, dedupe ou segurança. Achado aberto ≠ item de design.

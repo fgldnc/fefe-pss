@@ -1,3 +1,11 @@
+> **EXECUTADO em 02/08/2026.** Documento histórico — não reexecutar.
+> A entrega teve quatro desvios em relação a este prompt (coluna "Status" do
+> extrato removida, largura dos modais, `dedupKey` em centavos exatos e
+> `detectDuplicates` devolvendo `duplicateOf`). Os motivos estão em
+> `ROTEIRO-REDESIGN.md`, seção da rodada 2. **O roteiro manda, não este arquivo.**
+
+---
+
 # Prompt — Rodada 2: sinalização visual da revisão de importação
 
 ## Contexto do projeto

@@ -35,19 +35,52 @@ App de **controle financeiro pessoal** (nome exibido: "Radar", `index.html:6` = 
 | `metas.js` | CRUD de metas financeiras e seus aportes. |
 | `patrimonio.js` | CRUD de ativos, aportes e vínculo ativo→meta (`linkedGoalId`). |
 | `saldos.js` | Fluxo de caixa diário do mês; exporta `renderCalendario` (é o módulo usado pela aba "Fluxo de Caixa"). |
-| `calendario.js` | Calendário financeiro mensal — **não está registrado em `TAB_MODULES`** (`js/app.js:29` aponta a aba `calendario` para `saldos.js`). VERIFICAR se ainda é usado. |
+| `calendario.js` | Calendário financeiro mensal — **não está registrado em `TAB_MODULES`** (`js/app.js:29` aponta a aba `calendario` para `saldos.js`). **Código morto** — verificado em 02/08/2026: nenhum import aponta para ele. Remoção prevista para a rodada 4 do redesign. |
 | `timeline.js` | Linha do tempo de eventos financeiros com filtro por tipo. |
 | `relatorios.js` | Relatórios exportáveis em CSV e JSON. |
 | `configuracoes.js` | Categorias, regras de classificação, estatísticas, backup/restore, preferências, conta. |
 | `pdf-import.js` | Importação de **fatura de cartão** em PDF: extração, parse por banco, preview editável, projeção de parcelas. |
-| `pdf-import.fixed.js` | Substituto proposto de `pdf-import.js` (segmentação por coluna, tolerância de centavos, fingerprint anti-reimportação). **Não referenciado por nenhum import** — pendente de validação, ver `RELATORIO-AUDITORIA.md` achado 1. |
+| `pdf-import.legacy.js` | Versão anterior do import de fatura, substituída pelo antigo `pdf-import.fixed.js` (promovido a `pdf-import.js`). **Código morto** — não é importado por ninguém e ainda referencia `#pdf-info-text`, elemento removido do `index.html`. |
 | `parsers/base-parser.js` | Utilitários compartilhados dos parsers de extrato: `parseMoney`, `parseDate`, `normalizeDesc`, `autoClassify`, `dedupKey`/`detectDuplicates`, `genId`. |
 | `parsers/csv-parser.js` | Extrato em CSV, com esquema de colunas por banco (`BANK_SCHEMAS`). |
 | `parsers/ofx-parser.js` | Extrato em OFX, detectando SGML legado vs. XML puro. |
 | `parsers/pdf-statement-parser.js` | Extrato bancário em PDF, com parser por banco + genérico. |
-| `parsers/pdf-layout.js` | Reconstrução de layout de PDF por colunas a partir de `getTextContent()`. **Não importado por nenhum arquivo em uso** — usado só por `pdf-import.fixed.js`. |
+| `parsers/pdf-layout.js` | Reconstrução de layout de PDF por colunas a partir de `getTextContent()`. Em uso: `pdf-import.js` depende dele. |
 
 `css/style.css` = tokens de cor, layout, sidebar, tabelas. `css/components.css` = toast, modal, tags, skeleton, drop zone.
+
+## Vocabulário visual da revisão de importação (rodada 2 do redesign)
+
+Definido em `css/components.css`, logo abaixo de `.batch-stat-out`, e consumido
+pelos dois modais de importação. **Reusar; não inventar símbolo novo.**
+
+- `.mark-inferido` — losango `◇` (via `::before`) + texto curto em `--warning`.
+  Significa "o app deduziu isto". Usado na competência, no ano da data e na
+  categoria vazia.
+- `.field-inferido` / `.field-editado` — modificadores do próprio `<select>` /
+  `<input>`: âmbar enquanto é dedução, azul (`--border-strong`) depois que o
+  usuário mexeu. A marca fica **no campo que precisa ser corrigido**, nunca numa
+  coluna de status separada.
+- `.row-atencao` — fundo âmbar sutil na `<tr>` com qualquer pendência.
+  `.row-hidden-filter` — usada pelo filtro "ver só o que precisa de atenção".
+- `.import-summary-bar` + `.btn-atencao` — barra de contadores acima da tabela e
+  o botão primário quando há pendência (`Salvar assim mesmo · N sem categoria`).
+  **Nunca bloquear o salvamento.**
+- `.modal-import` — largura dos dois modais de importação (`min(1400px, 98vw)`).
+
+**Silêncio é o sinal de que está tudo bem:** linha classificada por regra não
+recebe marca nenhuma. Se a maioria das linhas ficar âmbar, o bug é na leitura de
+`classificationOrigin`, não no CSS.
+
+Os helpers compartilhados (`renderImportSummary`, `updateImportSummary`,
+`toggleImportFilter`, `updateImportConfirmButton`) ficam no fim de `js/utils.js`
+— é o único módulo comum aos dois fluxos que não cria dependência circular.
+Cada fluxo tem seu recálculo próprio, que **lê do DOM**: `_recomputeAtencao()`
+em `pdf-import.js`, `_recomputeAtencaoExtrato()` em `extratos.js`.
+
+O cabeçalho da tabela de preview do extrato está definido **em dois lugares**:
+no `index.html` e na variante montada por `_showReview()` quando o lote tem
+receitas. Mexeu num, mexa no outro.
 
 ## Convenções observadas no código
 
@@ -84,13 +117,14 @@ Cada item abaixo é uma regra de negócio real codificada como literal, sem cons
 - `js/dashboard.js:272` — lista no máx. **10** parcelas.
 
 **Importação de fatura — `js/pdf-import.js`**
-- `js/pdf-import.js:442` — competência da fatura = mês da 1ª transação **−1** (offset lido de `localStorage.fluxo_billing_offset`, default `'-1'`); só usado quando o campo de competência não está preenchido.
-- `js/pdf-import.js:460` — parcela é considerada já existente se a diferença de valor for `< R$ 0,02`.
-- `js/pdf-import.js:167,171` — o parser de um banco só é aceito se devolver `≥ 3` itens; abaixo disso cai no genérico.
-- `js/pdf-import.js:77` — PDF limitado a **20 MB**.
+- `js/pdf-import.js` (`_showPreview` e `_confirmarImportacao`) — competência da fatura = mês da 1ª transação **−1** (offset lido de `localStorage.fluxo_billing_offset`, default `'-1'`); só usado quando o campo de competência não está preenchido.
+- `js/pdf-import.js` (`_tolerancia`) — parcela é considerada já existente se a diferença de valor couber na tolerância: `clamp((N-1)/100 + R$ 0,01, R$ 0,02, R$ 1,00)`, onde N é o total de parcelas. A checagem roda no preview (aviso) **e** no save (proteção).
+- `js/pdf-import.js` (`SECTION_HEADERS`/`_parseStreams`) — o parser de um banco só é aceito se devolver `≥ 3` itens; abaixo disso cai no genérico.
+- `js/pdf-import.js` (`PDF_MAX_BYTES`) — PDF limitado a **20 MB**.
 
 **Parsers de extrato**
-- `js/parsers/base-parser.js:72` — chave de deduplicação: data + valor absoluto exato + **40** primeiros caracteres da descrição (ignora o tipo — ver `RELATORIO-AUDITORIA.md` achado 6).
+- `js/parsers/base-parser.js` (`dedupKey`) — chave de deduplicação: `data | tipo | valor em centavos exatos | 40 primeiros caracteres da descrição`. O valor já esteve num **bucket de 5 centavos**; foi removido em 02/08/2026 porque juntava lançamentos legitimamente distintos (mesmo estabelecimento, mesmo dia, valores a 2 centavos de distância). Mesma data + mesma descrição + valores diferentes **nunca** colidem — é o caso de salário, VA e VT creditados no mesmo dia.
+- `js/parsers/base-parser.js` (`detectDuplicates`) — devolve `duplicateOf` com o registro que bateu, para a tela de revisão poder dizer contra o quê bateu. Aviso de duplicata sem evidência é ruído.
 - `js/parsers/base-parser.js` (`DEFAULT_RULES`, a partir da linha ~6) — toda a classificação automática por categoria é uma lista de regex literais; é aqui que se mexe para mudar como um gasto é categorizado.
 - `js/parsers/pdf-statement-parser.js:10` — PDF limitado a **20 MB**.
 - `js/parsers/pdf-statement-parser.js:125` — linha descartada se a descrição tiver `< 3` caracteres.
@@ -120,4 +154,4 @@ prompt ficam em `PROMPT-rodada-N.md`.
 
 ## Contexto pendente
 
-`RELATORIO-AUDITORIA.md` (02/08/2026) lista 13 achados abertos e os arquivos entregues mas **ainda não ativados**: `js/pdf-import.fixed.js`, `js/parsers/pdf-layout.js` e `firestore.rules` (regras do Firestore ainda não publicadas). Ler antes de mexer em parsing de PDF, dedupe ou segurança.
+`RELATORIO-AUDITORIA.md` (02/08/2026) lista 13 achados abertos. Ler antes de mexer em parsing de PDF, dedupe ou segurança — mas conferir contra o código: `js/pdf-import.fixed.js` e `js/parsers/pdf-layout.js` **já foram ativados** (o "fixed" virou `js/pdf-import.js`), e o achado 6 (dedupe ignorando o tipo) já foi corrigido. Continua aberto: `firestore.rules` não publicado.
