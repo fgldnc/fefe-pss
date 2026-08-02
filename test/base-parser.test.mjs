@@ -151,12 +151,12 @@ test('autoClassify — regra de usuário com regex inválido não quebra a class
     { pattern: 'estabelecimento a', category: 'lazer', type: 'expense' }, // válida
   ];
   assert.deepEqual(autoClassify('ESTABELECIMENTO A', 100, regras),
-    { type: 'expense', category: 'lazer' });
+    { type: 'expense', category: 'lazer', origin: 'user-rule' });
 });
 
 test('autoClassify — regex inválido isolado cai nas regras padrão', () => {
   assert.deepEqual(autoClassify('IFOOD PEDIDO', 50, [{ pattern: '(', category: 'x', type: 'expense' }]),
-    { type: 'expense', category: 'alimentacao' });
+    { type: 'expense', category: 'alimentacao', origin: 'default-rule' });
 });
 
 test('autoClassify — regra de usuário tem prioridade sobre a padrão', () => {
@@ -168,10 +168,35 @@ test('autoClassify — regra de usuário tem prioridade sobre a padrão', () => 
 });
 
 test('autoClassify — sem nenhuma regra aplicável, o sinal decide o tipo', () => {
+  // Fallback devolve category null, NÃO 'outros': "não sei" precisa ser
+  // distinguível de "o usuário escolheu Outros".
   assert.deepEqual(autoClassify('XPTO NAO CLASSIFICAVEL', 10, []),
-    { type: 'expense', category: 'outros' });
+    { type: 'expense', category: null, origin: 'fallback' });
   assert.deepEqual(autoClassify('XPTO NAO CLASSIFICAVEL', -10, []),
-    { type: 'income', category: 'outros' });
+    { type: 'income', category: null, origin: 'fallback' });
+});
+
+// ─── procedência da classificação (origin) ──────────────────────────────────
+
+test('autoClassify — origin distingue regra do usuário de regra padrão', () => {
+  assert.equal(
+    autoClassify('IFOOD PEDIDO', 50, [{ pattern: 'ifood', category: 'lazer', type: 'expense' }]).origin,
+    'user-rule',
+  );
+  assert.equal(autoClassify('IFOOD PEDIDO', 50, []).origin, 'default-rule');
+});
+
+test('autoClassify — os dois "category: null" se distinguem pelo origin', () => {
+  // Regra de transferência casa e zera a categoria de propósito…
+  const transf = autoClassify('PAGAMENTO DE FATURA CARTAO', 500, []);
+  assert.equal(transf.category, null);
+  assert.equal(transf.type, 'transfer');
+  assert.equal(transf.origin, 'default-rule');
+
+  // …enquanto o fallback zera a categoria por desconhecimento.
+  const nada = autoClassify('XPTO NAO CLASSIFICAVEL', 500, []);
+  assert.equal(nada.category, null);
+  assert.equal(nada.origin, 'fallback');
 });
 
 // ─── regex genérico do parser de extrato em PDF ─────────────────────────────

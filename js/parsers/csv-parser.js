@@ -151,7 +151,12 @@ export function parseCSV(content, bankName = 'generico', userRules = []) {
       normalizedDescription: normalizeDesc(desc),
       amount,
       type,
-      category:              category || (type === 'income' ? null : 'outros'),
+      // Sem categoria = o app não sabe. Antes caía em 'outros', que é categoria
+      // legítima e escondia o chute; quem decide agora é o classificationOrigin.
+      category,
+      // `source` = de onde veio o arquivo; `classificationOrigin` = como a
+      // categoria foi decidida. Campo plano porque o item vai direto ao Firestore.
+      classificationOrigin:  cls.origin,
       source:                'statement_import',
       fileType:              'csv',
       importBatchId:         batchId,

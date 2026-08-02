@@ -273,3 +273,86 @@ export function renderInsights(getExpenses = null) {
     `<div class="insight-chip ${esc(c.type)}"><span>${esc(c.icon)}</span>${esc(c.text)}</div>`
   ).join('');
 }
+
+// ─── REVISÃO DE IMPORTAÇÃO: BARRA DE RESUMO E FILTRO DE ATENÇÃO ─────────────
+/**
+ * Monta a barra de resumo acima da tabela de preview (fatura e extrato usam a
+ * mesma). Os contadores de pendência ficam sempre no DOM, mas escondidos
+ * enquanto valem zero: assim dá para atualizar o número sem recriar o nó do
+ * botão de filtro — recriar perderia o estado ligado/desligado do filtro.
+ *
+ * prefixHtml e statsHtml chegam já escapados pelo chamador.
+ */
+export function renderImportSummary(bar, { prefixHtml = '', statsHtml = '' } = {}) {
+  if (!bar) return;
+  bar.innerHTML = `
+    <div class="import-summary-meta">
+      ${prefixHtml}
+      <span class="import-summary-total import-summary-count"></span>
+      <span class="import-summary-cat mark-inferido hidden"></span>
+      <span class="import-summary-dup mark-inferido hidden"></span>
+    </div>
+    ${statsHtml}
+    <button type="button" class="btn btn-ghost btn-sm import-filter-btn hidden" data-on="0">Ver só o que precisa de atenção</button>`;
+}
+
+/** Atualiza só os números da barra. Contador zerado some — silêncio é o sinal. */
+export function updateImportSummary(bar, { total = 0, semCategoria = 0, duplicatas = 0 } = {}) {
+  if (!bar) return;
+  const elTotal = bar.querySelector('.import-summary-total');
+  const elCat   = bar.querySelector('.import-summary-cat');
+  const elDup   = bar.querySelector('.import-summary-dup');
+  const btn     = bar.querySelector('.import-filter-btn');
+
+  if (elTotal) elTotal.textContent = `${total} lançamento${total === 1 ? '' : 's'}`;
+  if (elCat) {
+    elCat.textContent = `${semCategoria} sem categoria`;
+    elCat.classList.toggle('hidden', semCategoria === 0);
+  }
+  if (elDup) {
+    elDup.textContent = `${duplicatas} possível duplicata${duplicatas === 1 ? '' : 's'}`;
+    elDup.classList.toggle('hidden', duplicatas === 0);
+  }
+  if (btn) {
+    const temPendencia = semCategoria + duplicatas > 0;
+    btn.classList.toggle('hidden', !temPendencia);
+    // Sem pendência não existe o que filtrar: desliga antes de sumir, senão as
+    // linhas escondidas ficariam invisíveis sem botão para trazê-las de volta.
+    if (!temPendencia && btn.dataset.on === '1') resetImportFilter(bar);
+  }
+}
+
+/** Liga/desliga o filtro escondendo <tr> — sem re-render, para não perder edição. */
+export function toggleImportFilter(bar, tbody) {
+  const btn = bar?.querySelector('.import-filter-btn');
+  if (!btn || !tbody) return;
+  const on = btn.dataset.on !== '1';
+  btn.dataset.on = on ? '1' : '0';
+  btn.textContent = on ? 'Ver todos' : 'Ver só o que precisa de atenção';
+  tbody.querySelectorAll('tr').forEach(tr => {
+    tr.classList.toggle('row-hidden-filter', on && !tr.classList.contains('row-atencao'));
+  });
+}
+
+function resetImportFilter(bar) {
+  const btn = bar?.querySelector('.import-filter-btn');
+  if (!btn) return;
+  btn.dataset.on = '0';
+  btn.textContent = 'Ver só o que precisa de atenção';
+  document.querySelectorAll('.row-hidden-filter').forEach(tr => tr.classList.remove('row-hidden-filter'));
+}
+
+/**
+ * O botão de confirmação nomeia o que está sendo aceito. Nunca desabilita:
+ * salvar sem categoria é escolha legítima; o botão só obriga a ler o número.
+ */
+export function updateImportConfirmButton(btn, semCategoria, labelPadrao = 'Confirmar e Salvar') {
+  if (!btn) return;
+  if (semCategoria > 0) {
+    btn.textContent = `Salvar assim mesmo · ${semCategoria} sem categoria`;
+    btn.classList.add('btn-atencao');
+  } else {
+    btn.textContent = labelPadrao;
+    btn.classList.remove('btn-atencao');
+  }
+}

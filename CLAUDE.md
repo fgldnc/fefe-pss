@@ -111,6 +111,13 @@ Cada item abaixo é uma regra de negócio real codificada como literal, sem cons
 - `js/db.js:154` — gasto de extrato: `date.slice(0,7) === month`.
 - `js/db.js:197-200` — receita: `month`, senão `competenceMonth`, senão `date.slice(0,7)`.
 
+## Redesign em andamento
+
+`ROTEIRO-REDESIGN.md` é o estado do redesign entre sessões: diagnóstico por aba,
+decisões já fechadas, as 7 rodadas e suas dependências, e o prompt de retomada.
+**Ler antes de propor qualquer mudança de interface.** A rodada corrente e seu
+prompt ficam em `PROMPT-rodada-N.md`.
+
 ## Contexto pendente
 
 `RELATORIO-AUDITORIA.md` (02/08/2026) lista 13 achados abertos e os arquivos entregues mas **ainda não ativados**: `js/pdf-import.fixed.js`, `js/parsers/pdf-layout.js` e `firestore.rules` (regras do Firestore ainda não publicadas). Ler antes de mexer em parsing de PDF, dedupe ou segurança.

@@ -26,7 +26,22 @@ const DEFAULT_RULES = [
 ];
 
 /**
- * Detecta tipo (income/expense/transfer) e categoria a partir da descrição
+ * Detecta tipo (income/expense/transfer) e categoria a partir da descrição.
+ *
+ * Devolve também `origin`, declarando COMO a decisão foi tomada:
+ *   'user-rule'    — casou uma regra cadastrada pelo usuário
+ *   'default-rule' — casou uma regra de DEFAULT_RULES
+ *   'fallback'     — nada casou; o tipo veio só do sinal do valor
+ *
+ * Por que o fallback devolve `category: null` e não 'outros': "Outros" é uma
+ * categoria legítima, que o usuário escolhe de propósito. Usá-la também como
+ * "não sei" torna as duas situações indistinguíveis na tela e o chute entra na
+ * base sem dar motivo de desconfiança. A partir daqui, categoria vazia significa
+ * "o app não sabe".
+ *
+ * Uma regra pode casar e definir `category: null` de propósito (transferências,
+ * receita genérica). Esse null NÃO é desconhecimento — a diferença entre os dois
+ * nulls é lida pelo `origin`, nunca pela categoria.
  */
 export function autoClassify(description, amount, userRules = []) {
   const desc = (description || '').toLowerCase();
@@ -35,7 +50,7 @@ export function autoClassify(description, amount, userRules = []) {
   for (const rule of userRules) {
     try {
       if (new RegExp(rule.pattern, 'i').test(desc)) {
-        return { type: rule.type || 'expense', category: rule.category || null };
+        return { type: rule.type || 'expense', category: rule.category || null, origin: 'user-rule' };
       }
     } catch { /* padrão regex inválido — ignora a regra, não quebra a importação */ }
   }
@@ -43,13 +58,13 @@ export function autoClassify(description, amount, userRules = []) {
   // Regras padrão
   for (const rule of DEFAULT_RULES) {
     if (rule.pattern.test(desc)) {
-      return { type: rule.type, category: rule.category };
+      return { type: rule.type, category: rule.category, origin: 'default-rule' };
     }
   }
 
   // Por valor: se negativo → receita, positivo → despesa (padrão OFX)
   // Mas o parser já deve normalizar o sinal
-  return { type: amount < 0 ? 'income' : 'expense', category: 'outros' };
+  return { type: amount < 0 ? 'income' : 'expense', category: null, origin: 'fallback' };
 }
 
 /**

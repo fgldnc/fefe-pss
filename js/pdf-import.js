@@ -23,9 +23,12 @@
  *    do modal, reprocessando o mesmo arquivo N vezes).
  */
 
-import { state, toast, esc } from './utils.js';
+import {
+  state, toast, esc, resolveCategoryId,
+  renderImportSummary, updateImportSummary, toggleImportFilter, updateImportConfirmButton,
+} from './utils.js';
 import { saveTx, saveDoc, getAll } from './db.js';
-import { parseMoney } from './parsers/base-parser.js';
+import { parseMoney, autoClassify, detectDuplicates } from './parsers/base-parser.js';
 import { extractColumnStreams } from './parsers/pdf-layout.js';
 
 if (typeof pdfjsLib !== 'undefined') {
@@ -41,7 +44,7 @@ const INVOICE_COL           = 'importedInvoices';
 
 let _onDoneCallback = null;
 let _parsedItems    = [];
-let _parsedMeta     = { nextInvoiceRows: [], fingerprint: '', filename: '' };
+let _parsedMeta     = { nextInvoiceRows: [], fingerprint: '', filename: '', competenceSource: 'inferred' };
 let _eventsBound    = false;
 
 export function initPdfImport(onDone) {
@@ -61,8 +64,14 @@ function _resetModal() {
   if (tbody) tbody.innerHTML = '';
   const input = document.getElementById('pdf-file-input');
   if (input) input.value = '';
+  const bar = document.getElementById('pdf-summary-bar');
+  if (bar) bar.innerHTML = '';
+  const comp = document.getElementById('pdf-competencia');
+  comp?.classList.remove('field-inferido', 'field-editado');
+  document.getElementById('pdf-competencia-hint')?.classList.add('hidden');
+  updateImportConfirmButton(document.getElementById('btn-confirmar-pdf'), 0);
   _parsedItems = [];
-  _parsedMeta  = { nextInvoiceRows: [], fingerprint: '', filename: '' };
+  _parsedMeta  = { nextInvoiceRows: [], fingerprint: '', filename: '', competenceSource: 'inferred' };
 }
 
 // ─── EVENTOS (registrados UMA vez) ─────────────────────────────────────────
@@ -100,6 +109,15 @@ function _attachEvents() {
   checkAll?.addEventListener('change', e => {
     document.querySelectorAll('#pdf-preview-tbody input[type=checkbox]')
       .forEach(cb => { cb.checked = e.target.checked; });
+    _recomputeAtencao();
+  });
+
+  // Filtro "só o que precisa de atenção": esconde <tr>, sem re-render, para não
+  // perder edição em andamento. A barra é do shell, o botão dentro dela não.
+  document.getElementById('pdf-summary-bar')?.addEventListener('click', e => {
+    if (!e.target.closest('.import-filter-btn')) return;
+    toggleImportFilter(document.getElementById('pdf-summary-bar'),
+                       document.getElementById('pdf-preview-tbody'));
   });
 
   // Delegação no tbody: o innerHTML é recriado, mas o tbody não.
@@ -114,8 +132,30 @@ function _attachEvents() {
     const el = e.target;
     const idx = parseInt(el.dataset.idx, 10);
     if (isNaN(idx) || !_parsedItems[idx]) return;
-    if (el.classList.contains('pdf-cat-select')) _parsedItems[idx]._categoryId = el.value;
+    if (el.classList.contains('pdf-cat-select')) {
+      _parsedItems[idx]._categoryId = el.value;
+      // A partir daqui a categoria é escolha do usuário, não do classificador.
+      _parsedItems[idx].classificationOrigin = 'manual';
+      // Campo tocado pelo usuário troca de vocabulário: deixa de ser dedução
+      // (âmbar) e passa a ser edição confirmada (azul).
+      el.classList.toggle('field-editado', !!el.value);
+    }
+    if (el.classList.contains('pdf-cat-select') || el.classList.contains('pdf-row-check')) {
+      _recomputeAtencao();
+    }
   });
+
+  // Competência: o campo já vem preenchido por dedução. Qualquer toque do usuário
+  // promove o valor a confirmado.
+  const compInput = document.getElementById('pdf-competencia');
+  const marcarManual = () => {
+    _parsedMeta.competenceSource = 'manual';
+    compInput?.classList.remove('field-inferido');
+    compInput?.classList.add('field-editado');
+    document.getElementById('pdf-competencia-hint')?.classList.add('hidden');
+  };
+  compInput?.addEventListener('input',  marcarManual);
+  compInput?.addEventListener('change', marcarManual);
 }
 
 // ─── LEITURA DO PDF ────────────────────────────────────────────────────────
@@ -158,6 +198,9 @@ async function _processPdf(file) {
       nextInvoiceRows: proximasFaturas,
       fingerprint:     await _fingerprint(items),
       filename:        file.name,
+      // O campo de competência é pré-preenchido pelo app; até o usuário mexer,
+      // o valor é dedução — não confirmação.
+      competenceSource: 'inferred',
     };
 
     if (_linhasRejeitadas.length) {
@@ -371,6 +414,9 @@ function _applyYear(items, anoBase) {
       amount: it.amount,
       installmentCurrent: it.installmentCurrent,
       installmentTotal:   it.installmentTotal,
+      // De onde veio o ANO: o cabeçalho da fatura é fonte declarada; o relógio da
+      // máquina é palpite (fatura antiga importada hoje cai no ano errado).
+      dateYearSource: anoBase ? 'invoice-header' : 'assumed-current',
       _origin: it._origin,
     };
   });
@@ -462,13 +508,15 @@ function _showPreview(items, filename, proximasFaturas) {
   document.getElementById('pdf-processing').classList.add('hidden');
   document.getElementById('btn-confirmar-pdf').classList.remove('hidden');
 
-  const infoEl = document.getElementById('pdf-info-text');
-  if (infoEl) {
-    const extra = proximasFaturas.length
-      ? ` · ${proximasFaturas.length} linha(s) de "próximas faturas" ignorada(s) (usadas só para conferir as projeções)`
-      : '';
-    infoEl.textContent = `${items.length} lançamentos encontrados em "${filename}"${extra}`;
-  }
+  // Barra de resumo: substitui o texto solto de "N lançamentos encontrados".
+  const bar = document.getElementById('pdf-summary-bar');
+  const extra = proximasFaturas.length
+    ? `<span class="sep">·</span><span>${proximasFaturas.length} linha(s) de "próximas faturas" ignorada(s)</span>`
+    : '';
+  renderImportSummary(bar, {
+    prefixHtml: `<strong>${esc(filename)}</strong><span class="sep">·</span>`,
+    statsHtml:  extra ? `<div class="import-summary-meta">${extra}</div>` : '',
+  });
 
   const compInput = document.getElementById('pdf-competencia');
   if (compInput) {
@@ -479,19 +527,18 @@ function _showPreview(items, filename, proximasFaturas) {
     if (cm < 1)  { cm += 12; cy -= 1; }
     if (cm > 12) { cm -= 12; cy += 1; }
     compInput.value = `${cy}-${String(cm).padStart(2, '0')}`;
+    // Até o usuário tocar no campo, o valor é dedução — e a dedução se declara.
+    const inferida = _parsedMeta.competenceSource === 'inferred';
+    compInput.classList.toggle('field-inferido', inferida);
+    document.getElementById('pdf-competencia-hint')?.classList.toggle('hidden', !inferida);
   }
+
+  // Classificação e duplicidade resolvidas ANTES de montar o HTML: a marca
+  // visual precisa da procedência no momento em que a linha é escrita.
+  _classificarEDetectarDuplicatas(items);
 
   const catOpts = state.categories
     .map(c => `<option value="${esc(c.id)}">${esc(c.name)}</option>`).join('');
-
-  const catSuggest = (desc) => {
-    const d = (desc || '').toLowerCase();
-    for (const cat of state.categories) {
-      const kws = (cat.keywords || [cat.name.toLowerCase()]);
-      if (kws.some(kw => d.includes(String(kw).toLowerCase()))) return cat.id;
-    }
-    return '';
-  };
 
   const tbody = document.getElementById('pdf-preview-tbody');
   tbody.innerHTML = items.map((item, idx) => {
@@ -501,37 +548,118 @@ function _showPreview(items, filename, proximasFaturas) {
     const parcTag = item.installmentTotal > 1
       ? `${item.installmentCurrent}/${item.installmentTotal}` : '—';
 
+    const semCat      = !item._categoryId;
+    const anoDeduzido = item.dateYearSource === 'assumed-current';
+    const atencao     = semCat || anoDeduzido || item.isDuplicate;
+
+    const catSelected = state.categories
+      .map(c => `<option value="${esc(c.id)}"${c.id === item._categoryId ? ' selected' : ''}>${esc(c.name)}</option>`)
+      .join('');
+
+    const marks = [
+      anoDeduzido ? `<span class="mark-inferido">ano deduzido</span>` : '',
+      item.isDuplicate ? `<span class="tag-duplicata">Possível duplicata</span>` : '',
+    ].filter(Boolean).join('');
+
+    // A linha duplicada da fatura continua MARCADA para importar — diverge do
+    // extrato de propósito. O fingerprint já impede reimportar o mesmo arquivo,
+    // então repetição dentro de uma fatura nova é mais provavelmente uma compra
+    // genuinamente repetida (mesmo dia, valor e estabelecimento) que um erro.
+    // Desmarcar por padrão perderia um gasto real em silêncio — pior que um
+    // aviso a mais.
     return `
-      <tr>
-        <td><input type="checkbox" class="pdf-row-check" data-idx="${idx}" checked
+      <tr class="${atencao ? 'row-atencao' : ''}">
+        <td class="td-check"><input type="checkbox" class="pdf-row-check" data-idx="${idx}" checked
                    aria-label="Importar lançamento ${idx + 1}" /></td>
-        <td>${esc(dateFmt)}</td>
-        <td>
+        <td class="td-date">${esc(dateFmt)}</td>
+        <td class="td-desc">
           <input type="text" class="filter-input pdf-desc-input" aria-label="Descrição"
             style="font-size:0.78rem;padding:0.25rem 0.5rem;min-width:0;width:100%"
             value="${esc(item.description)}" data-idx="${idx}" data-field="description" />
+          ${marks ? `<div class="row-marks">${marks}</div>` : ''}
         </td>
-        <td>
-          <select class="select-inline pdf-cat-select" data-idx="${idx}" aria-label="Categoria">
-            <option value="">—</option>
-            ${catOpts}
+        <td class="td-cat">
+          <select class="select-inline pdf-cat-select${semCat ? ' field-inferido' : ''}"
+                  data-idx="${idx}" aria-label="Categoria">
+            <option value="">${semCat ? '◇ escolher' : '—'}</option>
+            ${catSelected || catOpts}
           </select>
         </td>
-        <td class="col-value">
+        <td class="col-value td-value">
           <input type="number" class="filter-input pdf-val-input" aria-label="Valor"
             style="font-size:0.78rem;padding:0.25rem 0.5rem;width:90px;text-align:right"
             value="${item.amount.toFixed(2)}" step="0.01" min="0"
             data-idx="${idx}" data-field="amount" />
         </td>
-        <td>${esc(parcTag)}</td>
+        <td class="td-extra">${esc(parcTag)}</td>
       </tr>`;
   }).join('');
 
-  tbody.querySelectorAll('.pdf-cat-select').forEach(sel => {
-    const idx = parseInt(sel.dataset.idx, 10);
-    const sug = catSuggest(_parsedItems[idx]?.description || '');
-    if (sug) { sel.value = sug; _parsedItems[idx]._categoryId = sug; }
+  _recomputeAtencao();
+}
+
+/**
+ * Preenche categoria sugerida, procedência e flag de duplicata de cada item.
+ *
+ * Categoria: mesma heurística do extrato (autoClassify), em vez de uma sugestão
+ * própria por "descrição contém o nome da categoria" — que era um chute
+ * indistinguível de uma classificação por regra. Fatura de cartão é sempre
+ * despesa: o cls.type é ignorado de propósito; só categoria e origem aproveitam.
+ *
+ * Duplicata: a checagem sai do save e vem para o preview. Antes, parcela já
+ * existente era pulada em silêncio no _confirmarImportacao() e só virava toast
+ * depois do fato — o usuário nunca via QUAL linha tinha sido ignorada.
+ */
+function _classificarEDetectarDuplicatas(items) {
+  const existentes = [...state.transactions, ...(state.extratoTransactions || [])];
+
+  // detectDuplicates compara também pelo type, e as duas origens divergem: gasto
+  // manual/fatura não grava type, item de extrato grava 'expense'. Sem alterar
+  // dedupKey (fora do escopo), roda as duas leituras e junta os resultados.
+  const semTipo = detectDuplicates(items.map(i => ({ ...i, type: '' })),        existentes);
+  const comTipo = detectDuplicates(items.map(i => ({ ...i, type: 'expense' })), existentes);
+
+  items.forEach((item, i) => {
+    const cls = autoClassify(item.description, item.amount, state.importRules);
+    item._categoryId          = resolveCategoryId(cls.category);
+    item.classificationOrigin = cls.origin;
+
+    item.isDuplicate = item.installmentTotal > 1
+      ? _parcelaJaExiste(item.description, item.amount, item.installmentCurrent, item.installmentTotal)
+      : (semTipo[i].isDuplicate || comTipo[i].isDuplicate);
   });
+}
+
+/**
+ * Recalcula contadores, rótulo do botão e o fundo das linhas a partir do DOM.
+ * Lê do DOM (e não só de _parsedItems) porque o checkbox e o select são a
+ * verdade corrente da revisão.
+ */
+function _recomputeAtencao() {
+  const tbody = document.getElementById('pdf-preview-tbody');
+  const bar   = document.getElementById('pdf-summary-bar');
+  if (!tbody) return;
+
+  let semCategoria = 0, duplicatas = 0, total = 0;
+
+  tbody.querySelectorAll('tr').forEach(tr => {
+    const sel  = tr.querySelector('.pdf-cat-select');
+    const cb   = tr.querySelector('.pdf-row-check');
+    if (!sel) return;
+    total++;
+    const item        = _parsedItems[parseInt(sel.dataset.idx, 10)] || {};
+    const semCat      = !sel.value;
+    const anoDeduzido = item.dateYearSource === 'assumed-current';
+
+    if (semCat && cb?.checked) semCategoria++;
+    if (item.isDuplicate) duplicatas++;
+
+    sel.classList.toggle('field-inferido', semCat);
+    tr.classList.toggle('row-atencao', semCat || anoDeduzido || !!item.isDuplicate);
+  });
+
+  updateImportSummary(bar, { total, semCategoria, duplicatas });
+  updateImportConfirmButton(document.getElementById('btn-confirmar-pdf'), semCategoria);
 }
 
 // ─── CONFERÊNCIA CONTRA "PRÓXIMAS FATURAS" ─────────────────────────────────
@@ -614,6 +742,11 @@ async function _confirmarImportacao() {
         competenceMonth,
         notes: '',
         isProjected: false,
+        // Procedência da classificação e das duas datas deduzidas. Registro antigo
+        // não tem estes campos — quem lê precisa tratar ausência como desconhecido.
+        classificationOrigin: item.classificationOrigin || 'fallback',
+        competenceSource:     _parsedMeta.competenceSource || 'inferred',
+        dateYearSource:       item.dateYearSource || 'assumed-current',
         importedFrom: 'pdf',
         invoiceFingerprint: _parsedMeta.fingerprint,
       };
@@ -689,6 +822,9 @@ async function _confirmarImportacao() {
     console.error(err);
     toast('Erro ao salvar. Veja o console.', 'error');
   } finally {
-    btn.disabled = false; btn.textContent = 'Confirmar e Salvar';
+    // Devolve o rótulo pelo recálculo, e não pelo texto fixo: se o salvamento
+    // falhou, as pendências continuam lá e o botão precisa continuar dizendo.
+    btn.disabled = false;
+    _recomputeAtencao();
   }
 }

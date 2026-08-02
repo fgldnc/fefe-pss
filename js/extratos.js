@@ -3,7 +3,10 @@
  * Orquestra: seleção de banco → parse → revisão → salvar no Firestore
  */
 
-import { state, esc, fmt, toast, resolveCategoryId } from './utils.js';
+import {
+  state, esc, fmt, toast, resolveCategoryId,
+  renderImportSummary, updateImportSummary, toggleImportFilter, updateImportConfirmButton,
+} from './utils.js';
 import { detectDuplicates }        from './parsers/base-parser.js';
 import { parseOFX }                from './parsers/ofx-parser.js';
 import { parseCSV }                from './parsers/csv-parser.js';
@@ -199,6 +202,14 @@ function _bindModalEvents() {
     // Confirmar importação
     if (e.target.closest?.('#btn-confirmar-extrato')) { _saveExtrato(); return; }
 
+    // Filtro "só o que precisa de atenção": esconde <tr> sem re-render, para
+    // não perder edição em andamento.
+    if (e.target.closest?.('.import-filter-btn')) {
+      toggleImportFilter(document.getElementById('extrato-batch-header'),
+                         document.getElementById('extrato-preview-tbody'));
+      return;
+    }
+
     // Clique na drop zone abre o file picker — mas evita acionar se clicou
     // no label/input diretamente (senão o picker abre duas vezes)
     if (e.target.closest?.('#extrato-drop-zone')) {
@@ -241,7 +252,11 @@ function _bindModalEvents() {
       document.querySelectorAll('#extrato-preview-tbody .row-check').forEach(cb => {
         cb.checked = checked;
       });
+      _recomputeAtencaoExtrato();
+      return;
     }
+    // Desmarcar/marcar uma linha muda quantos "sem categoria" serão salvos.
+    if (e.target?.classList?.contains('row-check')) _recomputeAtencaoExtrato();
   });
 
   _eventsBound = true;
@@ -266,6 +281,9 @@ function _resetModal() {
   document.getElementById('btn-confirmar-extrato')?.classList.add('hidden');
   document.getElementById('extrato-processing')?.classList.add('hidden');
   document.getElementById('extrato-preview-tbody')  && (document.getElementById('extrato-preview-tbody').innerHTML = '');
+  const bar = document.getElementById('extrato-batch-header');
+  if (bar) bar.innerHTML = '';
+  updateImportConfirmButton(document.getElementById('btn-confirmar-extrato'), 0);
   // Sem o clone dos elementos, a UI precisa ser devolvida ao estado inicial
   // explicitamente a cada abertura.
   document.getElementById('extrato-drop-zone')?.classList.remove('hidden', 'dragover');
@@ -396,21 +414,21 @@ function _showReview(items, bank, format) {
   document.getElementById('extrato-step-2').classList.remove('hidden');
   document.getElementById('btn-confirmar-extrato').classList.remove('hidden');
 
-  const dupCount  = items.filter(t => t.isDuplicate).length;
   const incCount  = items.filter(t => t.type === 'income').length;
   const expCount  = items.filter(t => t.type === 'expense').length;
   const totalIn   = items.filter(t => t.type === 'income').reduce((s,t) => s+t.amount, 0);
   const totalOut  = items.filter(t => t.type === 'expense').reduce((s,t) => s+t.amount, 0);
 
-  document.getElementById('extrato-batch-header').innerHTML = `
-    <div class="batch-meta">
-      <strong>${esc(BANK_NAMES[bank] || bank)}</strong> — <span style="text-transform:uppercase;font-size:0.75rem">${esc(format)}</span>
-      · ${items.length} transações${dupCount ? ` · <span style="color:var(--warning)">${dupCount} possível(is) duplicata(s)</span>` : ''}
-    </div>
-    <div class="batch-stats">
+  // Mesma barra de resumo da fatura: contadores de pendência só quando > 0.
+  renderImportSummary(document.getElementById('extrato-batch-header'), {
+    prefixHtml: `<strong>${esc(BANK_NAMES[bank] || bank)}</strong>`
+      + `<span class="sep">·</span><span style="text-transform:uppercase;font-size:0.75rem">${esc(format)}</span>`
+      + `<span class="sep">·</span>`,
+    statsHtml: `<div class="batch-stats">
       <span class="batch-stat-in">↑ ${incCount} entradas ${fmt(totalIn)}</span>
       <span class="batch-stat-out">↓ ${expCount} saídas ${fmt(totalOut)}</span>
-    </div>`;
+    </div>`,
+  });
 
   const tbody = document.getElementById('extrato-preview-tbody');
   const cats  = state.categories;
@@ -419,7 +437,9 @@ function _showReview(items, bank, format) {
   const hasIncomes = items.some(t => t.type === 'income');
   const theadEl = document.querySelector('#extrato-preview-tbody')?.closest('table')?.querySelector('thead tr');
   if (theadEl && hasIncomes) {
-    theadEl.innerHTML = '<th><input type="checkbox" id="extrato-check-all" checked /></th><th>Data</th><th>Descrição</th><th>Tipo</th><th>Categoria / Tipo receita</th><th class="col-value">Valor</th><th>Status</th>';
+    // Sem coluna "Status": a marca de duplicata passou para junto da descrição,
+    // no mesmo lugar em que o usuário decide se desmarca a linha.
+    theadEl.innerHTML = '<th><input type="checkbox" id="extrato-check-all" checked /></th><th>Data</th><th>Descrição</th><th>Tipo</th><th>Categoria / Tipo receita</th><th class="col-value">Valor</th>';
   }
 
   const INCOME_TYPES = [
@@ -454,6 +474,11 @@ function _showReview(items, bank, format) {
         aria-label="Ativo vinculado">
         <option value="">→ sem vínculo com ativo</option>${assetOptions}
       </select>`;
+    // Categoria vazia = nenhuma regra reconheceu (origin 'fallback'). Item
+    // antigo, sem classificationOrigin, cai aqui só se realmente não tem
+    // categoria — ausência do campo nunca vira pendência por si só.
+    const semCat = !isIncome && !tx.categoryId;
+
     const catOptions = cats.map(c =>
       `<option value="${esc(c.id)}" ${c.id === tx.categoryId ? 'selected' : ''}>${esc(c.name)}</option>`
     ).join('');
@@ -476,26 +501,32 @@ function _showReview(items, bank, format) {
            aria-label="Tipo de receita">
            ${incomeTypeOptions}
          </select>`
-      : `<select class="select-inline" data-field="categoryId" data-idx="${idx}" aria-label="Categoria">
-           <option value="">—</option>${catOptions}
+      : `<select class="select-inline${semCat ? ' field-inferido' : ''}" data-field="categoryId" data-idx="${idx}" aria-label="Categoria">
+           <option value="">${semCat ? '◇ escolher' : '—'}</option>${catOptions}
          </select>${assetSelect}`;
 
     const valColor = tx.type === 'income' ? 'var(--success)' : 'var(--danger)';
+    const atencao  = semCat || tx.isDuplicate;
 
-    return `<tr class="${tx.isDuplicate ? 'row-dup' : ''}">
-      <td><input type="checkbox" class="row-check" data-idx="${idx}"
+    // A duplicata do extrato continua vindo DESMARCADA — ao contrário da
+    // fatura, aqui não existe fingerprint de arquivo protegendo contra
+    // reimportar o mesmo período.
+    return `<tr class="${tx.isDuplicate ? 'row-dup' : ''}${atencao ? ' row-atencao' : ''}">
+      <td class="td-check"><input type="checkbox" class="row-check" data-idx="${idx}"
         aria-label="Importar transação ${idx + 1}" ${tx.isDuplicate ? '' : 'checked'} /></td>
-      <td style="font-size:0.8rem;white-space:nowrap">${esc(tx.date)}</td>
-      <td style="max-width:180px">
+      <td class="td-date" style="font-size:0.8rem;white-space:nowrap">${esc(tx.date)}</td>
+      <td class="td-desc" style="max-width:180px">
         <input type="text" class="form-input" style="padding:0.25rem 0.5rem;font-size:0.78rem;width:100%"
           data-field="description" data-idx="${idx}" aria-label="Descrição" value="${esc(tx.description)}" />
+        ${dupBadge ? `<div class="row-marks">${dupBadge}</div>` : ''}
       </td>
-      <td><select class="select-inline" data-field="type" data-idx="${idx}" aria-label="Tipo">${typeOptions}</select></td>
-      <td>${col5}</td>
-      <td class="col-value val-mono" style="white-space:nowrap;color:${valColor}">${fmt(tx.amount)}</td>
-      <td>${dupBadge}</td>
+      <td class="td-extra"><select class="select-inline" data-field="type" data-idx="${idx}" aria-label="Tipo">${typeOptions}</select></td>
+      <td class="td-cat">${col5}</td>
+      <td class="col-value val-mono td-value" style="white-space:nowrap;color:${valColor}">${fmt(tx.amount)}</td>
     </tr>`;
   }).join('');
+
+  _recomputeAtencaoExtrato();
 
   // Edição inline — inclui incomeType
   tbody.querySelectorAll('[data-field]').forEach(el => {
@@ -505,6 +536,11 @@ function _showReview(items, bank, format) {
       parsedItems[idx][field] = el.value;
       // Categoria mudou → mostra o seletor de ativo se virou investimento
       if (field === 'categoryId') {
+        // A partir daqui a categoria é escolha do usuário, não do classificador.
+        parsedItems[idx].classificationOrigin = 'manual';
+        // Campo tocado troca de vocabulário: dedução (âmbar) → edição (azul).
+        el.classList.toggle('field-editado', !!el.value);
+        _recomputeAtencaoExtrato();
         const cat = state.categories.find(c => c.id === el.value);
         const isInvest = !!cat && (cat.id + cat.name).toLowerCase().includes('investiment');
         const assetSel = el.closest('td')?.querySelector('.asset-select');
@@ -521,6 +557,36 @@ function _showReview(items, bank, format) {
       }
     });
   });
+}
+
+/**
+ * Recalcula contadores da barra, rótulo do botão e o fundo das linhas a partir
+ * do DOM — checkbox e select são a verdade corrente da revisão.
+ */
+function _recomputeAtencaoExtrato() {
+  const tbody = document.getElementById('extrato-preview-tbody');
+  const bar   = document.getElementById('extrato-batch-header');
+  if (!tbody) return;
+
+  let semCategoria = 0, duplicatas = 0, total = 0;
+
+  tbody.querySelectorAll('tr').forEach(tr => {
+    total++;
+    const cb  = tr.querySelector('.row-check');
+    const sel = tr.querySelector('[data-field="categoryId"]');
+    const item = parsedItems[parseInt(cb?.dataset.idx, 10)] || {};
+    // Entrada não tem categoria de gasto (usa tipo de receita) — nunca pendência.
+    const semCat = !!sel && !sel.value;
+
+    if (semCat && cb?.checked) semCategoria++;
+    if (item.isDuplicate) duplicatas++;
+
+    if (sel) sel.classList.toggle('field-inferido', semCat);
+    tr.classList.toggle('row-atencao', semCat || !!item.isDuplicate);
+  });
+
+  updateImportSummary(bar, { total, semCategoria, duplicatas });
+  updateImportConfirmButton(document.getElementById('btn-confirmar-extrato'), semCategoria);
 }
 
 // ─── SALVAR ───────────────────────────────────────────────────
@@ -628,7 +694,9 @@ async function _saveExtrato() {
     console.error('Erro ao salvar extrato:', err);
     toast(`Erro ao salvar: ${err.message}`, 'error');
   } finally {
-    btn.disabled    = false;
-    btn.textContent = 'Confirmar e Salvar';
+    // Rótulo devolvido pelo recálculo: se o salvamento falhou, as pendências
+    // continuam lá e o botão precisa continuar dizendo quantas são.
+    btn.disabled = false;
+    _recomputeAtencaoExtrato();
   }
 }

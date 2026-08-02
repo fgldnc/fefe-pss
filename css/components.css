@@ -287,6 +287,80 @@
 .batch-stat-in  { color: var(--success); }
 .batch-stat-out { color: var(--danger); }
 
+/* ── SINALIZAÇÃO DE PROCEDÊNCIA NA REVISÃO DE IMPORTAÇÃO ───────── */
+/* Um único símbolo para "o app deduziu isto": o losango. Aparece na
+   competência, no ano da data e na categoria vazia — três lugares, um
+   vocabulário. Silêncio (ausência de marca) é o sinal de que está tudo bem:
+   linha classificada por regra não recebe nada, e é isso que faz as poucas
+   linhas marcadas saltarem. Só --warning: verde e vermelho já significam
+   entrada e saída na coluna de valor da mesma tabela. */
+.mark-inferido {
+  display: inline-flex; align-items: center; gap: 0.2rem;
+  font-size: 0.69rem; color: var(--warning); white-space: nowrap;
+}
+.mark-inferido::before { content: '◇'; }
+
+/* Modificadores de campo: a marca vai no próprio controle que precisa ser
+   corrigido, não numa coluna de status à parte — sinal e correção no mesmo
+   lugar, senão o olho vai para a direita e a mão age na esquerda. */
+.field-inferido  { border-color: var(--warning) !important; color: var(--warning) !important; }
+.field-editado   { border-color: var(--border-strong) !important; }
+
+/* Fundo, não borda: a linha precisa se destacar sem competir com o campo. */
+.row-atencao { background: rgba(251, 191, 36, 0.05); }
+.row-hidden-filter { display: none !important; }
+
+.row-marks { display: flex; flex-wrap: wrap; gap: 0.3rem; margin-top: 0.2rem; }
+
+/* Barra de resumo dos dois modais de importação */
+.import-summary-bar {
+  display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 0.5rem 1rem;
+  padding: 0.75rem 1rem; background: var(--bg-card-raised);
+  border-radius: var(--radius-md); margin-bottom: 0.75rem;
+  font-size: 0.83rem;
+}
+.import-summary-bar:empty { display: none; }
+.import-summary-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 0.4rem; color: var(--text-secondary); }
+.import-summary-meta .sep { color: var(--text-muted); }
+.import-summary-count { font-family: var(--font-mono); font-size: 0.8rem; }
+.import-filter-btn { flex-shrink: 0; }
+
+/* Botão primário quando o lote tem pendência: obriga a ler o número antes de
+   clicar, mas nunca bloqueia — salvar sem categoria é escolha legítima. */
+.btn-atencao { background: var(--warning) !important; border-color: var(--warning) !important; color: var(--text-inverse) !important; }
+
+/* ── REVISÃO DE IMPORTAÇÃO EM TELA ESTREITA ───────────────────── */
+/* Abaixo de 480px a tabela vira cartão por lançamento: com 6–7 colunas não há
+   largura para tabela sem scroll horizontal. */
+@media (max-width: 480px) {
+  .import-preview-table thead { display: none; }
+  .import-preview-table,
+  .import-preview-table tbody,
+  .import-preview-table tr,
+  .import-preview-table td { display: block; width: 100%; }
+  .import-preview-table tr {
+    display: grid; grid-template-columns: auto 1fr auto;
+    gap: 0.3rem 0.5rem; align-items: center;
+    border: 1px solid var(--border-soft); border-radius: var(--radius-md);
+    padding: 0.6rem 0.7rem; margin-bottom: 0.6rem;
+  }
+  .import-preview-table td { border: none !important; padding: 0 !important; max-width: none !important; }
+  .import-preview-table .td-check { grid-column: 1; grid-row: 1; }
+  .import-preview-table .td-desc  { grid-column: 2; grid-row: 1; min-width: 0; }
+  .import-preview-table .td-value { grid-column: 3; grid-row: 1; text-align: right; }
+  .import-preview-table .td-date  { grid-column: 1 / 3; grid-row: 2; font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-muted); }
+  .import-preview-table .td-cat   { grid-column: 3 / 4; grid-row: 2; }
+  /* Parcela / tipo / status caem em linhas automáticas depois das duas fixas. */
+  .import-preview-table .td-extra { grid-column: 1 / 4; font-size: 0.75rem; color: var(--text-muted); }
+  .import-preview-table .select-inline,
+  .import-preview-table select { max-width: 100% !important; width: 100%; }
+  .import-preview-table .td-value input { width: 100% !important; }
+
+  .import-summary-bar { flex-direction: column; align-items: stretch; }
+  .import-filter-btn { width: 100%; }
+}
+
 /* ── SPINNER ─────────────────────────────────────────────────── */
 .spinner {
   width: 20px; height: 20px;

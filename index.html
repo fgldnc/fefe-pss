@@ -544,17 +544,18 @@
       <div id="pdf-step-2" class="hidden">
         <div class="pdf-review-header" style="display:flex;align-items:flex-end;justify-content:space-between;gap:1rem;flex-wrap:wrap">
           <div>
-            <p class="pdf-info-text" id="pdf-info-text"></p>
             <p class="form-hint">Revise e edite antes de salvar. Marque/desmarque para excluir lançamentos.</p>
           </div>
           <div class="form-row" style="margin:0">
             <label class="form-label" for="pdf-competencia">Mês de competência</label>
             <input type="month" id="pdf-competencia" class="form-input" style="max-width:170px" />
+            <span class="mark-inferido hidden" id="pdf-competencia-hint">deduzido do 1º lançamento · confirme</span>
             <span class="form-hint">Em qual mês estes gastos contam no dashboard.</span>
           </div>
         </div>
+        <div id="pdf-summary-bar" class="import-summary-bar"></div>
         <div class="table-wrapper">
-          <table class="data-table" id="tabela-pdf-preview">
+          <table class="data-table import-preview-table" id="tabela-pdf-preview">
             <thead><tr><th scope="col"><input type="checkbox" id="pdf-check-all" aria-label="Selecionar todos os lançamentos" checked /></th><th scope="col">Data</th><th scope="col">Descrição</th><th scope="col">Categoria</th><th scope="col" class="col-value">Valor</th><th scope="col">Parcela</th></tr></thead>
             <tbody id="pdf-preview-tbody"></tbody>
           </table>
@@ -601,11 +602,11 @@
 
       <!-- Step 2: revisão -->
       <div id="extrato-step-2" class="hidden">
-        <div id="extrato-batch-header" class="import-batch-header"></div>
+        <div id="extrato-batch-header" class="import-summary-bar"></div>
         <p class="form-hint" style="margin-bottom:0.75rem">Revise as transações. Duplicatas identificadas aparecem em destaque.</p>
         <div class="table-wrapper">
-          <table class="data-table">
-            <thead><tr><th scope="col"><input type="checkbox" id="extrato-check-all" aria-label="Selecionar todas as transações" checked /></th><th scope="col">Data</th><th scope="col">Descrição</th><th scope="col">Tipo</th><th scope="col">Categoria</th><th scope="col" class="col-value">Valor</th><th scope="col">Status</th></tr></thead>
+          <table class="data-table import-preview-table" id="tabela-extrato-preview">
+            <thead><tr><th scope="col"><input type="checkbox" id="extrato-check-all" aria-label="Selecionar todas as transações" checked /></th><th scope="col">Data</th><th scope="col">Descrição</th><th scope="col">Tipo</th><th scope="col">Categoria</th><th scope="col" class="col-value">Valor</th></tr></thead>
             <tbody id="extrato-preview-tbody"></tbody>
           </table>
         </div>

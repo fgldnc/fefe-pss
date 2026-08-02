@@ -78,7 +78,7 @@ const BANK_PARSERS = {
       if (!date || amount === 0) continue;
       const cls = autoClassify(desc, amount, userRules);
       const type = cls.type === 'transfer' ? 'transfer' : (isIn ? 'income' : 'expense');
-      items.push(_buildItem(date, desc, amount, type, cls.category, bankName, batchId));
+      items.push(_buildItem(date, desc, amount, type, cls.category, bankName, batchId, cls.origin));
     }
     return items;
   },
@@ -103,7 +103,7 @@ const BANK_PARSERS = {
       const isIn   = /entrada|crédito|credito|receb/.test(lower);
       const cls  = autoClassify(desc, amount, userRules);
       const type = cls.type === 'transfer' ? 'transfer' : (isIn ? 'income' : 'expense');
-      items.push(_buildItem(date, desc, amount, type, cls.category, bankName, batchId));
+      items.push(_buildItem(date, desc, amount, type, cls.category, bankName, batchId, cls.origin));
     }
     return items;
   },
@@ -138,13 +138,13 @@ function _genericParser(lines, bankName, userRules) {
 
     const cls  = autoClassify(desc, amount, userRules);
     const type = cls.type === 'transfer' ? 'transfer' : (isIn ? 'income' : 'expense');
-    items.push(_buildItem(date, desc, amount, type, cls.category, bankName || 'generico', batchId));
+    items.push(_buildItem(date, desc, amount, type, cls.category, bankName || 'generico', batchId, cls.origin));
   }
 
   return items;
 }
 
-function _buildItem(date, description, amount, type, category, bankName, batchId) {
+function _buildItem(date, description, amount, type, category, bankName, batchId, classificationOrigin) {
   return {
     id:                    genId(),
     bankName,
@@ -153,7 +153,12 @@ function _buildItem(date, description, amount, type, category, bankName, batchId
     normalizedDescription: normalizeDesc(description),
     amount,
     type,
-    category:              category || (type === 'income' ? null : 'outros'),
+    // Sem categoria = o app não sabe. Antes caía em 'outros', que é categoria
+    // legítima e escondia o chute; quem decide agora é o classificationOrigin.
+    category,
+    // `source` = de onde veio o arquivo; `classificationOrigin` = como a
+    // categoria foi decidida. Campo plano porque o item vai direto ao Firestore.
+    classificationOrigin,
     source:                'statement_import',
     fileType:              'pdf',
     importBatchId:         batchId,
