@@ -401,7 +401,7 @@ const _normDesc = (s) => (s || '')
  * O piso cobre erro de leitura do PDF; o teto impede que duas compras
  * distintas de valor próximo no mesmo estabelecimento sejam fundidas.
  */
-function _tolerancia(parcelaTotal) {
+export function _tolerancia(parcelaTotal) {
   const n = Math.max(1, parcelaTotal || 1);
   const t = (n - 1) / 100 + 0.01;
   return Math.min(DUP_TOLERANCE_CEILING, Math.max(DUP_TOLERANCE_FLOOR, t));

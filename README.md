@@ -7,6 +7,20 @@ sem precisar entender de programação. Siga os passos na ordem.
 
 ---
 
+## Testes
+
+A suíte usa só o runner nativo do Node (nada para instalar). Na raiz do projeto:
+
+```bash
+node --test "test/*.test.mjs"
+```
+
+Cobre as funções puras dos parsers: `parseMoney`, `parseDate`, `dedupKey`/
+`detectDuplicates`, `autoClassify`, `detectColumnBands` e a tolerância de
+centavos da deduplicação de parcelas.
+
+---
+
 ## O que você vai precisar
 
 - Uma conta Google (Gmail)
