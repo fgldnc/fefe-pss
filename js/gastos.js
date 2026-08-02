@@ -86,8 +86,8 @@ function _renderTable() {
         <td>${parcTag} ${projTag}</td>
         <td class="col-value"><span class="val-mono val-negative">${fmt(tx.amount)}</span></td>
         <td class="col-actions">
-          <button class="btn-icon-only" title="Editar" data-action="edit-tx" data-id="${tx.id}">✎</button>
-          <button class="btn-icon-only danger" title="Excluir" data-action="delete-tx" data-id="${tx.id}">✕</button>
+          <button class="btn-icon-only" title="Editar" aria-label="Editar lançamento ${esc(tx.description || '')}" data-action="edit-tx" data-id="${tx.id}">✎</button>
+          <button class="btn-icon-only danger" title="Excluir" aria-label="Excluir lançamento ${esc(tx.description || '')}" data-action="delete-tx" data-id="${tx.id}">✕</button>
         </td>
       </tr>`;
   }).join('');

@@ -39,8 +39,8 @@ function _renderReceitasTable() {
       <td>${esc(i.description) || '—'}</td>
       <td class="col-value"><span class="val-mono val-positive">${fmt(i.amount)}</span></td>
       <td class="col-actions">
-        <button class="btn-icon-only" data-action="edit-income" data-id="${i.id}">✎</button>
-        <button class="btn-icon-only danger" data-action="delete-income" data-id="${i.id}">✕</button>
+        <button class="btn-icon-only" title="Editar" aria-label="Editar receita ${esc(i.description || '')}" data-action="edit-income" data-id="${i.id}">✎</button>
+        <button class="btn-icon-only danger" title="Excluir" aria-label="Excluir receita ${esc(i.description || '')}" data-action="delete-income" data-id="${i.id}">✕</button>
       </td>
     </tr>`).join('');
 }

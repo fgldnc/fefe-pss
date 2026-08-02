@@ -104,8 +104,8 @@ function _renderAtivos() {
         <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(a.notes || '')}">${esc(a.notes) || '—'}</td>
         <td class="col-actions">
           ${isInvest ? `<button class="btn btn-xs btn-secondary" data-action="aporte-asset" data-id="${a.id}">+ Aporte</button>` : ''}
-          <button class="btn-icon-only" data-action="edit-asset" data-id="${a.id}">✎</button>
-          <button class="btn-icon-only danger" data-action="delete-asset" data-id="${a.id}">✕</button>
+          <button class="btn-icon-only" title="Editar" aria-label="Editar ativo ${esc(a.name || '')}" data-action="edit-asset" data-id="${a.id}">✎</button>
+          <button class="btn-icon-only danger" title="Excluir" aria-label="Excluir ativo ${esc(a.name || '')}" data-action="delete-asset" data-id="${a.id}">✕</button>
         </td>
       </tr>${detailRow}`;
   }).join('');

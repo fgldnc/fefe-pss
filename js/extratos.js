@@ -79,7 +79,9 @@ function _renderImportacoesList() {
       + '<div style="display:flex;align-items:center;gap:0.75rem">'
       +   '<span style="font-family:var(--font-mono);font-size:0.78rem;color:var(--success)">+' + fmt(inc) + '</span>'
       +   '<span style="font-family:var(--font-mono);font-size:0.78rem;color:var(--danger)">-' + fmt(exp) + '</span>'
-      +   '<button class="btn btn-danger btn-xs btn-del-batch" data-batchid="' + safeId + '" style="font-family:var(--font-sans);cursor:pointer">🗑 Excluir</button>'
+      +   '<button class="btn btn-danger btn-xs btn-del-batch" data-batchid="' + safeId + '"'
+      +   ' aria-label="Excluir extrato ' + esc(BANK_NAMES[batch.bankName] || batch.bankName) + ' de ' + esc(date) + '"'
+      +   ' style="font-family:var(--font-sans);cursor:pointer">🗑 Excluir</button>'
       + '</div>'
       + '</div>';
   }).join('');
@@ -448,7 +450,8 @@ function _showReview(items, bank, format) {
     const assetSelect = `
       <select class="select-inline asset-select ${isInvestCat ? '' : 'hidden'}"
         data-field="assetId" data-idx="${idx}"
-        style="margin-top:0.25rem;max-width:100%" title="Aportar em qual investimento?">
+        style="margin-top:0.25rem;max-width:100%" title="Aportar em qual investimento?"
+        aria-label="Ativo vinculado">
         <option value="">→ sem vínculo com ativo</option>${assetOptions}
       </select>`;
     const catOptions = cats.map(c =>
@@ -469,23 +472,25 @@ function _showReview(items, bank, format) {
 
     // Coluna 5: categoria (saída) ou tipo de receita (entrada)
     const col5 = isIncome
-      ? `<select class="select-inline" data-field="incomeType" data-idx="${idx}" style="max-width:180px">
+      ? `<select class="select-inline" data-field="incomeType" data-idx="${idx}" style="max-width:180px"
+           aria-label="Tipo de receita">
            ${incomeTypeOptions}
          </select>`
-      : `<select class="select-inline" data-field="categoryId" data-idx="${idx}">
+      : `<select class="select-inline" data-field="categoryId" data-idx="${idx}" aria-label="Categoria">
            <option value="">—</option>${catOptions}
          </select>${assetSelect}`;
 
     const valColor = tx.type === 'income' ? 'var(--success)' : 'var(--danger)';
 
     return `<tr class="${tx.isDuplicate ? 'row-dup' : ''}">
-      <td><input type="checkbox" class="row-check" data-idx="${idx}" ${tx.isDuplicate ? '' : 'checked'} /></td>
+      <td><input type="checkbox" class="row-check" data-idx="${idx}"
+        aria-label="Importar transação ${idx + 1}" ${tx.isDuplicate ? '' : 'checked'} /></td>
       <td style="font-size:0.8rem;white-space:nowrap">${esc(tx.date)}</td>
       <td style="max-width:180px">
         <input type="text" class="form-input" style="padding:0.25rem 0.5rem;font-size:0.78rem;width:100%"
-          data-field="description" data-idx="${idx}" value="${esc(tx.description)}" />
+          data-field="description" data-idx="${idx}" aria-label="Descrição" value="${esc(tx.description)}" />
       </td>
-      <td><select class="select-inline" data-field="type" data-idx="${idx}">${typeOptions}</select></td>
+      <td><select class="select-inline" data-field="type" data-idx="${idx}" aria-label="Tipo">${typeOptions}</select></td>
       <td>${col5}</td>
       <td class="col-value val-mono" style="white-space:nowrap;color:${valColor}">${fmt(tx.amount)}</td>
       <td>${dupBadge}</td>

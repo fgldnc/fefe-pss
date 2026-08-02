@@ -164,8 +164,8 @@ function _renderCategorias() {
         <span class="categoria-dot" style="background:${esc(c.color || '#888')}"></span>
         <span class="categoria-nome">${esc(c.name)}</span>
         <span style="font-size:0.7rem;color:var(--text-muted);margin-left:auto;margin-right:0.5rem">${esc(c.color || '')}</span>
-        <button class="btn-icon-only" data-action="edit-cat" data-id="${esc(c.id)}">✎</button>
-        <button class="btn-icon-only danger" data-action="delete-cat" data-id="${esc(c.id)}">✕</button>
+        <button class="btn-icon-only" title="Editar" aria-label="Editar categoria ${esc(c.name)}" data-action="edit-cat" data-id="${esc(c.id)}">✎</button>
+        <button class="btn-icon-only danger" title="Excluir" aria-label="Excluir categoria ${esc(c.name)}" data-action="delete-cat" data-id="${esc(c.id)}">✕</button>
       </div>`).join('');
 }
 
@@ -187,7 +187,7 @@ function _renderRegras() {
       <span style="color:var(--text-muted);margin:0 0.4rem">→</span>
       <span style="font-size:0.82rem;color:var(--text-secondary)">${esc(state.categories.find(c=>c.id===r.category)?.name || r.category || '—')}</span>
       <span style="margin-left:auto;font-size:0.7rem;padding:0.1rem 0.45rem;border-radius:20px;background:var(--accent-dim);color:var(--accent-bright);margin-right:0.5rem">${esc(r.type || 'expense')}</span>
-      <button class="btn-icon-only danger" data-action="delete-rule" data-idx="${i}">✕</button>
+      <button class="btn-icon-only danger" title="Excluir" aria-label="Excluir regra ${esc(r.pattern)}" data-action="delete-rule" data-idx="${i}">✕</button>
     </div>`).join('');
 }
 
@@ -360,9 +360,12 @@ function _openRuleModal() {
 
   const overlay = document.createElement('div');
   overlay.className = 'modal-overlay';
+  overlay.setAttribute('role', 'dialog');
+  overlay.setAttribute('aria-modal', 'true');
+  overlay.setAttribute('aria-labelledby', '_rc-title');
   overlay.innerHTML = `
     <div class="modal modal-sm">
-      <div class="modal-header"><h3>Nova Regra</h3><button id="_rc">✕</button></div>
+      <div class="modal-header"><h3 id="_rc-title">Nova Regra</h3><button id="_rc" title="Fechar" aria-label="Fechar">✕</button></div>
       <div class="modal-body">
         <div class="form-row">
           <label class="form-label">Padrão (texto na descrição)</label>

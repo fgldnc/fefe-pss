@@ -335,7 +335,13 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('btn-search')?.addEventListener('click', openCmd);
   document.addEventListener('keydown', e => {
     if ((e.ctrlKey || e.metaKey) && e.key === 'k') { e.preventDefault(); cmdOpen ? closeCmd() : openCmd(); }
-    if (e.key === 'Escape' && cmdOpen) closeCmd();
+    // Escape: o palette tem prioridade — só quando ele está fechado o Escape
+    // chega aos modais, senão fechar o palette fecharia o modal por baixo dele.
+    if (e.key === 'Escape') {
+      if (cmdOpen) { closeCmd(); return; }
+      document.querySelectorAll('.modal-overlay:not(.hidden)')
+        .forEach(m => m.classList.add('hidden'));
+    }
   });
   document.getElementById('cmd-overlay')?.addEventListener('click', e => {
     if (e.target.id === 'cmd-overlay') closeCmd();

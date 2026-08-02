@@ -255,7 +255,7 @@
         <div class="card-header"><span class="card-title">Todos os ativos e bens</span></div>
         <div class="table-wrapper">
           <table class="data-table">
-            <thead><tr><th>Nome</th><th>Tipo</th><th>Valor Inicial</th><th>Valor Atual</th><th>Aquisição</th><th>Obs.</th><th class="col-actions"></th></tr></thead>
+            <thead><tr><th scope="col">Nome</th><th scope="col">Tipo</th><th scope="col">Valor Inicial</th><th scope="col">Valor Atual</th><th scope="col">Aquisição</th><th scope="col">Obs.</th><th scope="col" class="col-actions"></th></tr></thead>
             <tbody id="ativos-tbody"><tr><td colspan="7" class="empty-row">Nenhum ativo cadastrado.</td></tr></tbody>
           </table>
         </div>
@@ -297,7 +297,7 @@
         <div class="table-wrapper">
           <table class="data-table">
             <thead>
-              <tr><th>Data</th><th>Banco</th><th>Descrição</th><th>Tipo</th><th>Categoria</th><th class="col-value">Valor</th></tr>
+              <tr><th scope="col">Data</th><th scope="col">Banco</th><th scope="col">Descrição</th><th scope="col">Tipo</th><th scope="col">Categoria</th><th scope="col" class="col-value">Valor</th></tr>
             </thead>
             <tbody id="extratos-tbody">
               <tr><td colspan="6" class="empty-row">Nenhuma transação de extrato ainda.</td></tr>
@@ -370,7 +370,7 @@
         <div class="table-wrapper">
           <table class="data-table">
             <thead>
-              <tr><th>Data</th><th>Descrição</th><th>Categoria</th><th>Tipo</th><th>Parcela</th><th class="col-value">Valor</th><th class="col-actions"></th></tr>
+              <tr><th scope="col">Data</th><th scope="col">Descrição</th><th scope="col">Categoria</th><th scope="col">Tipo</th><th scope="col">Parcela</th><th scope="col" class="col-value">Valor</th><th scope="col" class="col-actions"></th></tr>
             </thead>
             <tbody id="gastos-tbody">
               <tr><td colspan="7" class="empty-row">Carregando…</td></tr>
@@ -395,7 +395,7 @@
         <div class="card-header"><span class="card-title">💰 Receitas do mês</span></div>
         <div class="table-wrapper">
           <table class="data-table">
-            <thead><tr><th>Tipo</th><th>Descrição</th><th class="col-value">Valor</th><th class="col-actions"></th></tr></thead>
+            <thead><tr><th scope="col">Tipo</th><th scope="col">Descrição</th><th scope="col" class="col-value">Valor</th><th scope="col" class="col-actions"></th></tr></thead>
             <tbody id="receitas-tbody"><tr><td colspan="4" class="empty-row">Nenhuma receita registrada.</td></tr></tbody>
           </table>
         </div>
@@ -492,9 +492,9 @@
 <!-- ═══ MODAIS ════════════════════════════════════════════════════ -->
 
 <!-- Modal: Novo Gasto -->
-<div id="modal-gasto" class="modal-overlay hidden">
+<div id="modal-gasto" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="modal-gasto-title">
   <div class="modal">
-    <div class="modal-header"><h3 id="modal-gasto-title">Novo Lançamento</h3><button class="modal-close" data-modal="modal-gasto">✕</button></div>
+    <div class="modal-header"><h3 id="modal-gasto-title">Novo Lançamento</h3><button class="modal-close" data-modal="modal-gasto" aria-label="Fechar">✕</button></div>
     <div class="modal-body">
       <input type="hidden" id="gasto-id" />
       <div class="form-row"><label class="form-label">Data *</label><input type="date" id="gasto-data" class="form-input" required /></div>
@@ -528,9 +528,9 @@
 </div>
 
 <!-- Modal: Importar Fatura PDF -->
-<div id="modal-pdf" class="modal-overlay hidden">
+<div id="modal-pdf" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="modal-pdf-title">
   <div class="modal modal-lg">
-    <div class="modal-header"><h3>Importar Fatura PDF</h3><button class="modal-close" data-modal="modal-pdf">✕</button></div>
+    <div class="modal-header"><h3 id="modal-pdf-title">Importar Fatura PDF</h3><button class="modal-close" data-modal="modal-pdf" aria-label="Fechar">✕</button></div>
     <div class="modal-body">
       <div id="pdf-step-1">
         <div class="pdf-drop-zone" id="pdf-drop-zone">
@@ -555,7 +555,7 @@
         </div>
         <div class="table-wrapper">
           <table class="data-table" id="tabela-pdf-preview">
-            <thead><tr><th><input type="checkbox" id="pdf-check-all" checked /></th><th>Data</th><th>Descrição</th><th>Categoria</th><th class="col-value">Valor</th><th>Parcela</th></tr></thead>
+            <thead><tr><th scope="col"><input type="checkbox" id="pdf-check-all" aria-label="Selecionar todos os lançamentos" checked /></th><th scope="col">Data</th><th scope="col">Descrição</th><th scope="col">Categoria</th><th scope="col" class="col-value">Valor</th><th scope="col">Parcela</th></tr></thead>
             <tbody id="pdf-preview-tbody"></tbody>
           </table>
         </div>
@@ -566,9 +566,9 @@
 </div>
 
 <!-- Modal: Importar Extrato -->
-<div id="modal-extrato" class="modal-overlay hidden">
+<div id="modal-extrato" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="modal-extrato-title">
   <div class="modal modal-lg">
-    <div class="modal-header"><h3>Importar Extrato Bancário</h3><button class="modal-close" data-modal="modal-extrato">✕</button></div>
+    <div class="modal-header"><h3 id="modal-extrato-title">Importar Extrato Bancário</h3><button class="modal-close" data-modal="modal-extrato" aria-label="Fechar">✕</button></div>
     <div class="modal-body">
       <div id="extrato-step-1">
         <!-- Seleção de banco -->
@@ -605,7 +605,7 @@
         <p class="form-hint" style="margin-bottom:0.75rem">Revise as transações. Duplicatas identificadas aparecem em destaque.</p>
         <div class="table-wrapper">
           <table class="data-table">
-            <thead><tr><th><input type="checkbox" id="extrato-check-all" checked /></th><th>Data</th><th>Descrição</th><th>Tipo</th><th>Categoria</th><th class="col-value">Valor</th><th>Status</th></tr></thead>
+            <thead><tr><th scope="col"><input type="checkbox" id="extrato-check-all" aria-label="Selecionar todas as transações" checked /></th><th scope="col">Data</th><th scope="col">Descrição</th><th scope="col">Tipo</th><th scope="col">Categoria</th><th scope="col" class="col-value">Valor</th><th scope="col">Status</th></tr></thead>
             <tbody id="extrato-preview-tbody"></tbody>
           </table>
         </div>
@@ -616,9 +616,9 @@
 </div>
 
 <!-- Modal: Nova Receita -->
-<div id="modal-receita" class="modal-overlay hidden">
+<div id="modal-receita" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="modal-receita-title">
   <div class="modal">
-    <div class="modal-header"><h3 id="modal-receita-title">Nova Receita</h3><button class="modal-close" data-modal="modal-receita">✕</button></div>
+    <div class="modal-header"><h3 id="modal-receita-title">Nova Receita</h3><button class="modal-close" data-modal="modal-receita" aria-label="Fechar">✕</button></div>
     <div class="modal-body">
       <input type="hidden" id="receita-id" />
       <div class="form-row"><label class="form-label">Tipo</label>
@@ -637,9 +637,9 @@
 </div>
 
 <!-- Modal: Novo Ativo -->
-<div id="modal-ativo" class="modal-overlay hidden">
+<div id="modal-ativo" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="modal-ativo-title">
   <div class="modal">
-    <div class="modal-header"><h3 id="modal-ativo-title">Novo Ativo / Bem</h3><button class="modal-close" data-modal="modal-ativo">✕</button></div>
+    <div class="modal-header"><h3 id="modal-ativo-title">Novo Ativo / Bem</h3><button class="modal-close" data-modal="modal-ativo" aria-label="Fechar">✕</button></div>
     <div class="modal-body">
       <input type="hidden" id="ativo-id" />
       <div class="form-row"><label class="form-label">Nome *</label><input type="text" id="ativo-nome" class="form-input" placeholder="Ex: Tesouro Direto" required /></div>
@@ -665,9 +665,9 @@
 </div>
 
 <!-- Modal: Nova Meta -->
-<div id="modal-meta" class="modal-overlay hidden">
+<div id="modal-meta" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="modal-meta-title">
   <div class="modal">
-    <div class="modal-header"><h3 id="modal-meta-title">Nova Meta</h3><button class="modal-close" data-modal="modal-meta">✕</button></div>
+    <div class="modal-header"><h3 id="modal-meta-title">Nova Meta</h3><button class="modal-close" data-modal="modal-meta" aria-label="Fechar">✕</button></div>
     <div class="modal-body">
       <input type="hidden" id="meta-id" />
       <div class="form-row"><label class="form-label">Nome *</label><input type="text" id="meta-nome" class="form-input" placeholder="Ex: Reserva de emergência" required /></div>
@@ -688,9 +688,9 @@
 </div>
 
 <!-- Modal: Aporte em Meta -->
-<div id="modal-aporte-ativo" class="modal-overlay hidden">
+<div id="modal-aporte-ativo" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="modal-aporte-ativo-title">
   <div class="modal modal-sm">
-    <div class="modal-header"><h3 id="modal-aporte-ativo-title">Aporte no Ativo</h3><button class="modal-close" data-modal="modal-aporte-ativo">✕</button></div>
+    <div class="modal-header"><h3 id="modal-aporte-ativo-title">Aporte no Ativo</h3><button class="modal-close" data-modal="modal-aporte-ativo" aria-label="Fechar">✕</button></div>
     <div class="modal-body">
       <input type="hidden" id="aporte-ativo-id" />
       <div class="form-row"><label class="form-label">Valor *</label><input type="number" id="aporte-ativo-valor" class="form-input" placeholder="0,00" step="0.01" min="0" required /></div>
@@ -701,9 +701,9 @@
   </div>
 </div>
 
-<div id="modal-aporte" class="modal-overlay hidden">
+<div id="modal-aporte" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="modal-aporte-title">
   <div class="modal modal-sm">
-    <div class="modal-header"><h3>Registrar Aporte</h3><button class="modal-close" data-modal="modal-aporte">✕</button></div>
+    <div class="modal-header"><h3 id="modal-aporte-title">Registrar Aporte</h3><button class="modal-close" data-modal="modal-aporte" aria-label="Fechar">✕</button></div>
     <div class="modal-body">
       <input type="hidden" id="aporte-meta-id" />
       <div class="form-row"><label class="form-label">Valor *</label><input type="number" id="aporte-valor" class="form-input" placeholder="0,00" step="0.01" min="0" required /></div>
@@ -715,9 +715,9 @@
 </div>
 
 <!-- Modal: Nova Categoria -->
-<div id="modal-categoria" class="modal-overlay hidden">
+<div id="modal-categoria" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="modal-categoria-title">
   <div class="modal modal-sm">
-    <div class="modal-header"><h3>Categoria</h3><button class="modal-close" data-modal="modal-categoria">✕</button></div>
+    <div class="modal-header"><h3 id="modal-categoria-title">Categoria</h3><button class="modal-close" data-modal="modal-categoria" aria-label="Fechar">✕</button></div>
     <div class="modal-body">
       <input type="hidden" id="cat-id" />
       <div class="form-row"><label class="form-label">Nome *</label><input type="text" id="cat-nome" class="form-input" placeholder="Ex: Saúde" required /></div>

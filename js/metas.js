@@ -56,8 +56,8 @@ function _renderMetasGrid() {
           <span>${pct.toFixed(0)}% concluído · Prazo: ${prazoFmt}</span>
           <div class="meta-actions">
             <button class="btn btn-xs btn-secondary" data-action="aporte-meta" data-id="${g.id}">+ Aporte</button>
-            <button class="btn-icon-only" data-action="edit-meta" data-id="${g.id}">✎</button>
-            <button class="btn-icon-only danger" data-action="delete-meta" data-id="${g.id}">✕</button>
+            <button class="btn-icon-only" title="Editar" aria-label="Editar meta ${esc(g.name || '')}" data-action="edit-meta" data-id="${g.id}">✎</button>
+            <button class="btn-icon-only danger" title="Excluir" aria-label="Excluir meta ${esc(g.name || '')}" data-action="delete-meta" data-id="${g.id}">✕</button>
           </div>
         </div>
         ${aportes.length ? `
