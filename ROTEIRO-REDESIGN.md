@@ -4,13 +4,13 @@ Documento de estado entre sessões. Quem abrir uma sessão nova sobre design do
 Radar lê este arquivo primeiro e continua daqui, sem precisar refazer o
 diagnóstico.
 
-**Última atualização:** 02/08/2026 · rodadas 0, 1 e 2 concluídas, **rodada 3
-parte 1 (faixa de KPIs do Dashboard) concluída e conferida**, mais a
-**correção 3.1a** (modo "mês encerrado" e investido fora do "Livre"). Divergências
+**Última atualização:** 02/08/2026 · rodadas 0, 1 e 2 concluídas e **rodada 3
+concluída por inteiro** — parte 1 (faixa de KPIs), correção 3.1a (modo "mês
+encerrado" e investido fora do "Livre") e **parte 2 (pizza "Sem categoria",
+Orçamento × Real e reordenação dos blocos), conferida no app**. Divergências
 entre documento e código reconferidas nesta data (ver o fim do arquivo).
-Próximo passo: **rodada 3, parte 2** (pizza "Sem categoria", Orçamento × Real) —
-mockup aprovado (`MOCKUP-rodada-3-parte2.html`) e prompt escrito
-(`PROMPT-rodada-3-parte2.md`).
+Próximo passo: **rodada 4** (Fluxo de Caixa + remoção de `js/calendario.js` e
+`js/pdf-import.legacy.js`).
 
 ---
 
@@ -278,10 +278,90 @@ de duplicata sem que o lançamento esteja na base, o `title` da tag agora mostra
 contra qual registro ela bateu — é o dado que falta para fechar o diagnóstico.
 
 ### Rodada 3 — Recorte do Dashboard e micro-contexto nos KPIs
-**Estado: parte 1 CONCLUÍDA e conferida em 02/08/2026.** Mockup
-`MOCKUP-rodada-3-kpis.html`, prompt em `PROMPT-rodada-3.md`. Arquivos tocados:
+**Estado: CONCLUÍDA (partes 1 e 2) e conferida em 02/08/2026.** Mockups
+`MOCKUP-rodada-3-kpis.html` e `MOCKUP-rodada-3-parte2.html`; prompts em
+`PROMPT-rodada-3.md` e `PROMPT-rodada-3-parte2.md`. Arquivos tocados na parte 1:
 `js/dashboard.js`, `css/style.css`, `js/utils.js` (skeleton), `index.html`
-(skeleton estático). **Parte 2 (pizza, Orçamento × Real) segue pendente.**
+(skeleton estático).
+
+#### Parte 2 — "Sem categoria" e o card que não fechava (02/08/2026)
+
+**O achado maior do que o roteiro registrava.** O roteiro só apontava o gasto
+sem categoria sumindo do Orçamento × Real. O buraco era mais largo: o card
+iterava sobre `Object.entries(budgetMonth)`, então **também** sumia todo gasto
+em categoria *sem limite definido*. A soma visível ficava menor que o KPI de
+Despesas logo acima, sem nada na tela avisando. Mesmo padrão em
+`js/orcamento.js` (agrupava por `categoryId` e iterava só sobre
+`state.categories`).
+
+**Como ficou.** Uma função pura, `splitGastosPorLimite(txs, budgetMonth,
+categories)`, devolve `{ porCategoria, semCategoria, semLimite, total }` — uma
+partição exata das despesas do mês. Dashboard e aba Orçamento consomem a mesma
+função e o mesmo `renderForaDoLimite()`, então não existem duas verdades sobre
+o mesmo mês. Ambas moram em **`js/utils.js`**, não em `js/db.js`: são puras
+(não leem `state`, não tocam Firestore) e `utils.js` é o único módulo que os
+dois já importam sem criar ciclo — recebendo tudo por argumento, não viola a
+restrição de `utils.js` não importar módulo do projeto.
+
+**Onde o âmbar entra e onde não entra.** A fatia da pizza continua neutra
+(`#6b6b6b`, igual a "Outras"): a pizza não é editável, e a rodada 2 proibiu
+alarme sem porta de saída. Quem carrega o âmbar é a **linha da legenda**, que
+clica. Fechada, portanto, a pendência 1 herdada da parte 1 — a favor de "fatia
+neutra, legenda acionável".
+
+**A armadilha dos universos diferentes, resolvida.** Pizza mede
+`allExpensesOfMonth()` (transações **+** extrato); a aba Gastos mede
+`txOfMonth()` (**só** transações). Para a contagem nunca mentir sobre o
+destino, `db.js` passou a marcar o item normalizado com `_origem: 'extrato'`
+(campo só de leitura, nunca gravado) e a linha quebra em `N em Gastos ·
+M em Extratos` quando as duas origens existem — nesse caso a linha inteira
+**não** clica, porque nenhuma aba sozinha mostra o total anunciado.
+
+**Conferência feita no app** (servidor estático + `state` sintético injetado no
+console; sem Firebase, harness descartado no fim):
+
+1. Identidade fechando: 1.450 (categorias com limite) + 700 (fora de qualquer
+   limite) = 2.150 = centro da pizza = KPI de Despesas = linha de reconciliação.
+   `type: 'transfer'` ficou de fora, como manda a regra.
+2. Aba Orçamento e Dashboard reportaram **o mesmo** total para o mesmo mês.
+3. Mês com tudo classificado e tudo orçado: zero marcas âmbar, bloco "fora de
+   qualquer limite" ausente, sobrando só a reconciliação.
+4. Split por origem correto (2 em Gastos · 1 em Extratos) e clique levando à aba
+   certa já filtrada, com a tabela mostrando exatamente os N prometidos.
+5. Ida e volta ao Dashboard e clique de novo: funciona, sem listener duplicado
+   (o handler é delegado em `document` e registrado uma única vez em `app.js`).
+6. Re-render da aba Orçamento não duplica o bloco de fechamento.
+7. Evolução em meia largura: 6 rótulos de mês, 50px de folga entre eles, sem
+   sobreposição. Canvas a 220px.
+8. Em 360px: sem scroll horizontal, donut em 148px, `.lg-pct` escondido, nenhum
+   valor monetário truncado.
+9. Patrimônio intacto (4 KPIs, grid próprio). `node --test test/*.mjs`: 35/35.
+   Console limpo, sem erro de CSP.
+
+**Desvios do prompt, com o motivo:**
+
+- **Arquivos além dos cinco listados.** O prompt dizia "nenhum outro arquivo",
+  mas ele próprio autorizava `js/utils.js` (item 3.3) e exigia navegação sem
+  import estático de `app.js` (item 3.4). Tocados também: `js/app.js` (handler
+  delegado `[data-goto]` + `_goto()`), `js/db.js` (o campo `_origem`) e
+  `css/components.css` (onde `.progress-ok` e o bloco de orçamento já moravam).
+- **`.progress-ok` virou azul** (`--accent-primary`) em `css/components.css`.
+  Conferido antes, como o prompt mandava: a classe é compartilhada **só** entre
+  o card do Dashboard e a aba Orçamento, que devem ler igual — nenhuma outra
+  tela usa.
+- **Breakpoint do `.dashboard-row` mudou de 1200px para 900px.** O item 5 pede
+  `1fr 1fr` acima de 900px; a regra antiga colapsava antes disso.
+- **Tick do eixo X da evolução caiu de 10 para 9** (`autoSkip: false`,
+  `maxRotation: 0`), exatamente a saída que o prompt autorizava antes de mexer
+  no layout. Com a folga medida, os 6 rótulos cabem.
+- **Id de categoria órfão** (categoria apagada, `categoryId` apontando para o
+  nada) foi classificado como **resíduo**, não como pendência: entra em
+  "Outras" na pizza e em "categorias sem limite" no card. Se caísse no balde de
+  "sem categoria", a contagem da legenda não bateria com o filtro do destino
+  (`!t.categoryId`) — que é justamente o que ela promete.
+- **Sentinela do filtro de Gastos:** `__sem-categoria__`, exportada de
+  `utils.js` como `SEM_CATEGORIA_FILTRO`. Id de categoria é slug gerado do nome
+  (letras, dígitos, hífen), então `__…__` nunca colide.
 
 **Como o comprometido é calculado (o ponto que o prompt mandava verificar):**
 `allExpensesOfMonth()` filtra `state.transactions` só por competência
@@ -463,7 +543,16 @@ tinha sido descrito como indo simplesmente para Gastos.
   mais largo o layout pula na carga. Ajustar junto — e o skeleton estático de
   `index.html:174-178` também.
 
-Herda três pendências que precisam ser resolvidas dentro dela:
+Herdava três pendências. **1 e 2 foram fechadas na parte 2** (ver acima); 3 foi
+respeitada — a parte 2 reusou `.mark-inferido` em vez de inventar símbolo novo.
+
+1. ~~**A fatia "Sem categoria" da pizza**~~ **Fechada:** fatia neutra, legenda
+   acionável em âmbar.
+2. ~~**Lançamento sem categoria some do Orçamento × Real**~~ **Fechada, e o
+   buraco era maior:** gasto em categoria sem limite também sumia. Partição
+   exata em `splitGastosPorLimite()`.
+
+Texto original das pendências, para referência:
 
 1. **A fatia "Sem categoria" da pizza** (`dashboard.js`, correção aplicada na
    rodada 1) está em `#6b6b6b` como tratamento provisório. A rodada 2 fechou que
@@ -573,13 +662,15 @@ Só faz sentido desenhar o vazio depois que o cheio estiver certo.
 Cole numa sessão nova:
 
 > Estou retomando o redesign do Radar Financeiro. Leia `ROTEIRO-REDESIGN.md`,
-> `CLAUDE.md` e `RELATORIO-AUDITORIA.md` na raiz do repositório. Rodadas 0, 1 e 2
-> estão concluídas, e a **rodada 3 parte 1** (faixa de KPIs do Dashboard) já está
-> no ar. A próxima é a **rodada 3 parte 2** (fatia "Sem categoria" da pizza e
-> Orçamento × Real), com mockup já aprovado e prompt em
-> `PROMPT-rodada-3-parte2.md`. Antes de propor qualquer coisa, diga o que a parte
-> 2 herda de pendência da parte 1. Se algum achado do roteiro não bater mais com
-> o código, aponte a divergência em vez de seguir o roteiro.
+> `CLAUDE.md` e `RELATORIO-AUDITORIA.md` na raiz do repositório. Rodadas 0, 1, 2
+> e **3 (partes 1 e 2)** estão concluídas e no ar. A próxima é a **rodada 4**
+> (Fluxo de Caixa), que inclui a remoção de `js/calendario.js` e
+> `js/pdf-import.legacy.js` — os dois são código morto confirmado. Antes de
+> propor qualquer coisa, verifique se a identidade "categorias com limite + fora
+> de qualquer limite = total de despesas do mês" continua fechando no Dashboard
+> e na aba Orçamento: ela é o contrato que a rodada 3 estabeleceu. Se algum
+> achado do roteiro não bater mais com o código, aponte a divergência em vez de
+> seguir o roteiro.
 
 ---
 
