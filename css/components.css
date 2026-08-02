@@ -318,10 +318,15 @@
 
 /* A revisão de importação é a tela mais larga do app: 6–7 colunas, quase todas
    editáveis. Ganha largura própria para a descrição caber sem truncar. */
-.modal-import { max-width: min(1180px, 95vw); }
-.import-preview-table .td-desc { min-width: 260px; }
+.modal-import { max-width: min(1400px, 98vw); }
+.modal-import .modal-body { padding-left: 1rem; padding-right: 1rem; }
+/* Padding de célula menor e controles elásticos: com 6–7 colunas editáveis, o
+   respiro de 1rem por lado é o que empurrava a tabela para o scroll lateral. */
+.import-preview-table th,
+.import-preview-table td { padding-left: 0.45rem; padding-right: 0.45rem; }
+.import-preview-table .td-desc { width: 34%; min-width: 220px; }
 .import-preview-table .td-desc input { width: 100%; }
-.import-preview-table .td-cat select { max-width: 100%; }
+.import-preview-table select { max-width: 100%; width: 100%; }
 
 /* Barra de resumo dos dois modais de importação */
 .import-summary-bar {
