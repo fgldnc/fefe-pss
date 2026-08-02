@@ -171,20 +171,28 @@ async function _processPdf(file) {
 
 // ─── SEÇÕES DA FATURA ──────────────────────────────────────────────────────
 // Só CAPTURA vira transação. INFO é lido para conferência. IGNORE é descartado.
+//
+// TOLERÂNCIA A ACENTO FRAGMENTADO: o PDF.js entrega palavra acentuada em itens
+// separados ("Lan" + "ç" + "amentos"). O join de pdf-layout.js já recola isso
+// medindo o vão entre os itens, mas esse recolamento depende de heurística
+// (SPACE_GAP_PX) e pode falhar em fatura de outro banco. Por isso todo caractere
+// acentuado aqui aceita espaço em volta: /lan\s*[çc]\s*amentos/ casa tanto com
+// "Lançamentos" quanto com "Lan ç amentos". Mesmo espírito do [çc]/[aã] que já
+// existia — tolerar a variação sem depender de uma única camada.
 const SECTION_HEADERS = [
-  { re: /lan[çc]amentos\s*:?\s*compras\s+e\s+saques/i,           mode: 'capture' },
-  { re: /lan[çc]amentos\s+no\s+cart[aã]o/i,                       mode: 'capture' },
-  { re: /lan[çc]amentos\s*:?\s*(nacionais|internacionais)/i,      mode: 'capture' },
-  { re: /compras\s+parceladas\s*[-–—]?\s*pr[óo]ximas\s+faturas/i, mode: 'nextinvoice' },
-  { re: /total\s+dos\s+lan[çc]amentos\s+atuais/i,                 mode: 'ignore' },
+  { re: /lan\s*[çc]\s*amentos\s*:?\s*compras\s+e\s+saques/i,            mode: 'capture' },
+  { re: /lan\s*[çc]\s*amentos\s+no\s+cart\s*[aã]\s*o/i,                 mode: 'capture' },
+  { re: /lan\s*[çc]\s*amentos\s*:?\s*(nacionais|internacionais)/i,      mode: 'capture' },
+  { re: /compras\s+parceladas\s*[-–—]?\s*pr\s*[óo]\s*ximas\s+faturas/i, mode: 'nextinvoice' },
+  { re: /total\s+dos\s+lan\s*[çc]\s*amentos\s+atuais/i,                 mode: 'ignore' },
   // Coluna esquerda da fatura Itaú: seção de créditos/pagamentos que precede
   // "Lançamentos: compras e saques". Sem esta regra a seção não trocava de
   // modo e as linhas dependiam só do amount <= 0 para serem descartadas.
-  { re: /pagamentos\s+efetuados/i,                                mode: 'ignore' },
-  { re: /total\s+d[oa]s\s+pagamentos/i,                           mode: 'ignore' },
-  { re: /limites?\s+de\s+cr[ée]dito/i,                            mode: 'ignore' },
-  { re: /resumo\s+da\s+fatura/i,                                  mode: 'ignore' },
-  { re: /encargos\s+e\s+juros/i,                                  mode: 'ignore' },
+  { re: /pagamentos\s+efetuados/i,                                      mode: 'ignore' },
+  { re: /total\s+d[oa]s\s+pagamentos/i,                                 mode: 'ignore' },
+  { re: /limites?\s+de\s+cr\s*[ée]\s*dito/i,                            mode: 'ignore' },
+  { re: /resumo\s+da\s+fatura/i,                                        mode: 'ignore' },
+  { re: /encargos\s+e\s+juros/i,                                        mode: 'ignore' },
 ];
 
 function _sectionOf(line) {
