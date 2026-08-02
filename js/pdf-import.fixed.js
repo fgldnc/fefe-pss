@@ -177,6 +177,11 @@ const SECTION_HEADERS = [
   { re: /lan[çc]amentos\s*:?\s*(nacionais|internacionais)/i,      mode: 'capture' },
   { re: /compras\s+parceladas\s*[-–—]?\s*pr[óo]ximas\s+faturas/i, mode: 'nextinvoice' },
   { re: /total\s+dos\s+lan[çc]amentos\s+atuais/i,                 mode: 'ignore' },
+  // Coluna esquerda da fatura Itaú: seção de créditos/pagamentos que precede
+  // "Lançamentos: compras e saques". Sem esta regra a seção não trocava de
+  // modo e as linhas dependiam só do amount <= 0 para serem descartadas.
+  { re: /pagamentos\s+efetuados/i,                                mode: 'ignore' },
+  { re: /total\s+d[oa]s\s+pagamentos/i,                           mode: 'ignore' },
   { re: /limites?\s+de\s+cr[ée]dito/i,                            mode: 'ignore' },
   { re: /resumo\s+da\s+fatura/i,                                  mode: 'ignore' },
   { re: /encargos\s+e\s+juros/i,                                  mode: 'ignore' },
