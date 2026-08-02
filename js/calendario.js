@@ -2,7 +2,7 @@
  * calendario.js — Calendário financeiro mensal
  */
 
-import { state, monthLabel, offsetMonth, fmt, esc } from './utils.js';
+import { state, monthLabel, offsetMonth, fmt, esc, isOfMonth } from './utils.js';
 import { incomesOfMonth } from './db.js';
 
 export function renderCalendario() {
@@ -111,7 +111,7 @@ function _buildEventMap(ym) {
     .filter(c => (c.id + c.name).toLowerCase().includes('investiment'))
     .map(c => c.id);
 
-  for (const tx of state.transactions.filter(t => t.competenceMonth === ym && t.date)) {
+  for (const tx of state.transactions.filter(t => isOfMonth(t, ym) && t.date)) {
     const isInvest = investIds.includes(tx.categoryId);
     add(tx.date, {
       type:     'expense',
@@ -137,7 +137,7 @@ function _buildEventsList(ym) {
     .filter(c => (c.id + c.name).toLowerCase().includes('investiment'))
     .map(c => c.id);
 
-  for (const tx of state.transactions.filter(t => t.competenceMonth === ym && t.date)) {
+  for (const tx of state.transactions.filter(t => isOfMonth(t, ym) && t.date)) {
     const cat   = state.categories.find(c => c.id === tx.categoryId);
     const isInv = investIds.includes(tx.categoryId);
     events.push({

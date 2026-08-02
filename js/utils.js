@@ -70,6 +70,30 @@ export function offsetMonth(ym, delta) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
 }
 
+// ─── COMPETÊNCIA (critério único) ─────────────────────────────
+// Antes existiam três critérios diferentes para "este lançamento é deste mês?":
+// gasto de cartão por competenceMonth, gasto de extrato por date.slice(0,7) e
+// receita por month/competenceMonth/date. O resultado era Dashboard e Relatórios
+// discordando entre si sobre o mesmo lançamento.
+//
+// Ordem de precedência: o campo mais específico vence. competenceMonth é uma
+// decisão explícita do usuário (a parcela pesa em maio mesmo comprada em janeiro);
+// month é o mês declarado da receita; date é o último recurso, o mês do fato.
+//
+// Hoje nenhuma coleção grava dois desses campos ao mesmo tempo, então unificar
+// não move nenhum lançamento de mês — a função existe para impedir que voltem
+// a divergir quando um novo fluxo passar a gravar competenceMonth.
+
+/** Mês de competência de um lançamento (transação, extrato ou receita). */
+export function competenceOf(tx) {
+  return tx.competenceMonth || tx.month || (tx.date || '').slice(0, 7);
+}
+
+/** O lançamento pertence ao mês `month` ('YYYY-MM')? */
+export function isOfMonth(tx, month) {
+  return competenceOf(tx) === month;
+}
+
 // ─── TOAST ────────────────────────────────────────────────────
 const TOAST_ICONS = { success: '✓', error: '✕', warning: '⚠', info: '◈' };
 
@@ -125,9 +149,9 @@ export function showTableSkeleton(tbodyId, cols = 6) {
 // utils.js não pode importar db.js (dependência circular).
 function _expensesFallback(month, investIds) {
   const normais = state.transactions.filter(t =>
-    t.competenceMonth === month && !investIds.includes(t.categoryId));
+    isOfMonth(t, month) && !investIds.includes(t.categoryId));
   const extrato = (state.extratoTransactions || []).filter(t =>
-    t.type === 'expense' && (t.date || '').slice(0, 7) === month &&
+    t.type === 'expense' && isOfMonth(t, month) &&
     !investIds.includes(resolveCategoryId(t.categoryId || t.category)));
   // Resolve categoryId dos itens de extrato (slug → ID real) para os
   // agrupamentos por categoria baterem com o resto do app
@@ -236,7 +260,7 @@ export function renderInsights(getExpenses = null) {
   }
 
   const nextMonth = offsetMonth(month, 1);
-  const parcelas  = state.transactions.filter(t => t.competenceMonth === nextMonth && t.installmentTotal > 1);
+  const parcelas  = state.transactions.filter(t => isOfMonth(t, nextMonth) && t.installmentTotal > 1);
   const totalParc = parcelas.reduce((s, t) => s + (t.amount || 0), 0);
   if (totalParc > 0) chips.push({ type: 'info', icon: '📅', text: `${fmt(totalParc)} em parcelas no próximo mês` });
 

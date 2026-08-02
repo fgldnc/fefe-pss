@@ -5,7 +5,7 @@
  *   transactions, incomes, budgets, assets, goals, categories, settings
  */
 
-import { state, resolveCategoryId } from './utils.js';
+import { state, resolveCategoryId, isOfMonth } from './utils.js';
 import { getUid } from './auth.js';
 
 // ─── CATEGORIAS PADRÃO ─────────────────────────────────────────────────────
@@ -137,7 +137,7 @@ async function seedCategories() {
 
 /** Retorna transações do mês de competência */
 export function txOfMonth(month) {
-  return state.transactions.filter(t => t.competenceMonth === month);
+  return state.transactions.filter(t => isOfMonth(t, month));
 }
 
 /**
@@ -148,10 +148,10 @@ export function txOfMonth(month) {
  * os dados originais no Firestore — a normalização é só para leitura.
  */
 export function allExpensesOfMonth(month) {
-  const normais = state.transactions.filter(t => t.competenceMonth === month);
+  const normais = state.transactions.filter(t => isOfMonth(t, month));
 
   const doExtrato = (state.extratoTransactions || [])
-    .filter(t => t.type === 'expense' && (t.date || '').slice(0, 7) === month)
+    .filter(t => t.type === 'expense' && isOfMonth(t, month))
     .map(t => ({
       ...t,
       // Resolve slug do parser ('alimentacao'...) → ID real da categoria do usuário.
@@ -192,12 +192,9 @@ export async function deleteTx(id) {
 // ─── INCOMES ───────────────────────────────────────────────────────────────
 
 export function incomesOfMonth(month) {
-  // Critério unificado: 'month' explícito vence; sem 'month', aceita
-  // competenceMonth ou o mês da data. Nunca conta a mesma receita duas vezes.
-  return state.incomes.filter(i =>
-    i.month === month ||
-    (!i.month && (i.competenceMonth === month || (i.date || '').slice(0, 7) === month))
-  );
+  // Critério único do app (ver competenceOf em utils.js). Nunca conta a mesma
+  // receita duas vezes porque cada lançamento resolve para exatamente um mês.
+  return state.incomes.filter(i => isOfMonth(i, month));
 }
 
 export async function saveIncome(data, id = null) {

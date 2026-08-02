@@ -2,7 +2,7 @@
  * receitas.js — Aba de receitas e orçamento mensal
  */
 
-import { state, fmt, toast, esc } from './utils.js';
+import { state, fmt, toast, esc, isOfMonth } from './utils.js';
 import { incomesOfMonth, saveIncome, deleteIncome } from './db.js';
 
 let _receitasInit = false;
@@ -98,7 +98,7 @@ function _initReceitasEvents() {
   document.getElementById('btn-copiar-receitas')?.addEventListener('click', async () => {
     const prev = _offsetMonth(state.currentMonth, -1);
     const fromPrev = state.incomes.filter(i =>
-      i.month === prev && i.source !== 'statement_import'
+      isOfMonth(i, prev) && i.source !== 'statement_import'
     );
     if (!fromPrev.length) return toast('Nenhuma receita manual no mês anterior.', 'warning');
     if (!confirm(`Copiar ${fromPrev.length} receita(s) de ${prev} para ${state.currentMonth}?`)) return;

@@ -12,7 +12,7 @@
  *  - Saldo começa do ZERO no primeiro dia do mês
  */
 
-import { state, fmt, monthLabel, offsetMonth, esc } from './utils.js';
+import { state, fmt, monthLabel, offsetMonth, esc, isOfMonth } from './utils.js';
 import { incomesOfMonth } from './db.js';
 
 export function renderCalendario() {
@@ -138,14 +138,14 @@ function _buildDayData(ym, year, month, daysInMonth) {
   // Por quê: uma parcela como "SENAC WEB 5/6" tem date apontando para quando a
   // PRIMEIRA parcela foi comprada (ex: janeiro), mas o competenceMonth dela é maio
   // — é em maio que essa parcela específica "pesa" na fatura e desconta o saldo.
-  // Por isso filtramos por competenceMonth (não por date.slice(0,7)) e usamos
-  // apenas o número do dia do date para posicionar visualmente na tabela do mês.
+  // Por isso a pertinência ao mês vem de isOfMonth (competenceMonth vence a data)
+  // e o date entra só com o número do dia, para posicionar na tabela do mês.
   //
   // IMPORTANTE: exclui itens de extrato bancário (source === 'statement_import').
   // Eles são tratados separadamente no loop de extratoTransactions abaixo, com a
   // lógica correta de type (income/expense).
   for (const tx of state.transactions.filter(t =>
-    t.competenceMonth === ym && t.date && t.source !== 'statement_import'
+    isOfMonth(t, ym) && t.date && t.source !== 'statement_import'
   )) {
     const day = parseInt(tx.date.slice(8, 10), 10);
     // Se o dia original não existir neste mês (ex: dia 31 em mês de 30), usa o último dia válido
@@ -175,7 +175,7 @@ function _buildDayData(ym, year, month, daysInMonth) {
   // Transações de extrato bancário — soma SOMENTE as saídas (expense).
   // As entradas (income) já foram contabilizadas acima via state.incomes.
   for (const tx of (state.extratoTransactions || [])) {
-    if (!tx.date || tx.date.slice(0, 7) !== ym) continue;
+    if (!tx.date || !isOfMonth(tx, ym)) continue;
     if (tx.type !== 'expense') continue; // pula income — já contado em incomes
     const day = parseInt(tx.date.slice(8, 10), 10);
     if (!result[day]) continue;

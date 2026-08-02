@@ -2,7 +2,7 @@
  * relatorios.js — Relatórios exportáveis (CSV e JSON)
  */
 
-import { state, fmt, monthLabel, offsetMonth, esc, toast } from './utils.js';
+import { state, fmt, monthLabel, offsetMonth, esc, toast, isOfMonth } from './utils.js';
 import { allExpensesOfMonth, incomesOfMonth } from './db.js';
 
 // ─── RENDER DA SEÇÃO ──────────────────────────────────────────
@@ -214,7 +214,7 @@ function _parcelasFuturas(fromMonth) {
   const rows = [];
   for (let i = 1; i <= 6; i++) {
     const m    = offsetMonth(fromMonth, i);
-    const txs  = state.transactions.filter(t => t.competenceMonth === m && t.installmentTotal > 1);
+    const txs  = state.transactions.filter(t => isOfMonth(t, m) && t.installmentTotal > 1);
     for (const tx of txs) {
       const cat = state.categories.find(c => c.id === tx.categoryId);
       rows.push({
