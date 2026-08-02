@@ -14,6 +14,11 @@ import { addAporteToAsset }        from './db.js';
 let selectedBank   = '';
 let selectedFormat = 'ofx';
 let parsedItems    = [];
+// Listeners do modal: registrados UMA vez no primeiro open. Antes o modal
+// clonava os elementos a cada abertura para "limpar" listeners — o clone
+// perdia estado do elemento (ex.: files do input) e dependia de o clone
+// preservar tudo. Delegação + flag resolve sem tocar no DOM.
+let _eventsBound = false;
 
 const BANK_NAMES = {
   itau: 'Itaú', nubank: 'Nubank', inter: 'Inter',
@@ -154,88 +159,87 @@ export function initExtratoModal() {
   parsedItems    = [];
 
   _resetModal();
+  _bindModalEvents();
+}
 
-  // ── Limpa listeners antigos clonando elementos ──────────────
-  // (evita empilhamento ao abrir o modal várias vezes)
-  function _fresh(id) {
-    const el = document.getElementById(id);
-    if (!el) return el;
-    const clone = el.cloneNode(true);
-    el.parentNode.replaceChild(clone, el);
-    return clone;
-  }
+// Registra os listeners do modal uma única vez. Tudo por delegação no
+// modal/document, porque partes do conteúdo (thead da preview) são
+// recriadas por innerHTML e matariam um listener preso ao elemento.
+function _bindModalEvents() {
+  if (_eventsBound) return;
 
-  // Seleção de banco — usa delegação no container
-  const bankSelector = document.getElementById('bank-selector');
-  const freshBankSelector = bankSelector?.cloneNode(true);
-  if (bankSelector && freshBankSelector) {
-    bankSelector.parentNode.replaceChild(freshBankSelector, bankSelector);
-    freshBankSelector.addEventListener('click', e => {
-      const card = e.target.closest('.bank-card');
-      if (!card) return;
-      freshBankSelector.querySelectorAll('.bank-card').forEach(c => c.classList.remove('selected'));
+  const modal = document.getElementById('modal-extrato');
+  if (!modal) return; // shell ainda não montado — tenta de novo no próximo open
+
+  modal.addEventListener('click', e => {
+    // Seleção de banco
+    const card = e.target.closest?.('#bank-selector .bank-card');
+    if (card) {
+      modal.querySelectorAll('#bank-selector .bank-card').forEach(c => c.classList.remove('selected'));
       card.classList.add('selected');
       selectedBank = card.dataset.bank;
-    });
-  }
+      return;
+    }
 
-  // Seleção de formato — delegação no container
-  const formatTabs = document.getElementById('format-tabs');
-  const freshFormatTabs = formatTabs?.cloneNode(true);
-  if (formatTabs && freshFormatTabs) {
-    formatTabs.parentNode.replaceChild(freshFormatTabs, formatTabs);
-    freshFormatTabs.addEventListener('click', e => {
-      const tab = e.target.closest('.format-tab');
-      if (!tab) return;
-      freshFormatTabs.querySelectorAll('.format-tab').forEach(t => t.classList.remove('active'));
+    // Seleção de formato
+    const tab = e.target.closest?.('#format-tabs .format-tab');
+    if (tab) {
+      modal.querySelectorAll('#format-tabs .format-tab').forEach(t => t.classList.remove('active'));
       tab.classList.add('active');
       selectedFormat = tab.dataset.format;
       _updateFormatHint();
-    });
-  }
+      return;
+    }
 
-  // Drop zone e file input — clona para limpar listeners
-  const dropZone  = _fresh('extrato-drop-zone');
-  const fileInput = _fresh('extrato-file-input');
+    // Confirmar importação
+    if (e.target.closest?.('#btn-confirmar-extrato')) { _saveExtrato(); return; }
 
-  if (dropZone && fileInput) {
-    dropZone.addEventListener('dragover',  e => { e.preventDefault(); dropZone.classList.add('dragover'); });
-    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
-    dropZone.addEventListener('drop', e => {
-      e.preventDefault();
-      dropZone.classList.remove('dragover');
-      const file = e.dataTransfer.files[0];
-      if (file) _handleFile(file);
-    });
-
-    // Clique na área abre file picker — mas evita acionar se clicou no label/input diretamente
-    dropZone.addEventListener('click', e => {
+    // Clique na drop zone abre o file picker — mas evita acionar se clicou
+    // no label/input diretamente (senão o picker abre duas vezes)
+    if (e.target.closest?.('#extrato-drop-zone')) {
+      const fileInput = document.getElementById('extrato-file-input');
+      if (!fileInput) return;
       if (e.target === fileInput || e.target.tagName === 'LABEL') return;
       fileInput.click();
-    });
+    }
+  });
 
-    // Mudança de arquivo
-    fileInput.addEventListener('change', () => {
-      if (fileInput.files[0]) _handleFile(fileInput.files[0]);
-      fileInput.value = ''; // reset para poder re-selecionar o mesmo arquivo
-    });
-  }
+  modal.addEventListener('dragover', e => {
+    const dz = e.target.closest?.('#extrato-drop-zone');
+    if (!dz) return;
+    e.preventDefault();
+    dz.classList.add('dragover');
+  });
+  modal.addEventListener('dragleave', e => {
+    e.target.closest?.('#extrato-drop-zone')?.classList.remove('dragover');
+  });
+  modal.addEventListener('drop', e => {
+    const dz = e.target.closest?.('#extrato-drop-zone');
+    if (!dz) return;
+    e.preventDefault();
+    dz.classList.remove('dragover');
+    const file = e.dataTransfer?.files?.[0];
+    if (file) _handleFile(file);
+  });
 
-  // Checkbox "marcar todos" — delegação no document: o thead é recriado
-  // em _showReview quando há entradas, o que destruiria um listener direto.
-  if (!window.__extratoCheckAllBound) {
-    document.addEventListener('change', e => {
-      if (e.target?.id !== 'extrato-check-all') return;
+  modal.addEventListener('change', e => {
+    // Arquivo escolhido pelo picker
+    if (e.target?.id === 'extrato-file-input') {
+      if (e.target.files[0]) _handleFile(e.target.files[0]);
+      e.target.value = ''; // reset para poder re-selecionar o mesmo arquivo
+      return;
+    }
+    // Checkbox "marcar todos" — o thead é recriado em _showReview quando há
+    // entradas, o que destruiria um listener direto.
+    if (e.target?.id === 'extrato-check-all') {
+      const checked = e.target.checked;
       document.querySelectorAll('#extrato-preview-tbody .row-check').forEach(cb => {
-        cb.checked = e.target.checked;
+        cb.checked = checked;
       });
-    });
-    window.__extratoCheckAllBound = true;
-  }
+    }
+  });
 
-  // Botão confirmar
-  const btnConfirmar = _fresh('btn-confirmar-extrato');
-  btnConfirmar?.addEventListener('click', _saveExtrato);
+  _eventsBound = true;
 }
 
 function _updateFormatHint() {
@@ -257,6 +261,16 @@ function _resetModal() {
   document.getElementById('btn-confirmar-extrato')?.classList.add('hidden');
   document.getElementById('extrato-processing')?.classList.add('hidden');
   document.getElementById('extrato-preview-tbody')  && (document.getElementById('extrato-preview-tbody').innerHTML = '');
+  // Sem o clone dos elementos, a UI precisa ser devolvida ao estado inicial
+  // explicitamente a cada abertura.
+  document.getElementById('extrato-drop-zone')?.classList.remove('hidden', 'dragover');
+  const fileInput = document.getElementById('extrato-file-input');
+  if (fileInput) fileInput.value = '';
+  document.querySelectorAll('#bank-selector .bank-card').forEach(c => c.classList.remove('selected'));
+  document.querySelectorAll('#format-tabs .format-tab').forEach(t =>
+    t.classList.toggle('active', t.dataset.format === selectedFormat)
+  );
+  _updateFormatHint();
 }
 
 

@@ -60,11 +60,20 @@ function updateMonthLabel() {
   if (el) el.textContent = monthLabel(state.currentMonth);
 }
 
-async function refreshCurrentTab() {
+// Trocar de mês não muda dado no servidor: todas as telas filtram `state`
+// por competência em memória. Re-renderizar basta — recarregar as 7 coleções
+// a cada clique de mês era ida ao Firestore sem ganho nenhum.
+async function rerenderCurrentTab() {
   const active = document.querySelector('.nav-link.active');
   if (!active) return;
-  await loadAllData();
   await switchTab(active.dataset.tab);
+}
+
+// Use só depois de escrita externa que não atualizou `state` (import de
+// extrato, restore de backup).
+export async function reloadAndRerender() {
+  await loadAllData();
+  await rerenderCurrentTab();
 }
 
 // ─── COMMAND PALETTE ───────────────────────────────────────────
@@ -249,19 +258,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (!/^\d{4}-\d{2}$/.test(monthPicker.value)) return;
     state.currentMonth = monthPicker.value;
     updateMonthLabel();
-    await refreshCurrentTab();
+    await rerenderCurrentTab();
   });
 
   // Navegação por mês
   document.getElementById('btn-prev-month')?.addEventListener('click', async () => {
     state.currentMonth = offsetMonth(state.currentMonth, -1);
     updateMonthLabel();
-    await refreshCurrentTab();
+    await rerenderCurrentTab();
   });
   document.getElementById('btn-next-month')?.addEventListener('click', async () => {
     state.currentMonth = offsetMonth(state.currentMonth, 1);
     updateMonthLabel();
-    await refreshCurrentTab();
+    await rerenderCurrentTab();
   });
 
   // Clique nas abas da sidebar
