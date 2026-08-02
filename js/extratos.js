@@ -515,7 +515,7 @@ function _showReview(items, bank, format) {
       <td class="td-check"><input type="checkbox" class="row-check" data-idx="${idx}"
         aria-label="Importar transação ${idx + 1}" ${tx.isDuplicate ? '' : 'checked'} /></td>
       <td class="td-date" style="font-size:0.8rem;white-space:nowrap">${esc(tx.date)}</td>
-      <td class="td-desc" style="max-width:180px">
+      <td class="td-desc">
         <input type="text" class="form-input" style="padding:0.25rem 0.5rem;font-size:0.78rem;width:100%"
           data-field="description" data-idx="${idx}" aria-label="Descrição" value="${esc(tx.description)}" />
         ${dupBadge ? `<div class="row-marks">${dupBadge}</div>` : ''}

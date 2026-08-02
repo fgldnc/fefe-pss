@@ -311,6 +311,17 @@
 .row-hidden-filter { display: none !important; }
 
 .row-marks { display: flex; flex-wrap: wrap; gap: 0.3rem; margin-top: 0.2rem; }
+/* A marca é um rótulo curto: quebrar em duas linhas dobra a altura da linha e
+   estraga a leitura vertical da tabela. */
+.row-marks .tag-duplicata,
+.row-marks .tag-projetada { white-space: nowrap; }
+
+/* A revisão de importação é a tela mais larga do app: 6–7 colunas, quase todas
+   editáveis. Ganha largura própria para a descrição caber sem truncar. */
+.modal-import { max-width: min(1180px, 95vw); }
+.import-preview-table .td-desc { min-width: 260px; }
+.import-preview-table .td-desc input { width: 100%; }
+.import-preview-table .td-cat select { max-width: 100%; }
 
 /* Barra de resumo dos dois modais de importação */
 .import-summary-bar {
