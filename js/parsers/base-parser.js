@@ -66,10 +66,16 @@ export function normalizeDesc(str) {
 }
 
 /**
- * Gera chave de deduplicação
+ * Gera chave de deduplicação.
+ * `type` entra na chave porque entrada e saída de mesmo valor/data/descrição são
+ * um cenário real (transferência entre contas próprias) e não podem colidir.
+ * O valor é arredondado num bucket de 5 centavos para absorver diferença de
+ * arredondamento entre o extrato e o que já está gravado.
+ * `type` é opcional para manter compatibilidade com chamadas antigas.
  */
-export function dedupKey(date, amount, normalizedDesc) {
-  return `${date}|${Math.abs(amount).toFixed(2)}|${normalizedDesc.slice(0, 40)}`;
+export function dedupKey(date, amount, normalizedDesc, type = '') {
+  const bucket = (Math.round(Math.abs(amount) * 20) / 20).toFixed(2);
+  return `${date}|${type}|${bucket}|${normalizedDesc.slice(0, 40)}`;
 }
 
 /**
@@ -78,12 +84,12 @@ export function dedupKey(date, amount, normalizedDesc) {
 export function detectDuplicates(newItems, existingTransactions) {
   const existingKeys = new Set(
     existingTransactions.map(t =>
-      dedupKey(t.date || '', t.amount || 0, normalizeDesc(t.description || ''))
+      dedupKey(t.date || '', t.amount || 0, normalizeDesc(t.description || ''), t.type || '')
     )
   );
 
   return newItems.map(item => {
-    const key = dedupKey(item.date, item.amount, normalizeDesc(item.description));
+    const key = dedupKey(item.date, item.amount, normalizeDesc(item.description), item.type || '');
     return { ...item, isDuplicate: existingKeys.has(key) };
   });
 }

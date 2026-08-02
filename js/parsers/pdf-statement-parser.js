@@ -10,6 +10,14 @@ import { parseMoney, parseDate, normalizeDesc, autoClassify, genId } from './bas
 const PDF_MAX_BYTES = 20 * 1024 * 1024;
 
 /**
+ * Padrão genérico de lançamento: linha com data + descrição + valor.
+ * Ancorado em ^/$ porque sem âncora o regex casava qualquer par "data ... número"
+ * dentro de blocos que não são lançamentos (limite de crédito, resumo, código de
+ * barras). Exportado para permitir teste direto sem carregar o PDF.js.
+ */
+export const GENERIC_LINE_RE = /^\s*(\d{2}[\/\-]\d{2}[\/\-]\d{2,4})\s+(.{3,60}?)\s+([\d.,]{4,})\s*([CDcd]?)\s*$/;
+
+/**
  * Extrai transações de um extrato bancário em PDF
  */
 export async function parsePDFStatement(file, bankName = 'generico', userRules = []) {
@@ -113,8 +121,7 @@ function _genericParser(lines, bankName, userRules) {
   const items   = [];
   const batchId = genId();
 
-  // Padrão genérico: linha com data + texto + valor
-  const re = /(\d{2}[\/\-]\d{2}[\/\-]\d{2,4})\s+(.{5,60}?)\s+([\d.,]+(?:,\d{2})?)\s*([CDcd]?)/;
+  const re = GENERIC_LINE_RE;
 
   for (const line of lines) {
     const m = line.match(re);
