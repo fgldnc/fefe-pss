@@ -44,7 +44,7 @@ export function renderDashboard() {
   const totalExpense  = txExpenses.reduce((s, t) => s + (t.amount || 0), 0);
   const totalInvested = txInvestments.reduce((s, t) => s + (t.amount || 0), 0);
 
-  // ── Hero: o comprometido do mês ───────────────────────────────────────
+  // ── Hero ──────────────────────────────────────────────────────────────
   // allExpensesOfMonth() filtra state.transactions só por competência
   // (db.js:151, isOfMonth) — NÃO exclui isProjected. Logo a parcela projetada
   // do mês corrente JÁ está dentro de totalExpense: `projetado` é um recorte
@@ -55,21 +55,30 @@ export function renderDashboard() {
                                  .reduce((s, t) => s + (t.amount || 0), 0);
   const comprometido = totalExpense;
   const jaGasto      = Math.max(0, comprometido - projetado);
-  // Livre nunca é negativo: comprometido acima da receita enche a barra e o
-  // rodapé mostra o percentual real (ex.: 112%). Número negativo em vermelho
-  // no dia 1 é aritmética, não fato.
-  const livre        = Math.max(0, totalIncome - comprometido);
-  const pctReceita   = totalIncome > 0 ? Math.round((comprometido / totalIncome) * 100) : null;
-  // Denominador da barra: se estourou a receita, a própria despesa vira a escala.
-  const barBase      = Math.max(totalIncome, comprometido, 1);
-  const pctW         = v => ((v / barBase) * 100).toFixed(2);
 
-  // "N dias restantes" só faz sentido no mês corrente de verdade — dizer isso
-  // num mês passado ou futuro seria mentira.
-  const hoje       = new Date();
+  // A barra decompõe a receita INTEIRA: gasto + investido + sobra. O investido
+  // precisa ser segmento próprio porque sai da receita como qualquer saída —
+  // deixá-lo fora fazia "Livre" contar dinheiro que já tinha ido para o
+  // investimento (num mês fechado, "livre" lê como "o que ficou", e não era).
+  // `resultado` é assinado; `livre` é o que a barra desenha.
+  const resultado  = totalIncome - totalExpense - totalInvested;
+  const livre      = Math.max(0, resultado);
+  const guardado   = totalInvested + livre;
+  const pctReceita = totalIncome > 0 ? Math.round((comprometido  / totalIncome) * 100) : null;
+  const pctGuardado= totalIncome > 0 ? Math.round((guardado      / totalIncome) * 100) : null;
+  const pctLivre   = totalIncome > 0 ? Math.round((livre         / totalIncome) * 100) : null;
+  // Denominador da barra: se as saídas estouram a receita, elas viram a escala.
+  const barBase    = Math.max(totalIncome, totalExpense + totalInvested, 1);
+  const pctW       = v => ((v / barBase) * 100).toFixed(2);
+
+  // Posição do mês exibido. O rótulo do hero segue daqui: mês encerrado não
+  // tem nada "comprometido" — o que ele tem é resultado. Mês futuro, ao
+  // contrário, é comprometido no sentido literal: só parcela já contratada.
+  const hoje        = new Date();
   const mesCorrente = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}`;
-  const isMesAtual = month === mesCorrente;
-  const diasRest   = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0).getDate() - hoje.getDate();
+  const isMesAtual  = month === mesCorrente;
+  const isEncerrado = month < mesCorrente;
+  const diasRest    = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0).getDate() - hoje.getDate();
 
   const totalAssetInvest = state.assets
     .filter(a => a.type === 'investimento')
@@ -114,6 +123,34 @@ export function renderDashboard() {
   // ── Renderiza HTML dos KPIs (substitui skeleton) ─────────────────────
   const kpiGrid = document.getElementById('kpi-grid');
   if (kpiGrid) {
+    // Mês encerrado responde "como fechou?", não "quanto ainda posso gastar?".
+    // O rótulo, o número grande e o rodapé mudam; a barra é a MESMA nos dois
+    // modos — muda só o nome do que sobra (Livre → Sobrou).
+    const heroRotulo = isEncerrado
+      ? `Resultado de ${esc(monthLabel(month))}`
+      : `Comprometido de ${esc(monthLabel(month))}`;
+
+    // No mês encerrado o número grande é a sobra: é o único valor da faixa que
+    // nenhum outro card mostra (o comprometido é sempre igual ao card Despesas).
+    // Negativo aqui é FATO verificado, não a aritmética de dado faltando do
+    // dia 1 — por isso ganha vermelho, ao contrário do estado sem receita.
+    const heroValor = isEncerrado
+      ? `<span class="kpi-value ${resultado < 0 ? 'negative' : ''}" id="kpi-resultado">${fmt(resultado)}</span>`
+      : `<span class="kpi-value" id="kpi-comprometido">${fmt(comprometido)}</span>`;
+
+    const heroRodape = isEncerrado
+      ? (resultado < 0
+          ? `Gastou ${fmt(Math.abs(resultado))} além da receita de ${fmt(totalIncome)}`
+          : `${pctGuardado}% da receita guardada · ${pctLivre}% ficou livre`)
+      : `${pctReceita}% da receita de ${fmt(totalIncome)}${isMesAtual ? ` · ${diasRest} ${diasRest === 1 ? 'dia restante' : 'dias restantes'}` : ''}`;
+
+    // Parcela projetada nunca é reconciliada (nada no app vira isProjected de
+    // volta para false). Num mês fechado ela não é previsão: é a parte do mês
+    // que continua sendo estimativa. Nome honesto, cor neutra — marcar de
+    // âmbar viraria ruído permanente, já que não há ação que resolva.
+    const rotuloProj = isEncerrado ? 'Não conferido' : 'Parcelas previstas';
+    const rotuloSobra = isEncerrado ? 'Sobrou' : 'Livre';
+
     const heroCorpo = totalIncome === 0
       ? `<div class="hero-bar" aria-hidden="true"><i class="seg-proj" style="width:100%"></i></div>
          <div class="hero-legend"><span><i class="dot proj"></i>Tudo em despesa já lançada ou contratada</span></div>
@@ -122,18 +159,20 @@ export function renderDashboard() {
       : `<div class="hero-bar" aria-hidden="true">
            <i class="seg-real" style="width:${pctW(jaGasto)}%"></i>
            <i class="seg-proj" style="width:${pctW(projetado)}%"></i>
+           <i class="seg-invest" style="width:${pctW(totalInvested)}%"></i>
          </div>
          <div class="hero-legend">
            <span class="leg-real"><i class="dot real"></i>Já gasto <b class="num">${fmt(jaGasto)}</b></span>
-           <span class="leg-proj"><i class="dot proj"></i>Parcelas previstas <b class="num">${fmt(projetado)}</b></span>
-           <span class="leg-livre"><i class="dot livre"></i>Livre <b class="num">${fmt(livre)}</b></span>
+           ${projetado > 0 ? `<span class="leg-proj"><i class="dot proj"></i>${rotuloProj} <b class="num">${fmt(projetado)}</b></span>` : ''}
+           ${totalInvested > 0 ? `<span class="leg-invest"><i class="dot invest"></i>Investido <b class="num">${fmt(totalInvested)}</b></span>` : ''}
+           <span class="leg-livre"><i class="dot livre"></i>${rotuloSobra} <b class="num">${fmt(livre)}</b></span>
          </div>
-         <div class="kpi-foot">${pctReceita}% da receita de ${fmt(totalIncome)}${isMesAtual ? ` · ${diasRest} ${diasRest === 1 ? 'dia restante' : 'dias restantes'}` : ''}</div>`;
+         <div class="kpi-foot">${heroRodape}</div>`;
 
     kpiGrid.innerHTML = `
       <div class="kpi-card kpi-hero">
-        <span class="kpi-label">Comprometido de ${esc(monthLabel(month))}</span>
-        <span class="kpi-value" id="kpi-comprometido">${fmt(comprometido)}</span>
+        <span class="kpi-label">${heroRotulo}</span>
+        ${heroValor}
         ${heroCorpo}
       </div>
       <div class="kpi-card">

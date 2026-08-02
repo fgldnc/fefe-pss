@@ -383,14 +383,19 @@ body {
 .hero-bar i { display: block; height: 100%; }
 .hero-bar .seg-real { background: var(--accent-primary); }
 .hero-bar .seg-proj { background: var(--accent-primary); opacity: 0.38; }
+/* Investido em ciano, não em --gold: âmbar na faixa significa "falta um dado"
+   (.mark-inferido). Ciano é da mesma família neutra do azul — quantidade, não
+   juízo. Verde/vermelho seguem proibidos na barra. */
+.hero-bar .seg-invest { background: var(--accent-bright); }
 
 .hero-legend { display: flex; gap: 1.1rem; flex-wrap: wrap; font-size: 0.72rem; color: var(--text-secondary); }
 .hero-legend span { display: flex; align-items: center; gap: 0.35rem; }
 .hero-legend .num { font-family: var(--font-mono); color: var(--text-primary); font-weight: 500; }
 .hero-legend .dot { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; }
-.hero-legend .dot.real  { background: var(--accent-primary); }
-.hero-legend .dot.proj  { background: var(--accent-primary); opacity: 0.38; }
-.hero-legend .dot.livre { background: var(--bg-hover); border: 1px solid var(--border-soft); }
+.hero-legend .dot.real   { background: var(--accent-primary); }
+.hero-legend .dot.proj   { background: var(--accent-primary); opacity: 0.38; }
+.hero-legend .dot.invest { background: var(--accent-bright); }
+.hero-legend .dot.livre  { background: var(--bg-hover); border: 1px solid var(--border-soft); }
 
 .kpi-foot { font-size: 0.75rem; color: var(--text-muted); margin-top: auto; }
 
@@ -401,6 +406,12 @@ body {
   transition: background var(--transition);
 }
 .hero-cta:hover { background: var(--accent-dim); }
+
+/* `.mark-inferido` nasceu na rodada 2 para rótulo curto dentro de célula de
+   tabela, onde `nowrap` está certo. No hero ele carrega uma frase inteira e
+   estourava o card em tela estreita. Solto só aqui — o vocabulário original
+   segue intacto nos dois modais de importação. */
+.kpi-hero .mark-inferido { white-space: normal; }
 
 /* Delta + sparkline empurrados para a base, para os três apoios alinharem
    entre si mesmo com valores de altura diferente. */
@@ -653,11 +664,14 @@ body {
   .kpi-hero .kpi-value { font-size: 1.7rem; }
   /* Colapsa para "Livre": escondido, não reflowado — reflow empilharia três
      linhas e empurraria o rodapé para fora do primeiro olhar. */
-  .hero-legend .leg-real, .hero-legend .leg-proj { display: none; }
+  .hero-legend .leg-real, .hero-legend .leg-proj, .hero-legend .leg-invest { display: none; }
   /* Delta + sparkline não cabem lado a lado em card de ~145px. Quebra em duas
      linhas em vez de truncar: o sparkline desce, nada some e nada é cortado. */
   #kpi-grid .kpi-trend { flex-wrap: wrap; row-gap: 0.3rem; }
   #kpi-grid .spark { margin-left: auto; }
+  /* Delta curto ("▲ 12%") nunca quebra; quem quebra é o texto de fallback
+     ("excluindo investimentos"), que não cabe em card de ~150px. */
+  #kpi-grid .kpi-delta { white-space: normal; }
   .filter-bar { flex-direction: column; }
   .filter-select, .filter-input { width: 100%; }
   .page-header { flex-direction: column; align-items: flex-start; }

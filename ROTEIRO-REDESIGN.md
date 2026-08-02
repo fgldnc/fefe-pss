@@ -5,7 +5,8 @@ Radar lê este arquivo primeiro e continua daqui, sem precisar refazer o
 diagnóstico.
 
 **Última atualização:** 02/08/2026 · rodadas 0, 1 e 2 concluídas, **rodada 3
-parte 1 (faixa de KPIs do Dashboard) concluída e conferida**. Divergências
+parte 1 (faixa de KPIs do Dashboard) concluída e conferida**, mais a
+**correção 3.1a** (modo "mês encerrado" e investido fora do "Livre"). Divergências
 entre documento e código reconferidas nesta data (ver o fim do arquivo).
 Próximo passo: **rodada 3, parte 2** (pizza "Sem categoria", Orçamento × Real) —
 mockup aprovado (`MOCKUP-rodada-3-parte2.html`) e prompt escrito
@@ -319,6 +320,77 @@ diferença.** 35 testes de `node --test test/*.mjs` seguem passando.
 - **`--gold` do card Investido:** o valor foi para `--text-primary` como o
   prompt pedia (remoção da classe só no HTML gerado; `.kpi-value.gold`
   intacto no CSS).
+
+#### Correção 3.1a — mês encerrado e o investido fora do "Livre" (02/08/2026)
+
+Feita depois da parte 1 estar no ar, a partir de um print de junho/2026.
+Arquivos: `js/dashboard.js`, `css/style.css`. Sem mockup, a pedido.
+
+**Dois defeitos, um deles introduzido pela parte 1:**
+
+1. **"Comprometido" num mês encerrado é a palavra errada.** Mês fechado não tem
+   nada comprometido — tem resultado. Só o rótulo já era mentira.
+2. **`livre` não subtraía o investido** (`livre = receita − comprometido`, e
+   `comprometido` exclui investimentos). Em junho isso mostrava "Livre
+   R$ 2.398,70" quando R$ 1.790,97 já tinham ido para investimento — sobrou
+   R$ 607,73. **Regressão da parte 1:** o KPI antigo fazia
+   `totalIncome − totalExpense − totalInvested`; o prompt da rodada 3 definiu
+   `livre = totalIncome − comprometido` e a implementação seguiu a
+   especificação sem levantar a mudança de sentido. O número não estava
+   errado — o **nome** estava: R$ 2.398,70 é o *guardado* (investido + sobra),
+   que é a taxa de poupança do mês, 47% da receita.
+
+**O rótulo passa a seguir a posição do mês exibido** (`isEncerrado = month <
+mesCorrente`):
+
+| Mês | Rótulo | Número grande |
+|---|---|---|
+| Passado | `Resultado de {mês}` | sobra (assinada) |
+| Corrente | `Comprometido de {mês}` | comprometido |
+| Futuro | `Comprometido de {mês}` | comprometido |
+
+Futuro não muda: mês que só tem parcela contratada é comprometido no sentido
+literal. O único modo novo é o do mês encerrado.
+
+**A sobra vira o número grande no mês fechado** porque `comprometido ===
+totalExpense` sempre — o hero repetia exatamente o número do card Despesas.
+A sobra é o único valor da faixa que nenhum outro card mostra.
+
+**A barra ganhou um quarto segmento (`.seg-invest`, `--accent-bright`)** e passa
+a decompor a receita inteira: `já gasto + projetado + investido + sobra =
+receita`. Sem isso, tirar o investido do livre quebraria o fechamento que o
+critério de pronto da parte 1 exigia. Ciano e não `--gold` de propósito: âmbar
+na faixa significa "falta um dado" (`.mark-inferido`), e a rodada 3 já tinha
+tirado o dourado do card Investido por causa dessa colisão.
+
+**Vermelho volta a ser permitido — só no mês encerrado.** Resultado negativo ali
+é fato verificado, não a aritmética de dado faltando do dia 1. É o caso oposto
+ao que motivou a proibição, e por isso recebe tratamento oposto: número em
+`--danger` e rodapé `Gastou R$ X além da receita de R$ Y`.
+
+**`Parcelas previstas` → `Não conferido` em mês fechado.** Confirmado que nada
+no app reverte `isProjected` (só é escrito na criação, `gastos.js:287` e
+`pdf-import.js:807`): parcela projetada continua projetada para sempre. Em
+junho isso eram R$ 755,93, ~28% do mês, que nunca foram conferidos contra
+fatura. Segmento mantido em cor neutra, **sem** `.mark-inferido` — âmbar
+apareceria em todo mês fechado com parcelamento, e não há ação que resolva.
+A reconciliação de verdade é assunto da rodada 5.
+
+**Dois estouros de layout a 360px, achados na conferência e corrigidos:**
+`.mark-inferido` é `white-space: nowrap` (certo para rótulo curto em célula de
+tabela, errado para a frase inteira do hero — 370px num card de 286px); e o
+texto de fallback `excluindo investimentos` não cabia em card de ~150px. Os
+dois `white-space: normal` são escopados (`.kpi-hero .mark-inferido` e
+`#kpi-grid .kpi-delta` dentro do breakpoint) — os modais de importação seguem
+com `nowrap`, verificado.
+
+**Conferido** com os números reais do print de junho:
+`1.917,65 + 755,93 + 1.790,97 + 607,73 = 5.072,28` fecha exatamente com a
+receita; rodapé `47% da receita guardada · 12% ficou livre`. Mês corrente
+fecha em 6.500 com o livre já líquido de investimento. Mês encerrado negativo
+mostra `-R$ 500,00` em vermelho com a barra em 100%. Futuro sem receita segue
+sem negativo, com marca e CTA. Patrimônio reconferido em iframes (26 elementos,
+22 props + caixa): idêntico. 35 testes passando.
 
 **Decisões de design fechadas na aprovação do mockup (parte 1):**
 
