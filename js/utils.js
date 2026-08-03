@@ -15,7 +15,30 @@ export const state = {
   goals: [],
   extratoTransactions: [],
   importRules: [],
+  // Configurações de fluxo de caixa (users/{uid}/settings/fluxo).
+  // saldoInicial é por mês e "ausente" NÃO é zero: zero é abertura legítima,
+  // ausente é a tela que ainda não pode chamar a curva de "saldo".
+  fluxoConfig: { saldoInicial: {}, faturaVencimentoDia: null },
 };
+
+// ─── CATEGORIA DE INVESTIMENTO (regra única) ───────────────────
+// A mesma regra estava escrita em quatro lugares, em duas implementações.
+// Investimento sai do total de despesas em toda tela que fala de gasto, então
+// duas leituras diferentes do que é "investimento" viram dois totais diferentes
+// para o mesmo mês — foi o que a rodada 3 eliminou no orçamento.
+//
+// Compara id e name SEPARADAMENTE, nunca concatenados: `id + name` casa
+// "investiment" atravessando a fronteira dos dois campos (id "…invest" +
+// name "iment…") e classificaria como investimento algo que não é.
+export function getInvestCatIds(categories = state.categories) {
+  return (categories || [])
+    .filter(c => {
+      const id   = (c.id   || '').toLowerCase();
+      const name = (c.name || '').toLowerCase();
+      return id.includes('investiment') || name.includes('investiment');
+    })
+    .map(c => c.id);
+}
 
 // ─── CATEGORIAS: RESOLVE SLUG → ID REAL ───────────────────────
 // Os parsers de extrato classificam com slugs ('alimentacao', 'transporte'...),
@@ -177,9 +200,7 @@ export function renderInsights(getExpenses = null) {
   const month     = state.currentMonth;
   const prevMonth = offsetMonth(month, -1);
 
-  const investIds = state.categories
-    .filter(c => (c.id + c.name).toLowerCase().includes('investiment'))
-    .map(c => c.id);
+  const investIds = getInvestCatIds();
 
   // Fonte única: mesmo cálculo dos KPIs quando o dashboard fornece o callback
   const expensesOf = getExpenses || (m => _expensesFallback(m, investIds));

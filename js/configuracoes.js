@@ -112,7 +112,15 @@ export function renderConfiguracoes() {
               <option value="-1" selected>Vencimento em mês X → competência X-1</option>
               <option value="0">Sem offset (mesmo mês do vencimento)</option>
             </select>
-            <span class="form-hint">Define como faturas importadas são alocadas nos meses.</span>
+            <span class="form-hint">Define em qual mês de <b>competência</b> as faturas importadas entram.</span>
+          </div>
+          <div class="form-row">
+            <label class="form-label" for="fatura-vencimento-dia">Dia de vencimento da fatura</label>
+            <input type="number" id="fatura-vencimento-dia" class="form-input" style="max-width:120px"
+                   min="1" max="28" step="1" placeholder="não definido" />
+            <span class="form-hint">Dia em que a fatura sai do <b>caixa</b> — é onde ela aparece no Fluxo de Caixa.
+              Não confundir com o offset acima, que é de <b>competência</b>. Aceita de 1 a 28; em branco, o Fluxo de
+              Caixa lança o cartão no dia da compra.</span>
           </div>
         </div>
       </div>
@@ -316,6 +324,38 @@ function _initEvents() {
   const savedOffset = localStorage.getItem('fluxo_billing_offset') ?? '-1';
   const offsetSel = document.getElementById('billing-offset');
   if (offsetSel) offsetSel.value = savedOffset;
+
+  // Dia de vencimento da fatura — vizinho do offset na tela, mas de outra
+  // natureza: o offset decide o MÊS de competência, este decide o DIA em que o
+  // dinheiro sai do caixa. Vai para o Firestore (settings/fluxo), e não para o
+  // localStorage como o offset, porque o Fluxo de Caixa erra o "menor saldo" do
+  // mês inteiro se ler isto de um navegador e não de outro.
+  const vencInput = document.getElementById('fatura-vencimento-dia');
+  if (vencInput) {
+    const dia = state.fluxoConfig?.faturaVencimentoDia;
+    vencInput.value = dia ? String(dia) : '';
+    vencInput.addEventListener('change', async e => {
+      const bruto = e.target.value.trim();
+      const n = Math.trunc(Number(bruto));
+      // Campo vazio é "não definido" de propósito — deixa o Fluxo de Caixa cair
+      // no dia da compra, marcado como inferido. Não é erro, não vira toast de erro.
+      const valor = bruto === '' ? null : n;
+      if (valor !== null && !(Number.isFinite(n) && n >= 1 && n <= 28)) {
+        toast('O dia de vencimento precisa estar entre 1 e 28.', 'error');
+        e.target.value = state.fluxoConfig?.faturaVencimentoDia || '';
+        return;
+      }
+      try {
+        const { saveFluxoConfig } = await import('./db.js');
+        await saveFluxoConfig({ faturaVencimentoDia: valor });
+        e.target.value = valor === null ? '' : String(valor);
+        toast(valor === null ? 'Dia de vencimento removido.' : `Fatura vence no dia ${valor}.`, 'success');
+      } catch (err) {
+        console.error('Erro ao salvar dia de vencimento:', err);
+        toast('Não foi possível salvar o dia de vencimento.', 'error');
+      }
+    });
+  }
 
   document.getElementById('btn-wipe-collection')?.addEventListener('click', async () => {
     const sel  = document.getElementById('wipe-collection-select');

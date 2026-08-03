@@ -36,13 +36,11 @@ App de **controle financeiro pessoal** (nome exibido: "Radar", `index.html:6` = 
 | `orcamento.js` | Editor de limites de orçamento por categoria do mês. |
 | `metas.js` | CRUD de metas financeiras e seus aportes. |
 | `patrimonio.js` | CRUD de ativos, aportes e vínculo ativo→meta (`linkedGoalId`). |
-| `saldos.js` | Fluxo de caixa diário do mês; exporta `renderCalendario` (é o módulo usado pela aba "Fluxo de Caixa"). |
-| `calendario.js` | Calendário financeiro mensal — **não está registrado em `TAB_MODULES`** (`js/app.js:29` aponta a aba `calendario` para `saldos.js`). **Código morto** — verificado em 02/08/2026: nenhum import aponta para ele. Remoção prevista para a rodada 4 do redesign. |
+| `saldos.js` | Aba "Fluxo de Caixa": 3 KPIs (abertura, menor saldo, projeção), curva do saldo diário (Chart.js) e tabela só dos dias com movimento. Exporta `renderCalendario` (ponto de entrada de `TAB_MODULES`) e as funções puras `buildMovimentos`/`buildSerie`/`acharMinimo`/`contextoDoMinimo`, testadas em `test/saldos.test.mjs`. |
 | `timeline.js` | Linha do tempo de eventos financeiros com filtro por tipo. |
 | `relatorios.js` | Relatórios exportáveis em CSV e JSON. |
 | `configuracoes.js` | Categorias, regras de classificação, estatísticas, backup/restore, preferências, conta. |
 | `pdf-import.js` | Importação de **fatura de cartão** em PDF: extração, parse por banco, preview editável, projeção de parcelas. |
-| `pdf-import.legacy.js` | Versão anterior do import de fatura, substituída pelo antigo `pdf-import.fixed.js` (promovido a `pdf-import.js`). **Código morto** — não é importado por ninguém e ainda referencia `#pdf-info-text`, elemento removido do `index.html`. |
 | `parsers/base-parser.js` | Utilitários compartilhados dos parsers de extrato: `parseMoney`, `parseDate`, `normalizeDesc`, `autoClassify`, `dedupKey`/`detectDuplicates`, `genId`. |
 | `parsers/csv-parser.js` | Extrato em CSV, com esquema de colunas por banco (`BANK_SCHEMAS`). |
 | `parsers/ofx-parser.js` | Extrato em OFX, detectando SGML legado vs. XML puro. |
@@ -84,9 +82,33 @@ O cabeçalho da tabela de preview do extrato está definido **em dois lugares**:
 no `index.html` e na variante montada por `_showReview()` quando o lote tem
 receitas. Mexeu num, mexa no outro.
 
+## Vocabulário visual do Fluxo de Caixa (rodada 4)
+
+Classes `.fx-*` em `css/style.css`, no fim do arquivo. **Prefixo próprio de
+propósito:** Dashboard e Patrimônio compartilham `.kpi-grid`/`.kpi-card`, e o
+roteiro marca Patrimônio como "não mexer" — reaproveitar as classes moveria as
+outras duas telas junto.
+
+- `.fx-kpis` é `1fr 1.35fr 1fr`; `.fx-kpi.fx-hero` é o do meio, em
+  `--bg-card-raised`, porque é o único que induz decisão.
+- **Âmbar nesta aba significa só `.mark-inferido`** (vencimento de fatura não
+  definido, projeção com parcela não conferida). Saldo baixo é fato, não
+  pendência: a faixa `saldo < 100` foi removida.
+- **Vermelho só para saldo negativo**, que é fato aritmético sobre dado
+  existente — não é a "aritmética de dado faltando" que a rodada 3 proibiu no
+  Dashboard.
+- Sem `--gold` e sem emoji. Estado de linha usa ciano (`.fx-hoje`), nunca
+  magenta: magenta é acento de série categórica.
+- `.tag-projetada` é reusada de `css/components.css:105` — não crie outra.
+
+**Chart.js é canvas e não resolve `var(--…)`:** as cores da curva estão em HEX
+literal no topo de `js/saldos.js` (`HEX_AZUL`, `HEX_VERM`…), espelhando os
+tokens do `:root`. Já houve regressão por passar `var(--accent-primary)`.
+
 ## Convenções observadas no código
 
-- **`state` global exportado de `utils.js`** (`js/utils.js:7`). Todos os módulos importam e mutam o mesmo objeto: `user`, `currentMonth`, `categories`, `transactions`, `incomes`, `budgets`, `assets`, `goals`, `extratoTransactions`, `importRules`. Não há encapsulamento nem notificação de mudança.
+- **`state` global exportado de `utils.js`** (`js/utils.js:7`). Todos os módulos importam e mutam o mesmo objeto: `user`, `currentMonth`, `categories`, `transactions`, `incomes`, `budgets`, `assets`, `goals`, `extratoTransactions`, `importRules`, `fluxoConfig`. Não há encapsulamento nem notificação de mudança.
+- **`getInvestCatIds()` (`js/utils.js`) é a regra única de "categoria é de investimento"**, consumida por `dashboard.js`, `orcamento.js` e `saldos.js`. Compara `id` e `name` **separadamente**: concatenar casa "investiment" atravessando a fronteira dos dois campos. Investimento sai do total de despesas em toda tela que fala de gasto — duas leituras diferentes viram dois totais para o mesmo mês. (`gastos.js`, `extratos.js` e `relatorios.js` ainda têm cópias da versão concatenada; as três estavam fora do escopo da rodada 4.)
 - **`esc()` obrigatório em toda interpolação de `innerHTML`** (`js/utils.js:44`). Escapa `& < > " ' /`. Todo dado vindo do Firestore ou de arquivo importado passa por `esc()` antes de entrar no HTML.
 - **`toast(msg, type)`** (`js/utils.js:76`) é o canal padrão de feedback — tipos `success | error | warning | info`. `alert()` só sobrevive no erro de login (`js/auth.js:23`); `confirm()` nativo é usado nas exclusões, deliberadamente.
 - **Cada módulo de aba exporta uma função `render*`** sem argumentos (`renderDashboard`, `renderGastos`, `renderMetas`, …), registrada em `TAB_MODULES` (`js/app.js:19-31`). É o único ponto de entrada da aba.
@@ -141,6 +163,26 @@ Cada item abaixo é uma regra de negócio real codificada como literal, sem cons
 - `js/db.js:465` — descrição limitada a **500** caracteres.
 - `js/db.js:12-25` — `DEFAULT_CATEGORIES`: as 12 categorias padrão e suas cores, semeadas no primeiro login.
 - `js/utils.js:24-29` — `_SLUG_TO_NAME`: mapa slug-do-parser → nome de categoria, base do `resolveCategoryId`.
+
+**Fluxo de caixa — `js/saldos.js` e `js/db.js`**
+- `settings/fluxo` (documento único, `users/{uid}/settings/fluxo`) guarda
+  `saldoInicial` (mapa `"YYYY-MM"` → número) e `faturaVencimentoDia`. **Ausente
+  nunca é zero:** zero é abertura legítima, ausente esconde os KPIs de mínimo e
+  de projeção e troca o cabeçalho da coluna para "Acumulado".
+- `faturaVencimentoDia` limitado a **1–28**: 29/30/31 não existem em todo mês.
+  Fora da faixa vira `null`. Com o dia definido, todo o cartão do mês vira **uma
+  linha** nele; sem ele, cai no dia da compra e a tela marca `.mark-inferido`.
+- `saveFluxoConfig` usa `setDoc` **sem** merge (ao contrário de `saveDoc`): com
+  merge, um mês removido de `saldoInicial` sobreviveria no Firestore.
+- `contextoDoMinimo` considera "entrada logo depois" até **3 dias** após o
+  mínimo; além disso não é véspera de nada.
+- Empate no menor saldo resolve pela **primeira** ocorrência — é o que mantém o
+  ponto do gráfico, a linha destacada e o dia citado no KPI sendo o mesmo dia.
+- A tabela mostra só dias com movimento, mais o dia 1 e o dia de hoje; o
+  contador `N dias sem movimento omitidos` existe para a omissão não ser
+  silenciosa.
+- `settings` **não** entra em backup/restore (`ALLOWED_COL_NAMES`) nem em
+  `WIPABLE_COLLECTIONS`. Pendência conhecida, registrada no roteiro.
 
 **Competência (três critérios coexistindo — mudar um sem os outros desalinha os totais)**
 - `js/db.js:151` — gasto normal: `competenceMonth === month`.

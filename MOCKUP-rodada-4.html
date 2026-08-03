@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mockup rodada 4 — Fluxo de Caixa</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg-main:#161616; --bg-card:#1f1f1f; --bg-card-raised:#262626; --bg-hover:#2c2c2c;
+  --accent-secondary:#345cea; --accent-primary:#3982f7; --accent-bright:#3ec2fc;
+  --accent-dim:rgba(57,130,247,.14); --accent-magenta:#c01888;
+  --text-primary:#f5f5f5; --text-secondary:#a3a3a3; --text-muted:#6b6b6b;
+  --border-soft:rgba(255,255,255,.07); --border-md:rgba(255,255,255,.12);
+  --success:#1eb11b; --danger:#f87171; --danger-dim:rgba(248,113,113,.14);
+  --warning:#fbbf24; --warning-dim:rgba(251,191,36,.14); --info:#a78bfa;
+  --font-sans:'Outfit',system-ui,sans-serif; --font-mono:'JetBrains Mono',monospace;
+  --radius-sm:6px; --radius-md:10px; --radius-xl:20px;
+  --shadow-card:0 2px 16px rgba(0,0,0,.45),0 0 0 1px var(--border-soft);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg-main);color:var(--text-primary);font-family:var(--font-sans);
+  font-size:15px;-webkit-font-smoothing:antialiased;padding:1.5rem}
+.wrap{max-width:1180px;margin:0 auto}
+.val-mono{font-family:var(--font-mono);font-variant-numeric:tabular-nums}
+
+.mock-note{background:var(--bg-card);border-left:3px solid var(--accent-magenta);
+  border-radius:var(--radius-sm);padding:.8rem 1rem;margin-bottom:1.6rem;
+  font-size:.82rem;color:var(--text-secondary);line-height:1.55}
+.mock-note b{color:var(--text-primary);font-weight:600}
+.mock-sec{font-size:.7rem;letter-spacing:.09em;text-transform:uppercase;
+  color:var(--text-muted);font-weight:600;margin:2.2rem 0 .7rem}
+
+/* ─── KPIs ─── */
+.fx-kpis{display:grid;grid-template-columns:1fr 1.35fr 1fr;gap:.9rem;margin-bottom:1rem}
+.fx-kpi{background:var(--bg-card);border-radius:var(--radius-md);padding:1rem 1.1rem;
+  box-shadow:var(--shadow-card)}
+.fx-kpi.hero{background:var(--bg-card-raised)}
+.fx-kpi-label{font-size:.74rem;color:var(--text-secondary);font-weight:500;
+  letter-spacing:.02em;margin-bottom:.45rem}
+.fx-kpi-val{font-family:var(--font-mono);font-size:1.5rem;font-weight:500;line-height:1.15}
+.fx-kpi.hero .fx-kpi-val{font-size:1.85rem}
+.fx-kpi-val.neg{color:var(--danger)}
+.fx-kpi-sub{font-size:.75rem;color:var(--text-muted);margin-top:.4rem;line-height:1.45}
+.fx-kpi-sub .dia{color:var(--accent-bright);font-weight:600;font-family:var(--font-mono)}
+.mark-inferido{color:var(--warning);border-bottom:1px dotted var(--warning);cursor:help}
+
+/* ─── Gráfico ─── */
+.fx-card{background:var(--bg-card);border-radius:var(--radius-md);padding:1.1rem 1.2rem;
+  box-shadow:var(--shadow-card);margin-bottom:1rem}
+.fx-card-head{display:flex;justify-content:space-between;align-items:baseline;
+  gap:1rem;margin-bottom:.9rem;flex-wrap:wrap}
+.fx-card-title{font-size:.92rem;font-weight:600}
+.fx-legend{display:flex;gap:.9rem;font-size:.72rem;color:var(--text-muted);flex-wrap:wrap}
+.fx-legend i{display:inline-block;width:14px;height:2px;vertical-align:middle;
+  margin-right:.35rem;background:var(--accent-primary)}
+.fx-legend i.proj{background:transparent;border-top:2px dashed var(--accent-primary)}
+.fx-legend i.zero{background:var(--danger)}
+.fx-chart-box{position:relative;height:230px}
+
+/* ─── Tabela ─── */
+.fx-table-head{display:flex;justify-content:space-between;align-items:center;
+  gap:1rem;margin-bottom:.75rem;flex-wrap:wrap}
+.fx-ref{font-size:.74rem;color:var(--text-muted)}
+.fx-ref b{color:var(--text-secondary);font-family:var(--font-mono);font-weight:500}
+table{width:100%;border-collapse:collapse;font-size:.84rem}
+thead th{text-align:left;font-size:.7rem;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--text-muted);font-weight:600;padding:.5rem .7rem;
+  border-bottom:1px solid var(--border-md)}
+thead th.num{text-align:right}
+tbody td{padding:.55rem .7rem;border-bottom:1px solid var(--border-soft)}
+tbody td.num{text-align:right;font-family:var(--font-mono);font-variant-numeric:tabular-nums}
+tbody tr.hoje{background:rgba(62,194,252,.07)}
+tbody tr.hoje td:first-child{color:var(--accent-bright);font-weight:700}
+tbody tr.minimo td{background:var(--danger-dim)}
+.td-dia{color:var(--text-secondary);font-weight:500;width:52px;font-family:var(--font-mono)}
+.td-desc{color:var(--text-secondary)}
+.v-in{color:var(--success)}
+.v-out{color:var(--text-primary)}
+.v-nil{color:var(--text-muted)}
+.v-saldo{font-weight:600}
+.v-saldo.neg{color:var(--danger)}
+.tag{display:inline-block;font-size:.63rem;padding:.08rem .34rem;border-radius:4px;
+  vertical-align:middle;margin-left:.35rem;font-weight:600;letter-spacing:.02em}
+.tag-projetada{background:rgba(167,139,250,.16);color:var(--info)}
+.tag-min{background:var(--danger-dim);color:var(--danger)}
+.fx-sep td{background:transparent;border-bottom:none;padding:.35rem .7rem;
+  font-size:.7rem;color:var(--text-muted);letter-spacing:.05em;text-transform:uppercase}
+tfoot td{padding:.6rem .7rem;border-top:1px solid var(--border-md);font-weight:600;
+  font-size:.82rem}
+tfoot td.num{text-align:right;font-family:var(--font-mono)}
+.fx-rodape{display:flex;gap:1.4rem;flex-wrap:wrap;margin-top:.85rem;
+  font-size:.76rem;color:var(--text-muted)}
+.fx-rodape b{color:var(--text-secondary);font-family:var(--font-mono);font-weight:500}
+
+/* ─── Estados ─── */
+.state-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:.9rem}
+.empty{text-align:center;padding:1.8rem 1rem}
+.empty-t{font-weight:600;font-size:.9rem;margin-bottom:.3rem}
+.empty-x{font-size:.78rem;color:var(--text-muted);line-height:1.5}
+.btn{display:inline-block;margin-top:.8rem;background:var(--accent-primary);
+  color:#fff;border:none;border-radius:var(--radius-sm);padding:.45rem .9rem;
+  font-family:var(--font-sans);font-size:.8rem;font-weight:600;cursor:pointer}
+.btn.ghost{background:transparent;border:1px solid var(--border-md);color:var(--text-secondary)}
+.sk{background:linear-gradient(90deg,#242424 25%,#2e2e2e 50%,#242424 75%);
+  background-size:200% 100%;animation:sk 1.4s infinite;border-radius:var(--radius-sm)}
+@keyframes sk{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
+@media(max-width:900px){
+  .fx-kpis{grid-template-columns:1fr 1fr}
+  .fx-kpi.hero{grid-column:1/-1}
+}
+@media(max-width:480px){
+  body{padding:1rem .8rem}
+  .fx-kpis{grid-template-columns:1fr}
+  .fx-kpi-val{font-size:1.35rem}
+  .fx-kpi.hero .fx-kpi-val{font-size:1.6rem}
+  .fx-chart-box{height:190px}
+  .col-desc{display:none}
+  thead th,tbody td{padding:.5rem .4rem;font-size:.78rem}
+  .td-dia{width:38px}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="mock-note">
+  <b>Mockup rodada 4 — Fluxo de Caixa.</b> Valores fictícios. Três mudanças de recorte:
+  (1) a resposta sai da tabela e sobe para três KPIs; (2) a curva do saldo substitui a
+  leitura linha a linha; (3) a tabela mostra <b>só dias com movimento</b> e perde as duas
+  colunas constantes. <b>Pré-requisito de dado declarado:</b> <code>saldo inicial do mês</code>
+  — sem ele, "menor saldo" não é caixa, é acumulado de fluxo a partir de zero.
+</div>
+
+<div class="mock-sec">1 · Caso normal — mês corrente, dia 18</div>
+
+<div class="fx-kpis">
+  <div class="fx-kpi">
+    <div class="fx-kpi-label">Saldo inicial de agosto</div>
+    <div class="fx-kpi-val">R$ 1.240,00</div>
+    <div class="fx-kpi-sub">Fechamento de julho</div>
+  </div>
+  <div class="fx-kpi hero">
+    <div class="fx-kpi-label">Menor saldo do mês</div>
+    <div class="fx-kpi-val">R$ 163,60</div>
+    <div class="fx-kpi-sub">no dia <span class="dia">4</span> · véspera da entrada do dia 5</div>
+  </div>
+  <div class="fx-kpi">
+    <div class="fx-kpi-label">Projeção para 31/08</div>
+    <div class="fx-kpi-val">R$ 847,30</div>
+    <div class="fx-kpi-sub"><span class="mark-inferido" title="Inclui 3 parcelas projetadas, ainda não conferidas contra fatura">inclui R$ 980,50 projetados</span></div>
+  </div>
+</div>
+
+<div class="fx-card">
+  <div class="fx-card-head">
+    <span class="fx-card-title">Saldo dia a dia</span>
+    <span class="fx-legend">
+      <span><i></i>efetivado</span>
+      <span><i class="proj"></i>projetado</span>
+      <span><i class="zero"></i>zero</span>
+    </span>
+  </div>
+  <div class="fx-chart-box"><canvas id="cv"></canvas></div>
+</div>
+
+<div class="fx-card">
+  <div class="fx-table-head">
+    <span class="fx-card-title">Movimentos</span>
+    <span class="fx-ref">Referência de orçamento: <b>R$ 96,77</b>/dia · 13 dias sem movimento omitidos</span>
+  </div>
+  <table>
+    <thead>
+      <tr>
+        <th>Dia</th>
+        <th class="col-desc">Movimento</th>
+        <th class="num">Entradas</th>
+        <th class="num">Saídas</th>
+        <th class="num">Saldo</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td class="td-dia">01</td><td class="col-desc td-desc">Saldo inicial</td>
+        <td class="num v-nil">—</td><td class="num v-nil">—</td>
+        <td class="num v-saldo">1.240,00</td></tr>
+      <tr><td class="td-dia">02</td><td class="col-desc td-desc">Supermercado</td>
+        <td class="num v-nil">—</td><td class="num v-out">86,40</td>
+        <td class="num v-saldo">1.153,60</td></tr>
+      <tr class="minimo"><td class="td-dia">04</td><td class="col-desc td-desc">Aluguel <span class="tag tag-min">menor saldo</span></td>
+        <td class="num v-nil">—</td><td class="num v-out">990,00</td>
+        <td class="num v-saldo">163,60</td></tr>
+      <tr><td class="td-dia">05</td><td class="col-desc td-desc">Salário</td>
+        <td class="num v-in">5.200,00</td><td class="num v-nil">—</td>
+        <td class="num v-saldo">5.363,60</td></tr>
+      <tr><td class="td-dia">08</td><td class="col-desc td-desc">Farmácia</td>
+        <td class="num v-nil">—</td><td class="num v-out">142,30</td>
+        <td class="num v-saldo">5.221,30</td></tr>
+      <tr><td class="td-dia">10</td><td class="col-desc td-desc">Fatura do cartão <span class="mark-inferido" title="Dia de vencimento inferido do offset de fechamento — confirmar em Configurações">vencimento inferido</span></td>
+        <td class="num v-nil">—</td><td class="num v-out">2.870,00</td>
+        <td class="num v-saldo">2.351,30</td></tr>
+      <tr><td class="td-dia">14</td><td class="col-desc td-desc">Combustível</td>
+        <td class="num v-nil">—</td><td class="num v-out">318,00</td>
+        <td class="num v-saldo">2.033,30</td></tr>
+      <tr><td class="td-dia">16</td><td class="col-desc td-desc">Internet</td>
+        <td class="num v-nil">—</td><td class="num v-out">205,50</td>
+        <td class="num v-saldo">1.827,80</td></tr>
+      <tr class="hoje"><td class="td-dia">18</td><td class="col-desc td-desc">Hoje</td>
+        <td class="num v-nil">—</td><td class="num v-nil">—</td>
+        <td class="num v-saldo">1.827,80</td></tr>
+      <tr class="fx-sep"><td colspan="5">A partir daqui, projetado</td></tr>
+      <tr><td class="td-dia">22</td><td class="col-desc td-desc">Curso online <span class="tag tag-projetada">3/6</span></td>
+        <td class="num v-nil">—</td><td class="num v-out">476,90</td>
+        <td class="num v-saldo">1.350,90</td></tr>
+      <tr><td class="td-dia">26</td><td class="col-desc td-desc">Seguro <span class="tag tag-projetada">5/12</span></td>
+        <td class="num v-nil">—</td><td class="num v-out">289,00</td>
+        <td class="num v-saldo">1.061,90</td></tr>
+      <tr><td class="td-dia">29</td><td class="col-desc td-desc">Assinatura anual <span class="tag tag-projetada">2/4</span></td>
+        <td class="num v-nil">—</td><td class="num v-out">214,60</td>
+        <td class="num v-saldo">847,30</td></tr>
+    </tbody>
+    <tfoot>
+      <tr>
+        <td>Total</td><td class="col-desc"></td>
+        <td class="num v-in">5.200,00</td>
+        <td class="num v-out">5.592,70</td>
+        <td class="num v-saldo">847,30</td>
+      </tr>
+    </tfoot>
+  </table>
+  <div class="fx-rodape">
+    <span>Investido no mês (fora do saldo): <b>R$ 600,00</b></span>
+    <span>Dias com movimento: <b>12 de 31</b></span>
+  </div>
+</div>
+
+<div class="mock-sec">2 · Saldo cruza o zero</div>
+
+<div class="fx-kpis">
+  <div class="fx-kpi">
+    <div class="fx-kpi-label">Saldo inicial de setembro</div>
+    <div class="fx-kpi-val">R$ 310,00</div>
+    <div class="fx-kpi-sub">Fechamento de agosto</div>
+  </div>
+  <div class="fx-kpi hero">
+    <div class="fx-kpi-label">Menor saldo do mês</div>
+    <div class="fx-kpi-val neg">−R$ 742,10</div>
+    <div class="fx-kpi-sub">no dia <span class="dia">9</span> · fica negativo por 4 dias, até a entrada do dia 13</div>
+  </div>
+  <div class="fx-kpi">
+    <div class="fx-kpi-label">Projeção para 30/09</div>
+    <div class="fx-kpi-val">R$ 1.106,40</div>
+    <div class="fx-kpi-sub"><span class="mark-inferido" title="Inclui 2 parcelas projetadas">inclui R$ 703,60 projetados</span></div>
+  </div>
+</div>
+
+<div class="fx-card">
+  <div class="fx-card-head">
+    <span class="fx-card-title">Saldo dia a dia</span>
+    <span class="fx-legend">
+      <span><i></i>efetivado</span>
+      <span><i class="proj"></i>projetado</span>
+      <span><i class="zero"></i>zero</span>
+    </span>
+  </div>
+  <div class="fx-chart-box"><canvas id="cv2"></canvas></div>
+</div>
+
+<div class="mock-sec">3 · Estados de carregamento, vazio e erro</div>
+
+<div class="state-grid">
+  <div class="fx-card" style="margin:0">
+    <div class="fx-kpi-label" style="margin-bottom:.7rem">Carregando</div>
+    <div class="sk" style="height:26px;width:60%;margin-bottom:.5rem"></div>
+    <div class="sk" style="height:14px;width:40%;margin-bottom:1rem"></div>
+    <div class="sk" style="height:110px"></div>
+  </div>
+
+  <div class="fx-card" style="margin:0">
+    <div class="empty">
+      <div class="empty-t">Sem saldo inicial definido</div>
+      <div class="empty-x">Sem o saldo de abertura do mês, a curva mede fluxo acumulado,
+        não caixa — e o "menor saldo" não corresponde a dinheiro nenhum.</div>
+      <button class="btn">Definir saldo inicial</button>
+    </div>
+  </div>
+
+  <div class="fx-card" style="margin:0">
+    <div class="empty">
+      <div class="empty-t">Nenhum movimento em agosto</div>
+      <div class="empty-x">Importe a fatura ou o extrato do mês para ver o fluxo diário.</div>
+      <button class="btn ghost">Ir para Extratos</button>
+    </div>
+  </div>
+
+  <div class="fx-card" style="margin:0">
+    <div class="empty">
+      <div class="empty-t" style="color:var(--danger)">Não foi possível montar o fluxo</div>
+      <div class="empty-x">Os KPIs acima seguem com o último cálculo válido.
+        Recarregue a aba para tentar de novo.</div>
+      <button class="btn ghost">Recarregar</button>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<script>
+// Chart.js é canvas: não resolve var(--…). Cores em HEX literal, por regra do projeto.
+const AZUL='#3982f7', VERM='#f87171', CINZA='#6b6b6b', TXT='#a3a3a3', GRID='rgba(255,255,255,.07)';
+const BRL = v => 'R$ ' + v.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+
+function serie(pontos, dias){
+  const out=[]; let atual=null, i=0;
+  for(let d=1; d<=dias; d++){ if(pontos[d]!==undefined) atual=pontos[d]; out.push(atual); }
+  return out;
+}
+
+function montar(id, pontos, dias, hoje, minDia){
+  const dados = serie(pontos, dias);
+  const efetivo = dados.map((v,i)=> i+1<=hoje ? v : null);
+  // repete o ponto de "hoje" para as duas linhas se encostarem sem buraco
+  const projet  = dados.map((v,i)=> i+1>=hoje ? v : null);
+
+  new Chart(document.getElementById(id), {
+    type:'line',
+    data:{
+      labels: Array.from({length:dias},(_,i)=>i+1),
+      datasets:[
+        {label:'Efetivado', data:efetivo, borderColor:AZUL, borderWidth:2,
+         pointRadius:0, tension:0, fill:false},
+        {label:'Projetado', data:projet, borderColor:AZUL, borderWidth:2,
+         borderDash:[5,4], pointRadius:0, tension:0, fill:false},
+        {label:'Menor saldo', data:dados.map((v,i)=> i+1===minDia ? v : null),
+         borderColor:'transparent', pointRadius:4.5, pointBackgroundColor:VERM,
+         pointBorderColor:'#161616', pointBorderWidth:1.5}
+      ]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      interaction:{mode:'index', intersect:false},
+      plugins:{
+        legend:{display:false},
+        tooltip:{
+          filter: it => it.raw !== null,
+          callbacks:{
+            title: it => 'Dia ' + it[0].label,
+            label: it => it.dataset.label + ': ' + BRL(it.raw)
+          }
+        }
+      },
+      scales:{
+        x:{grid:{display:false}, border:{color:GRID},
+           ticks:{color:CINZA, font:{size:10, family:'JetBrains Mono'},
+                  maxRotation:0, autoSkip:false,
+                  callback:(v,i)=> [0,4,9,14,19,24,dias-1].includes(i) ? i+1 : ''}},
+        y:{grid:{color: c => c.tick.value===0 ? VERM : GRID,
+                 lineWidth: c => c.tick.value===0 ? 1.5 : 1},
+           border:{display:false},
+           ticks:{color:CINZA, font:{size:10, family:'JetBrains Mono'},
+                  callback:v => v===0 ? '0' : (v/1000).toLocaleString('pt-BR')+'k'}}
+      }
+    }
+  });
+}
+
+montar('cv', {1:1240, 2:1153.60, 4:163.60, 5:5363.60, 8:5221.30, 10:2351.30,
+              14:2033.30, 16:1827.80, 22:1350.90, 26:1061.90, 29:847.30}, 31, 18, 4);
+
+montar('cv2', {1:310, 3:118.40, 6:-284.50, 9:-742.10, 13:1980.20, 17:1642.00,
+               21:1391.30, 24:1310.00, 27:1106.40}, 30, 15, 9);
+</script>
+</body>
+</html>

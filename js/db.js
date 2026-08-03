@@ -75,7 +75,7 @@ export async function updateFields(colName, id, fields) {
 
 /** Carrega todos os dados do Firestore no state global */
 export async function loadAllData() {
-  const [transactions, incomes, budgetDocs, assets, goals, categories, rules] = await Promise.all([
+  const [transactions, incomes, budgetDocs, assets, goals, categories, rules, settings] = await Promise.all([
     getAll('transactions'),
     getAll('incomes'),
     getAll('budgets'),
@@ -83,6 +83,7 @@ export async function loadAllData() {
     getAll('goals'),
     getAll('categories'),
     getAll('rules').catch(() => []),
+    getAll('settings').catch(() => []),
   ]);
 
   // Separa extratos bancários das transações normais
@@ -92,6 +93,7 @@ export async function loadAllData() {
   state.assets              = assets;
   state.goals               = goals;
   state.importRules         = rules;
+  state.fluxoConfig         = _normalizeFluxoConfig(settings.find(s => s.id === 'fluxo'));
 
   // Categorias: semeio padrão apenas se vazio; caso contrário deduplica por nome
   if (categories.length === 0) {
@@ -131,6 +133,75 @@ async function seedCategories() {
   for (const cat of DEFAULT_CATEGORIES) {
     await addDoc(colRef('categories'), cat);
   }
+}
+
+// ─── CONFIGURAÇÕES DE FLUXO (users/{uid}/settings/fluxo) ───────────────────
+// Documento único com duas configurações que a aba Fluxo de Caixa precisa para
+// que a coluna "Saldo" seja saldo de verdade, e não fluxo acumulado a partir de
+// um zero fictício:
+//   saldoInicial        — mapa { "YYYY-MM": número }, a abertura de cada mês
+//   faturaVencimentoDia — o dia em que a fatura sai do caixa (1–28)
+//
+// Mora em `settings` porque a subcoleção já está liberada em firestore.rules e
+// nenhum outro módulo a usa — assim esta configuração não depende de republicar
+// as regras no console.
+//
+// Regra retroativa que atravessa o arquivo inteiro: documento ausente, campo
+// ausente ou mês ausente são "não definido", NUNCA zero. Zero é uma abertura de
+// mês legítima; confundir os dois faria a tela afirmar um saldo que ninguém
+// declarou.
+
+/** 1–28: 29, 30 e 31 não existem em todo mês, e "último dia válido" mentiria
+ *  sobre a data em que o dinheiro sai. Fora da faixa → não definido. */
+function _normalizeVencimento(v) {
+  const n = Math.trunc(Number(v));
+  return Number.isFinite(n) && n >= 1 && n <= 28 ? n : null;
+}
+
+function _normalizeFluxoConfig(doc) {
+  const saldoInicial = {};
+  const bruto = doc?.saldoInicial;
+  if (bruto && typeof bruto === 'object') {
+    for (const [mes, val] of Object.entries(bruto)) {
+      // Só entra o que é mês válido e número: lixo no documento não pode virar
+      // um saldo inicial silencioso.
+      if (!/^\d{4}-\d{2}$/.test(mes)) continue;
+      const n = Number(val);
+      if (Number.isFinite(n)) saldoInicial[mes] = n;
+    }
+  }
+  return { saldoInicial, faturaVencimentoDia: _normalizeVencimento(doc?.faturaVencimentoDia) };
+}
+
+/**
+ * Grava um patch em settings/fluxo e atualiza o state local em seguida
+ * (mesmo padrão de saveTx/saveBudgets — evita recarregar tudo).
+ *
+ * `patch.saldoInicial` é mesclado mês a mês sobre o que já existe: gravar
+ * agosto não pode apagar setembro. Passar `null` num mês remove aquele mês,
+ * que é como a usuária desfaz uma abertura declarada por engano.
+ */
+export async function saveFluxoConfig(patch = {}) {
+  const atual = state.fluxoConfig || { saldoInicial: {}, faturaVencimentoDia: null };
+
+  const saldoInicial = { ...atual.saldoInicial };
+  for (const [mes, val] of Object.entries(patch.saldoInicial || {})) {
+    if (val === null || val === undefined || !Number.isFinite(Number(val))) delete saldoInicial[mes];
+    else saldoInicial[mes] = Number(val);
+  }
+
+  const faturaVencimentoDia = Object.prototype.hasOwnProperty.call(patch, 'faturaVencimentoDia')
+    ? _normalizeVencimento(patch.faturaVencimentoDia)
+    : atual.faturaVencimentoDia;
+
+  // setDoc SEM merge, ao contrário de saveDoc: o documento inteiro é montado
+  // aqui a partir do state, e com merge um mês removido de saldoInicial
+  // sobreviveria no Firestore e voltaria no próximo load.
+  const dados = { saldoInicial, faturaVencimentoDia };
+  const { setDoc } = fb();
+  await setDoc(docRef('settings', 'fluxo'), dados);
+  state.fluxoConfig = dados;
+  return dados;
 }
 
 // ─── TRANSACTIONS ──────────────────────────────────────────────────────────

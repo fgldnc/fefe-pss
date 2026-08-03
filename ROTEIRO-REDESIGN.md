@@ -4,13 +4,13 @@ Documento de estado entre sessões. Quem abrir uma sessão nova sobre design do
 Radar lê este arquivo primeiro e continua daqui, sem precisar refazer o
 diagnóstico.
 
-**Última atualização:** 02/08/2026 · rodadas 0, 1 e 2 concluídas e **rodada 3
-concluída por inteiro** — parte 1 (faixa de KPIs), correção 3.1a (modo "mês
+**Última atualização:** 02/08/2026 · rodadas 0, 1, 2, **3 (por inteiro)** e
+**4 (Fluxo de Caixa)** concluídas. Rodada 3 — parte 1 (faixa de KPIs), correção 3.1a (modo "mês
 encerrado" e investido fora do "Livre") e **parte 2 (pizza "Sem categoria",
 Orçamento × Real e reordenação dos blocos), conferida no app**. Divergências
 entre documento e código reconferidas nesta data (ver o fim do arquivo).
-Próximo passo: **rodada 4** (Fluxo de Caixa + remoção de `js/calendario.js` e
-`js/pdf-import.legacy.js`).
+**Rodada 4 concluída e conferida no app em 02/08/2026** (ver a seção da rodada
+4). Próximo passo: **rodada 5** (comprometimento futuro e aging de parcelas).
 
 ---
 
@@ -593,11 +593,50 @@ Fecha também o formato de KPI que a rodada 5 vai reusar e o layout que a
 rodada 6 vai tornar clicável.
 
 ### Rodada 4 — Fluxo de Caixa
-**Estado: não iniciada. Independente de dado; depois das anteriores na fila.**
+**Estado: CONCLUÍDA em 02/08/2026.** Mockup em `MOCKUP-rodada-4.html`, prompt em
+`PROMPT-rodada-4.md`. Conferida no app com `state` sintético (harness
+descartado, não comitado): aritmética do fluxo, os quatro estados, mês que cruza
+o zero, mês encerrado, mês futuro, empate no mínimo, 360px sem scroll
+horizontal, dez trocas de mês sem empilhar instância de Chart e console limpo.
+`node --test test/*.mjs` em **54/54** (eram 35; `test/saldos.test.mjs` cobre a
+série diária, a busca do mínimo, a fatura no vencimento e o contexto da
+sublinha).
 
-Layout puro: eliminar colunas constantes, marcar o pior saldo do mês, tornar a
-resposta ("chego no fim do mês?") legível sem varrer 31 linhas. Sem campo novo.
-Momento de remover `js/calendario.js`.
+**Correção de escopo: NÃO é "layout puro" e NÃO é "sem campo novo", como este
+roteiro dizia.** Verificado no código em 02/08/2026: `saldos.js:12` e `:54`
+iniciam o saldo em **zero** no dia 1. Logo a coluna "Saldo" não é saldo, é fluxo
+acumulado — e "marcar o pior saldo do mês", que era o entregável central da
+rodada, exibiria em vermelho um número que não corresponde a caixa nenhum.
+**Decidido:** entra `saldo inicial por mês` como pré-requisito de dado declarado.
+
+Segundo pré-requisito, achado ao desenhar: **`saldos.js:147-162` posiciona a
+fatura no dia da *compra*** (pertinência pelo `competenceMonth`, dia pelo
+`date`), mas a fatura sai do caixa numa data só. Sem `faturaVencimentoDia`, o
+mínimo pode apontar o dia errado. Degradação prevista: sem o campo, cai no
+comportamento atual com `.mark-inferido`.
+
+Os dois campos vão para `users/{uid}/settings/fluxo`. A subcoleção `settings`
+**já está liberada** em `firestore.rules:116-118` e não é usada por módulo
+nenhum — então a rodada **não depende de republicar as regras**, que é item
+aberto e não verificável pelo código.
+
+Entregáveis de layout: três KPIs no topo (saldo inicial · **menor saldo do mês
+com o dia** · projeção de fechamento); curva do saldo diário em Chart.js com
+linha do zero e trecho projetado tracejado; tabela reduzida a cinco colunas e
+**só dias com movimento**. Saem da tabela: "Diário" (mesmo valor em 31 linhas,
+`saldos.js:186-188`) vira nota de cabeçalho, e "Invest." (não afeta o saldo,
+`saldos.js:10`) vira rodapé.
+
+**Três violações de decisões já fechadas, corrigidas nesta rodada:** `--gold`
+decorativo (`saldos.js:88`, `:113` — mesmo hex de `--warning`); âmbar em
+`saldo < 100` (`:77` — âmbar é "exige ação" desde a rodada 2, e saldo baixo é
+fato); emoji nos cabeçalhos (`:99`, `:101`). Mais uma restrição inegociável
+violada hoje, em produção: **parcela projetada e lançamento efetivo somados na
+mesma célula sem distinção**.
+
+Momento de remover `js/calendario.js` e `js/pdf-import.legacy.js` (zero
+importadores, reconfirmado em 02/08/2026) e de unificar `getInvestCatIds` — ver
+divergência abaixo.
 
 ### Rodada 5 — Comprometimento futuro e aging de parcelas
 **Estado: não iniciada. Depende do formato de KPI da rodada 3.**
@@ -662,28 +701,63 @@ Só faz sentido desenhar o vazio depois que o cheio estiver certo.
 Cole numa sessão nova:
 
 > Estou retomando o redesign do Radar Financeiro. Leia `ROTEIRO-REDESIGN.md`,
-> `CLAUDE.md` e `RELATORIO-AUDITORIA.md` na raiz do repositório. Rodadas 0, 1, 2
-> e **3 (partes 1 e 2)** estão concluídas e no ar. A próxima é a **rodada 4**
-> (Fluxo de Caixa), que inclui a remoção de `js/calendario.js` e
-> `js/pdf-import.legacy.js` — os dois são código morto confirmado. Antes de
+> `CLAUDE.md` e `RELATORIO-AUDITORIA.md` na raiz do repositório. Rodadas 0, 1, 2,
+> **3 (partes 1 e 2)** e **4 (Fluxo de Caixa)** estão concluídas e no ar. A
+> próxima é a **rodada 5** (comprometimento futuro e aging de parcelas), que
+> reusa o formato de KPI da rodada 3 e as classes `.fx-*` da rodada 4. Antes de
 > propor qualquer coisa, verifique se a identidade "categorias com limite + fora
-> de qualquer limite = total de despesas do mês" continua fechando no Dashboard
-> e na aba Orçamento: ela é o contrato que a rodada 3 estabeleceu. Se algum
-> achado do roteiro não bater mais com o código, aponte a divergência em vez de
-> seguir o roteiro.
+> de qualquer limite = total de despesas do mês" continua fechando no Dashboard,
+> na aba Orçamento e no total de saídas do Fluxo de Caixa: ela é o contrato que a
+> rodada 3 estabeleceu e que a rodada 4 estendeu ao Fluxo. Rode
+> `node --test test/*.mjs` (54/54) antes de começar. Se algum achado do roteiro
+> não bater mais com o código, aponte a divergência em vez de seguir o roteiro.
 
 ---
 
 ## Registro de divergências conhecidas
+
+- **Contrato da rodada 3 reconferido em 02/08/2026 — fechando.**
+  `splitGastosPorLimite()` (`utils.js:305`) fecha **por construção**, não por
+  coincidência: `total` soma toda despesa não-`transfer` e cada lançamento cai
+  em exatamente um dos três baldes, então
+  `Σ porCategoria.real + semCategoria.total + semLimite.total ≡ total`.
+  Dashboard (`dashboard.js:231`) e aba Orçamento (`orcamento.js:29-30`) consomem
+  a **mesma base**: `allExpensesOfMonth(month)` menos investimentos, e as mesmas
+  categorias menos investimentos. 35/35 testes passando.
+  **Risco registrado, não achado:** `split` pula `type === 'transfer'` e
+  `totalExpense` (`dashboard.js:47`) não pula. Hoje é inócuo porque `transfer` só
+  é gravado pelos parsers de extrato (`base-parser.js:9-10`) e
+  `allExpensesOfMonth` (`db.js:152`) já filtra `type === 'expense'` do extrato.
+  **Se algum dia um lançamento manual puder ser marcado como transferência, o
+  KPI de Despesas e a linha de reconciliação divergem em silêncio.**
+- ~~**`getInvestCatIds` está triplicado, em duas implementações diferentes.**~~
+  **Resolvido na rodada 4:** `getInvestCatIds(categories = state.categories)` é
+  exportado de `js/utils.js` e consumido por `dashboard.js`, `orcamento.js` e
+  `saldos.js`. Ficou a implementação de campos separados — concatenar casa
+  "investiment" atravessando a fronteira entre `id` e `name`. **Sobram três
+  cópias da versão concatenada**, todas fora do escopo declarado da rodada 4:
+  `gastos.js:177` e `extratos.js:463` (checam UMA categoria, outro formato) e
+  `relatorios.js:153` (mesmo formato de lista — candidata natural da próxima
+  rodada que tocar em Relatórios). Texto original, para referência:
+  `dashboard.js:24` usa `id.includes(…) || name.includes(…)`; `orcamento.js:16` e
+  `saldos.js:126` usam `(c.id + c.name).includes(…)`. Mesmo resultado hoje, mas é
+  o padrão de "duas verdades sobre o mesmo mês" que a rodada 3 eliminou ao criar
+  `splitGastosPorLimite()`. **Unificação em `utils.js` faz parte da rodada 4**
+  (item 3.1 do prompt), e vem **antes** do resto porque mexe na base do contrato.
+- **`users/{uid}/settings/fluxo` não entra no backup/restore da rodada 4**
+  (`db.js:471` `ALLOWED_COL_NAMES` e `db.js:388` `WIPABLE_COLLECTIONS` seguem
+  como estão). Configuração não é dado financeiro e ampliar a superfície do
+  restore é risco fora do escopo de uma rodada de design. **Consequência:**
+  restaurar um backup não traz de volta saldo inicial nem dia de vencimento.
 
 - ~~`CLAUDE.md` cita `js/pdf-import.fixed.js` como arquivo entregue e não
   ativado.~~ **Resolvido em 02/08/2026:** o "fixed" foi promovido a
   `js/pdf-import.js` (o cabeçalho do arquivo ainda descreve a promoção) e o
   antigo virou `js/pdf-import.legacy.js`, que não é importado por ninguém.
   `js/parsers/pdf-layout.js` está em uso de verdade. `CLAUDE.md` atualizado.
-- **`js/pdf-import.legacy.js` é código morto.** Ainda referencia
-  `#pdf-info-text`, elemento que a rodada 2 removeu do `index.html`. Remover
-  numa rodada que já toque no fluxo de fatura — limpeza, não design.
+- ~~**`js/pdf-import.legacy.js` é código morto.**~~ **Removido na rodada 4**,
+  junto de `js/calendario.js`. O grep de `calendario.js` e `pdf-import.legacy`
+  não retorna nada fora do histórico do git.
 - `RELATORIO-AUDITORIA.md` (02/08/2026) lista 13 achados. Ler antes de mexer em
   parsing de PDF, dedupe ou segurança. Achado aberto ≠ item de design.
   **Não são mais 13 abertos:** o achado 6 (dedupe) foi fechado na rodada 2 e o

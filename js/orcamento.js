@@ -2,7 +2,7 @@
  * orcamento.js — Aba de orçamento mensal
  */
 
-import { state, esc, fmt, toast, splitGastosPorLimite, renderForaDoLimite } from './utils.js';
+import { state, esc, fmt, toast, splitGastosPorLimite, renderForaDoLimite, getInvestCatIds } from './utils.js';
 import { saveBudgets, allExpensesOfMonth } from './db.js';
 
 export function renderOrcamento() {
@@ -13,9 +13,7 @@ export function renderOrcamento() {
   const month   = state.currentMonth;
   const budgets = state.budgets[month] || {};
 
-  const investIds = state.categories
-    .filter(c => (c.id + c.name).toLowerCase().includes('investiment'))
-    .map(c => c.id);
+  const investIds = getInvestCatIds();
 
   const cats = state.categories.filter(c => !investIds.includes(c.id));
 

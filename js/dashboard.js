@@ -12,24 +12,16 @@
 
 import {
   state, fmt, monthLabel, offsetMonth, esc, renderInsights, showKpiSkeleton,
-  splitGastosPorLimite, renderForaDoLimite, SEM_CATEGORIA_FILTRO,
+  splitGastosPorLimite, renderForaDoLimite, SEM_CATEGORIA_FILTRO, getInvestCatIds,
 } from './utils.js';
 import { txOfMonth, allExpensesOfMonth, incomesOfMonth } from './db.js';
 
 let chartCategorias = null;
 let chartEvolucao   = null;
 
-// ─── HELPER: detecta se uma categoria é de investimento ───────────────────
-// Reconhece id="investimento" E name="Investimentos" (backup antigo)
-function getInvestCatIds() {
-  return state.categories
-    .filter(c => {
-      const id   = (c.id   || '').toLowerCase();
-      const name = (c.name || '').toLowerCase();
-      return id.includes('investiment') || name.includes('investiment');
-    })
-    .map(c => c.id);
-}
+// A detecção de categoria de investimento (id="investimento" ou
+// name="Investimentos" de backup antigo) vive em utils.js: Dashboard, Orçamento
+// e Fluxo de Caixa precisam da MESMA regra para os totais baterem.
 
 // ─── RENDER PRINCIPAL ─────────────────────────────────────────────────────
 export function renderDashboard() {

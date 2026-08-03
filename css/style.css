@@ -727,3 +727,149 @@ body {
   .pizza-donut { width: 148px; height: 148px; }
   .pizza-skeleton-ring { border-width: 23px; }
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   FLUXO DE CAIXA (rodada 4)
+   Prefixo .fx-* de propósito: Dashboard e Patrimônio compartilham
+   .kpi-grid/.kpi-card, e esta aba tem outra proporção (três cards,
+   o do meio herói). Reaproveitar as classes moveria as outras duas
+   telas junto.
+════════════════════════════════════════════════════════════════ */
+.fx-kpis { display: grid; grid-template-columns: 1fr 1.35fr 1fr; gap: 0.9rem; margin-bottom: 1rem; }
+.fx-kpi {
+  background: var(--bg-card); border-radius: var(--radius-md);
+  padding: 1rem 1.1rem; box-shadow: var(--shadow-card);
+}
+/* Só o herói muda de fundo: é o único dos três que induz decisão. */
+.fx-kpi.fx-hero { background: var(--bg-card-raised); }
+.fx-kpi-label {
+  font-size: 0.74rem; color: var(--text-secondary); font-weight: 500;
+  letter-spacing: 0.02em; margin-bottom: 0.45rem;
+}
+.fx-kpi-val {
+  font-family: var(--font-mono); font-variant-numeric: tabular-nums;
+  font-size: 1.5rem; font-weight: 500; line-height: 1.15;
+}
+.fx-kpi.fx-hero .fx-kpi-val { font-size: 1.85rem; }
+/* Vermelho aqui é fato aritmético sobre dado existente (saldo negativo), não a
+   "aritmética de dado faltando" que a rodada 3 proibiu no Dashboard. */
+.fx-kpi-val.neg { color: var(--danger); }
+.fx-kpi-sub { font-size: 0.75rem; color: var(--text-muted); margin-top: 0.4rem; line-height: 1.45; }
+.fx-kpi-sub .fx-dia { color: var(--accent-bright); font-weight: 600; font-family: var(--font-mono); }
+/* .mark-inferido global é nowrap (rótulo curto de célula). Na sublinha do KPI a
+   marca carrega uma frase inteira, então quebra — escopado, sem tocar na regra
+   global que os modais de importação usam. */
+.fx-kpi-sub .mark-inferido { white-space: normal; display: inline; }
+
+.fx-card {
+  background: var(--bg-card); border-radius: var(--radius-md);
+  padding: 1.1rem 1.2rem; box-shadow: var(--shadow-card); margin-bottom: 1rem;
+}
+.fx-card-head {
+  display: flex; justify-content: space-between; align-items: baseline;
+  gap: 1rem; margin-bottom: 0.9rem; flex-wrap: wrap;
+}
+.fx-card-title { font-size: 0.92rem; font-weight: 600; }
+.fx-legend { display: flex; gap: 0.9rem; font-size: 0.72rem; color: var(--text-muted); flex-wrap: wrap; }
+.fx-legend i {
+  display: inline-block; width: 14px; height: 2px; vertical-align: middle;
+  margin-right: 0.35rem; background: var(--accent-primary);
+}
+.fx-legend i.proj { background: transparent; border-top: 2px dashed var(--accent-primary); }
+.fx-legend i.zero { background: var(--danger); }
+.fx-chart-box { position: relative; height: 230px; }
+
+.fx-table-head {
+  display: flex; justify-content: space-between; align-items: center;
+  gap: 1rem; margin-bottom: 0.75rem; flex-wrap: wrap;
+}
+.fx-ref { font-size: 0.74rem; color: var(--text-muted); }
+.fx-ref b { color: var(--text-secondary); font-family: var(--font-mono); font-weight: 500; }
+.fx-ref .mark-inferido { white-space: normal; display: inline; }
+
+.fx-table { width: 100%; border-collapse: collapse; font-size: 0.84rem; }
+.fx-table thead th {
+  text-align: left; font-size: 0.7rem; letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--text-muted); font-weight: 600; padding: 0.5rem 0.7rem;
+  border-bottom: 1px solid var(--border-md);
+}
+.fx-table th.num, .fx-table td.num { text-align: right; }
+.fx-table tbody td { padding: 0.55rem 0.7rem; border-bottom: 1px solid var(--border-soft); }
+.fx-table td.num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+/* Ciano de estado de linha. Magenta é acento de série categórica — usá-lo aqui
+   faria "hoje" parecer uma categoria. */
+.fx-table tbody tr.fx-hoje { background: rgba(62, 194, 252, 0.07); }
+.fx-table tbody tr.fx-hoje td:first-child { color: var(--accent-bright); font-weight: 700; }
+.fx-table tbody tr.fx-minimo td { background: var(--danger-dim); }
+.fx-td-dia { color: var(--text-secondary); font-weight: 500; width: 52px; font-family: var(--font-mono); }
+.fx-td-desc { color: var(--text-secondary); }
+.fx-v-in { color: var(--success); }
+.fx-v-out { color: var(--text-primary); }
+.fx-v-nil { color: var(--text-muted); }
+.fx-v-saldo { font-weight: 600; }
+.fx-v-saldo.neg { color: var(--danger); }
+.fx-tag {
+  display: inline-block; font-size: 0.63rem; padding: 0.08rem 0.34rem; border-radius: 4px;
+  vertical-align: middle; margin-left: 0.35rem; font-weight: 600; letter-spacing: 0.02em;
+}
+.fx-tag-min { background: var(--danger-dim); color: var(--danger); }
+/* Separador, não linha de dado: sem borda para não parecer um lançamento. */
+.fx-table tr.fx-sep td {
+  background: transparent; border-bottom: none; padding: 0.55rem 0.7rem 0.3rem;
+  font-size: 0.7rem; color: var(--text-muted); letter-spacing: 0.05em; text-transform: uppercase;
+}
+.fx-table tfoot td {
+  padding: 0.6rem 0.7rem; border-top: 1px solid var(--border-md);
+  font-weight: 600; font-size: 0.82rem;
+}
+.fx-table tfoot td.num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+/* O parêntese "(fora do saldo)" é o que impede a soma errada: investimento não
+   entra na coluna Saldo e precisa dizer isso onde o número aparece. */
+.fx-rodape {
+  display: flex; gap: 1.4rem; flex-wrap: wrap; margin-top: 0.85rem;
+  font-size: 0.76rem; color: var(--text-muted);
+}
+.fx-rodape b { color: var(--text-secondary); font-family: var(--font-mono); font-weight: 500; }
+
+/* Saldo inicial editável no cabeçalho da aba: é onde o número é olhado. */
+.fx-abertura { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; font-size: 0.8rem; }
+.fx-abertura label { color: var(--text-secondary); }
+.fx-abertura input {
+  width: 130px; background: var(--bg-card-raised); border: 1px solid var(--border-md);
+  border-radius: var(--radius-sm); color: var(--text-primary); padding: 0.35rem 0.5rem;
+  font-family: var(--font-mono); font-size: 0.82rem; text-align: right;
+}
+.fx-abertura input:focus { outline: none; border-color: var(--border-strong); }
+.fx-abertura .fx-hint { color: var(--text-muted); font-size: 0.72rem; }
+
+.fx-empty { text-align: center; padding: 1.8rem 1rem; }
+.fx-empty-t { font-weight: 600; font-size: 0.9rem; margin-bottom: 0.3rem; }
+.fx-empty-t.erro { color: var(--danger); }
+.fx-empty-x { font-size: 0.78rem; color: var(--text-muted); line-height: 1.5; max-width: 42ch; margin: 0 auto; }
+.fx-empty .btn { margin-top: 0.85rem; }
+
+@media (max-width: 900px) {
+  .fx-kpis { grid-template-columns: 1fr 1fr; }
+  .fx-kpi.fx-hero { grid-column: 1 / -1; }
+}
+@media (max-width: 480px) {
+  .fx-kpis { grid-template-columns: 1fr; }
+  /* Herói primeiro: em coluna única, a ordem é a hierarquia. */
+  .fx-kpi.fx-hero { order: -1; }
+  .fx-kpi-val { font-size: 1.35rem; }
+  .fx-kpi.fx-hero .fx-kpi-val { font-size: 1.6rem; }
+  .fx-chart-box { height: 190px; }
+  .fx-card { padding: 0.9rem 0.75rem; }
+  /* A descrição some antes de qualquer valor monetário: valor truncado é erro
+     de leitura, descrição ausente é só menos contexto. */
+  .fx-table .col-desc { display: none; }
+  .fx-table thead th, .fx-table tbody td, .fx-table tfoot td { padding: 0.5rem 0.35rem; font-size: 0.78rem; }
+  .fx-td-dia { width: 34px; }
+  /* Sem a coluna Movimento, as tags migram para junto do valor do saldo. */
+  .fx-tag { display: block; margin: 0.1rem 0 0; text-align: right; }
+}
+@media (max-width: 360px) {
+  .fx-table thead th, .fx-table tbody td, .fx-table tfoot td { padding: 0.45rem 0.25rem; font-size: 0.72rem; }
+  .fx-td-dia { width: 26px; }
+  .fx-kpi { padding: 0.85rem 0.9rem; }
+}
