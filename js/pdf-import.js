@@ -242,6 +242,13 @@ async function _processPdf(file) {
 // existia — tolerar a variação sem depender de uma única camada.
 const SECTION_HEADERS = [
   { re: /lan\s*[çc]\s*amentos\s*:?\s*compras\s+e\s+saques/i,            mode: 'capture' },
+  // ORDEM IMPORTA: _sectionOf devolve o PRIMEIRO casamento. Esta linha precisa
+  // vir antes da regra genérica de "lançamentos no cartão", que casaria com ela.
+  // "Lançamentos no cartão Crediário (próximo período)" está nas faturas Itaú
+  // reais de junho e julho/2026 e é cobrança de um período que ainda não
+  // aconteceu — capturá-la lançava gasto futuro como gasto do mês.
+  { re: /lan\s*[çc]\s*amentos\s+no\s+cart\s*[aã]\s*o\s+credi\s*[áa]\s*rio/i, mode: 'ignore' },
+  { re: /pr\s*[óo]\s*ximo\s+per\s*[íi]\s*odo/i,                         mode: 'ignore' },
   { re: /lan\s*[çc]\s*amentos\s+no\s+cart\s*[aã]\s*o/i,                 mode: 'capture' },
   { re: /lan\s*[çc]\s*amentos\s*:?\s*(nacionais|internacionais)/i,      mode: 'capture' },
   { re: /compras\s+parceladas\s*[-–—]?\s*pr\s*[óo]\s*ximas\s+faturas/i, mode: 'nextinvoice' },
@@ -256,7 +263,7 @@ const SECTION_HEADERS = [
   { re: /encargos\s+e\s+juros/i,                                        mode: 'ignore' },
 ];
 
-function _sectionOf(line) {
+export function _sectionOf(line) {
   for (const h of SECTION_HEADERS) if (h.re.test(line)) return h.mode;
   return null;
 }
@@ -365,7 +372,7 @@ function _parseInstallment(desc) {
  * Cada coluna começa em 'unknown' (captura, para não perder a primeira página
  * de faturas que não repetem o cabeçalho) e muda a cada cabeçalho reconhecido.
  */
-function _parseStreams(streams) {
+export function _parseStreams(streams) {
   const lancamentos     = [];
   const proximasFaturas = [];
   let anoBase = null;
@@ -408,7 +415,7 @@ function _parseStreams(streams) {
  * for MAIOR que o mês do vencimento, a compra é do ano anterior (virada de ano).
  * Sem vencimento na fatura, cai na heurística antiga baseada na data de hoje.
  */
-function _applyYear(items, anoBase) {
+export function _applyYear(items, anoBase) {
   return items.map(it => {
     const mm = parseInt(it.mm, 10);
     let year;
@@ -513,9 +520,25 @@ export function _tolerancia(parcelaTotal) {
  * porque não havia — havia uma projeção que o próprio app tinha criado, e nada
  * no projeto jamais a convertia de volta em lançamento confirmado.
  *
- * A data é ignorada de propósito: a projeção tem data futura, estimada.
+ * A data é ignorada de propósito PARA AS PARCELAS SEGUINTES: a projeção tem data
+ * futura, estimada, e exigir igualdade impediria a reconciliação.
+ *
+ * A PRIMEIRA parcela é a exceção, e precisa ser: nela a data é a data da COMPRA
+ * dos dois lados, não uma estimativa. Sem esse recorte, uma recompra idêntica do
+ * mesmo produto — mesmo estabelecimento, mesmo valor, mesmo número de parcelas —
+ * some. Foi o que aconteceu com uma rematrícula no SENAC: R$ 267,30 em 6x
+ * comprada em janeiro e de novo em julho. Sem a data, a compra de julho era lida
+ * como "parcela 1/6 já registrada" e nunca entrava.
  */
-function _acharParcela(desc, amount, parcelaNum, parcelaTotal) {
+const DIAS_MESMA_COMPRA = 45; // folga para registro legado normalizado no dia 15
+
+function _mesmaCompra(dataA, dataB) {
+  if (!dataA || !dataB) return true; // sem data dos dois lados, não dá para negar
+  const ms = Math.abs(new Date(dataA + 'T12:00:00') - new Date(dataB + 'T12:00:00'));
+  return Number.isFinite(ms) && ms <= DIAS_MESMA_COMPRA * 86400000;
+}
+
+export function _acharParcela(desc, amount, parcelaNum, parcelaTotal, date = null) {
   const nd  = _normDesc(desc);
   const tol = _tolerancia(parcelaTotal);
   return state.transactions.find(t => {
@@ -523,7 +546,9 @@ function _acharParcela(desc, amount, parcelaNum, parcelaTotal) {
     if (t.installmentCurrent !== parcelaNum) return false;
     if (t.installmentTotal   !== parcelaTotal) return false;
     if (_normDesc(t.description) !== nd) return false;
-    return Math.abs((t.amount || 0) - amount) <= tol;
+    if (Math.abs((t.amount || 0) - amount) > tol) return false;
+    if (parcelaNum === 1 && date && !_mesmaCompra(t.date, date)) return false;
+    return true;
   }) || null;
 }
 
@@ -708,7 +733,7 @@ function _classificarEDetectarDuplicatas(items) {
 
     if (item.installmentTotal > 1) {
       const existente = _acharParcela(
-        item.description, item.amount, item.installmentCurrent, item.installmentTotal);
+        item.description, item.amount, item.installmentCurrent, item.installmentTotal, item.date);
       const mesDela = existente ? (existente.competenceMonth || (existente.date || '').slice(0, 7)) : '';
 
       // Projeção que o próprio app criou NÃO é duplicata: é a previsão que esta
@@ -861,7 +886,7 @@ async function _confirmarImportacao() {
       };
 
       const existente = item.installmentTotal > 1
-        ? _acharParcela(item.description, item.amount, item.installmentCurrent, item.installmentTotal)
+        ? _acharParcela(item.description, item.amount, item.installmentCurrent, item.installmentTotal, item.date)
         : null;
 
       if (existente && existente.isProjected) {
