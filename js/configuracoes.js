@@ -165,7 +165,10 @@ function _renderCategorias() {
     list.innerHTML = '<p style="padding:1rem;font-size:0.83rem;color:var(--text-muted)">Nenhuma categoria.</p>';
     return;
   }
-  list.innerHTML = state.categories
+  // Cópia antes de ordenar: `sort()` ordena NO LUGAR, e `state.categories` é o
+  // mesmo array que todas as outras abas leem. Abrir Configurações reordenava
+  // silenciosamente a ordem das opções em todos os selects do app.
+  list.innerHTML = [...state.categories]
     .sort((a, b) => (a.order || 0) - (b.order || 0))
     .map(c => `
       <div class="categoria-item">

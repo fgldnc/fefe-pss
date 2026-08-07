@@ -2,7 +2,7 @@
  * gastos.js — Aba de gastos: tabela, lançamento manual, importação PDF
  */
 
-import { state, fmt, toast, esc, SEM_CATEGORIA_FILTRO } from './utils.js';
+import { state, fmt, toast, esc, SEM_CATEGORIA_FILTRO, getInvestCatIds } from './utils.js';
 import { txOfMonth, saveTx, deleteTx, addAporteToAsset } from './db.js';
 import { initPdfImport } from './pdf-import.js';
 
@@ -172,9 +172,13 @@ function _initGastosEvents() {
 
 }
 
+// Regra única do app (js/utils.js). A cópia local comparava `id + name`
+// CONCATENADOS, o que casa "investiment" atravessando a fronteira dos dois
+// campos — um id terminado em "invest" ao lado de um nome começado em "iment"
+// virava categoria de investimento. Duas leituras diferentes do que é
+// investimento produzem dois totais para o mesmo mês.
 function _isInvestCat(catId) {
-  const cat = state.categories.find(c => c.id === catId);
-  return !!cat && (cat.id + cat.name).toLowerCase().includes('investiment');
+  return !!catId && getInvestCatIds().includes(catId);
 }
 
 function _toggleAtivoRow() {

@@ -24,7 +24,7 @@
  */
 
 import {
-  state, toast, esc, resolveCategoryId,
+  state, toast, esc, resolveCategoryId, offsetMonth, monthLabel,
   renderImportSummary, updateImportSummary, toggleImportFilter, updateImportConfirmButton,
 } from './utils.js';
 import { saveTx, saveDoc, getAll } from './db.js';
@@ -44,7 +44,13 @@ const INVOICE_COL           = 'importedInvoices';
 
 let _onDoneCallback = null;
 let _parsedItems    = [];
-let _parsedMeta     = { nextInvoiceRows: [], fingerprint: '', filename: '', competenceSource: 'inferred' };
+let _parsedMeta     = {
+  nextInvoiceRows: [], fingerprint: '', filename: '',
+  competenceSource: 'inferred',
+  // Vencimento declarado na fatura ({year, month}) — é dele que a competência
+  // sai. `null` quando o PDF não traz a linha de vencimento.
+  vencimento: null,
+};
 let _eventsBound    = false;
 
 export function initPdfImport(onDone) {
@@ -71,7 +77,10 @@ function _resetModal() {
   document.getElementById('pdf-competencia-hint')?.classList.add('hidden');
   updateImportConfirmButton(document.getElementById('btn-confirmar-pdf'), 0);
   _parsedItems = [];
-  _parsedMeta  = { nextInvoiceRows: [], fingerprint: '', filename: '', competenceSource: 'inferred' };
+  _parsedMeta  = {
+    nextInvoiceRows: [], fingerprint: '', filename: '',
+    competenceSource: 'inferred', vencimento: null,
+  };
 }
 
 // ─── EVENTOS (registrados UMA vez) ─────────────────────────────────────────
@@ -201,6 +210,7 @@ async function _processPdf(file) {
       // O campo de competência é pré-preenchido pelo app; até o usuário mexer,
       // o valor é dedução — não confirmação.
       competenceSource: 'inferred',
+      vencimento:      anoBase,
     };
 
     if (_linhasRejeitadas.length) {
@@ -422,6 +432,40 @@ function _applyYear(items, anoBase) {
   });
 }
 
+// ─── COMPETÊNCIA DA FATURA ─────────────────────────────────────────────────
+/**
+ * Em que mês a fatura pesa.
+ *
+ * A âncora é o VENCIMENTO declarado na fatura, não a data de uma compra.
+ * Antes a conta saía de `items[0].date` — a primeira linha na ORDEM DE LEITURA
+ * do PDF — mais o offset. Uma fatura que fecha em julho e vence em agosto traz
+ * compras a partir do início de junho, então `items[0]` é de junho e a fatura
+ * inteira caía em maio (junho − 1). O usuário procurava em julho e não achava
+ * nada; ao reimportar, tudo aparecia como "já registrado", porque estava — três
+ * meses antes. O offset também ficava dependente da ordem de leitura: bastava o
+ * parser de coluna devolver outra linha primeiro para a fatura mudar de mês.
+ *
+ * O offset (`fluxo_billing_offset`, default -1) passa a significar o que a tela
+ * de Preferências sempre disse que significava: "vencimento em X → competência
+ * X-1". Sem vencimento no PDF, a melhor âncora disponível é a compra MAIS
+ * RECENTE — o mês em que a fatura fechou —, e a dedução se declara na tela.
+ */
+export function competenciaDaFatura(items, vencimento, offset = -1) {
+  if (vencimento?.year && vencimento?.month) {
+    const venc = `${vencimento.year}-${String(vencimento.month).padStart(2, '0')}`;
+    return { ym: offsetMonth(venc, offset), origem: 'vencimento', venc };
+  }
+  // `sort()` lexicográfico basta: as datas já estão em YYYY-MM-DD.
+  const ultima = items.map(i => i.date).filter(Boolean).sort().pop();
+  if (ultima) return { ym: ultima.slice(0, 7), origem: 'ultima-compra', venc: null };
+  return { ym: new Date().toISOString().slice(0, 7), origem: 'hoje', venc: null };
+}
+
+function _billingOffset() {
+  const n = parseInt(localStorage.getItem('fluxo_billing_offset') ?? '-1', 10);
+  return Number.isFinite(n) ? n : -1;
+}
+
 function _dedup(items) {
   const seen = new Set();
   return items.filter(it => {
@@ -453,16 +497,34 @@ export function _tolerancia(parcelaTotal) {
   return Math.min(DUP_TOLERANCE_CEILING, Math.max(DUP_TOLERANCE_FLOOR, t));
 }
 
-function _parcelaJaExiste(desc, amount, parcelaNum, parcelaTotal) {
+/**
+ * Acha a parcela correspondente já gravada — e DEVOLVE O REGISTRO, não um
+ * booleano.
+ *
+ * Quem chama precisa de três coisas que um `true` não carrega: em que mês está,
+ * quanto vale e se é PROJEÇÃO ou lançamento real. Essa última distinção é o
+ * bug que este arquivo tinha:
+ *
+ * ao importar uma fatura parcelada, o app cria de uma vez as parcelas futuras
+ * com `isProjected: true`. Na fatura do mês seguinte, essa mesma parcela volta —
+ * agora como fato. A versão anterior a via como duplicata, pulava o save em
+ * silêncio e contava no toast de "parcelas já existentes". Resultado: a fatura
+ * inteira era acusada de duplicada, e o usuário não achava duplicata nenhuma,
+ * porque não havia — havia uma projeção que o próprio app tinha criado, e nada
+ * no projeto jamais a convertia de volta em lançamento confirmado.
+ *
+ * A data é ignorada de propósito: a projeção tem data futura, estimada.
+ */
+function _acharParcela(desc, amount, parcelaNum, parcelaTotal) {
   const nd  = _normDesc(desc);
   const tol = _tolerancia(parcelaTotal);
-  return state.transactions.some(t => {
+  return state.transactions.find(t => {
     if ((t.installmentTotal || 1) <= 1) return false;
     if (t.installmentCurrent !== parcelaNum) return false;
     if (t.installmentTotal   !== parcelaTotal) return false;
     if (_normDesc(t.description) !== nd) return false;
     return Math.abs((t.amount || 0) - amount) <= tol;
-  });
+  }) || null;
 }
 
 // ─── FINGERPRINT DA FATURA (anti-reimportação) ─────────────────────────────
@@ -520,17 +582,20 @@ function _showPreview(items, filename, proximasFaturas) {
 
   const compInput = document.getElementById('pdf-competencia');
   if (compInput) {
-    const refDate = items[0]?.date || new Date().toISOString().slice(0, 10);
-    const [gy, gm] = refDate.split('-').map(Number);
-    const offset = parseInt(localStorage.getItem('fluxo_billing_offset') ?? '-1', 10);
-    let cy = gy, cm = gm + offset;
-    if (cm < 1)  { cm += 12; cy -= 1; }
-    if (cm > 12) { cm -= 12; cy += 1; }
-    compInput.value = `${cy}-${String(cm).padStart(2, '0')}`;
-    // Até o usuário tocar no campo, o valor é dedução — e a dedução se declara.
+    const comp = competenciaDaFatura(items, _parsedMeta.vencimento, _billingOffset());
+    compInput.value = comp.ym;
+    // Até o usuário tocar no campo, o valor é dedução — e a dedução se declara
+    // DIZENDO DE ONDE VEIO. "deduzido do 1º lançamento" era genérico demais para
+    // alguém conferir; com o vencimento na frase, o erro fica visível na hora.
     const inferida = _parsedMeta.competenceSource === 'inferred';
     compInput.classList.toggle('field-inferido', inferida);
-    document.getElementById('pdf-competencia-hint')?.classList.toggle('hidden', !inferida);
+    const hint = document.getElementById('pdf-competencia-hint');
+    if (hint) {
+      hint.textContent = comp.origem === 'vencimento'
+        ? `deduzido do vencimento ${comp.venc} · confirme`
+        : 'sem vencimento no PDF — deduzido da compra mais recente · confirme';
+      hint.classList.toggle('hidden', !inferida);
+    }
   }
 
   // Classificação e duplicidade resolvidas ANTES de montar o HTML: a marca
@@ -558,10 +623,21 @@ function _showPreview(items, filename, proximasFaturas) {
 
     const marks = [
       anoDeduzido ? `<span class="mark-inferido">ano deduzido</span>` : '',
+      // Confirmação de projeção é notícia boa e não vira âmbar: a linha diz o
+      // que vai acontecer ("vira lançamento confirmado") em vez de acusar.
+      // `.tag-projetada` é o vocabulário que o app já usa para parcela prevista.
+      item.reconcilia
+        ? `<span class="tag-projetada" title="Esta parcela já estava prevista${
+              item.reconciliaMes ? ` em ${esc(item.reconciliaMes)}` : ''
+            }. Salvar aqui confirma a previsão, sem criar um gasto novo.">confirma a parcela prevista${
+              item.reconciliaMes ? ` de ${esc(item.reconciliaMes)}` : ''
+            }</span>`
+        : '',
       item.isDuplicate
         ? `<span class="tag-duplicata" title="${esc(item.duplicateWhy || '')}">${
             item.installmentTotal > 1
-              ? `Parcela ${item.installmentCurrent}/${item.installmentTotal} já registrada`
+              ? `Parcela ${item.installmentCurrent}/${item.installmentTotal} já lançada${
+                  item.duplicateOf?.date ? ` em ${esc(item.duplicateOf.date)}` : ''}`
               : `Já existe · ${item.amount.toFixed(2)} em ${esc(item.date || '')}`
           }</span>`
         : '',
@@ -631,14 +707,24 @@ function _classificarEDetectarDuplicatas(items) {
     item.classificationOrigin = cls.origin;
 
     if (item.installmentTotal > 1) {
-      // Parcela compara por descrição + nº de parcela + valor dentro da
-      // tolerância de centavos; a DATA é ignorada de propósito, porque a
-      // parcela projetada tem data futura. Regra distinta, motivo distinto.
-      item.isDuplicate  = _parcelaJaExiste(item.description, item.amount, item.installmentCurrent, item.installmentTotal);
-      item.duplicateOf  = null;
+      const existente = _acharParcela(
+        item.description, item.amount, item.installmentCurrent, item.installmentTotal);
+      const mesDela = existente ? (existente.competenceMonth || (existente.date || '').slice(0, 7)) : '';
+
+      // Projeção que o próprio app criou NÃO é duplicata: é a previsão que esta
+      // fatura vem confirmar. Não conta como pendência, não fica âmbar, e no
+      // save atualiza a linha existente em vez de criar outra.
+      item.reconcilia   = existente ? !!existente.isProjected : false;
+      item.reconciliaId = item.reconcilia ? existente.id : null;
+      item.isDuplicate  = !!existente && !existente.isProjected;
+      item.duplicateOf  = existente && !existente.isProjected
+        ? { date: existente.date || '', amount: existente.amount || 0, description: existente.description || '' }
+        : null;
+      item.reconciliaMes = item.reconcilia && mesDela ? monthLabel(mesDela) : '';
       item.duplicateWhy = item.isDuplicate
-        ? `A parcela ${item.installmentCurrent}/${item.installmentTotal} desta compra já está registrada, `
-          + `com valor dentro de R$ ${_tolerancia(item.installmentTotal).toFixed(2)} de diferença.`
+        ? `Esta parcela já está lançada${mesDela ? ` em ${monthLabel(mesDela)}` : ''}, `
+          + `no valor de R$ ${(existente.amount || 0).toFixed(2)} — e não é uma parcela projetada, `
+          + `é um lançamento confirmado. Importar de novo duplicaria o gasto.`
         : '';
     } else {
       const hit = semTipo[i].duplicateOf || comTipo[i].duplicateOf;
@@ -727,13 +813,9 @@ async function _confirmarImportacao() {
   try {
     let competenceMonth = document.getElementById('pdf-competencia')?.value || '';
     if (!/^\d{4}-\d{2}$/.test(competenceMonth)) {
-      const refDate = selected[0].date || new Date().toISOString().slice(0, 10);
-      const [refY, refM] = refDate.split('-').map(Number);
-      const offset = parseInt(localStorage.getItem('fluxo_billing_offset') ?? '-1', 10);
-      let compY = refY, compM = refM + offset;
-      if (compM < 1)  { compM += 12; compY -= 1; }
-      if (compM > 12) { compM -= 12; compY += 1; }
-      competenceMonth = `${compY}-${String(compM).padStart(2, '0')}`;
+      // Mesma regra do preview — uma função só, senão o mês salvo pode divergir
+      // do mês que a tela mostrou.
+      competenceMonth = competenciaDaFatura(selected, _parsedMeta.vencimento, _billingOffset()).ym;
     }
 
     // ── Guarda contra reimportação da mesma fatura ────────────────────────
@@ -741,15 +823,20 @@ async function _confirmarImportacao() {
     if (jaImportada) {
       const quando = jaImportada.importedAt
         ? new Date(jaImportada.importedAt).toLocaleString('pt-BR') : 'anteriormente';
+      // A mensagem antiga prometia duplicação certa. Hoje a parcela projetada é
+      // reconciliada e a já lançada é pulada, então o risco real é só para o
+      // lançamento à vista — que é o que a frase precisa dizer.
       const ok = confirm(
         `Esta fatura já foi importada em ${quando} (competência ${jaImportada.competenceMonth}).\n\n` +
-        `Importar de novo vai duplicar os lançamentos. Continuar mesmo assim?`
+        `As parcelas já registradas serão reconhecidas, mas as compras à vista podem ` +
+        `entrar em duplicidade. Continuar mesmo assim?`
       );
       if (!ok) { toast('Importação cancelada — fatura já registrada.', 'info'); return; }
     }
 
     let saved = 0;
     let skippedDuplicates = 0;
+    let reconciliadas = 0;
     const projetadas = [];
 
     for (const item of selected) {
@@ -773,8 +860,17 @@ async function _confirmarImportacao() {
         invoiceFingerprint: _parsedMeta.fingerprint,
       };
 
-      if (item.installmentTotal > 1 &&
-          _parcelaJaExiste(item.description, item.amount, item.installmentCurrent, item.installmentTotal)) {
+      const existente = item.installmentTotal > 1
+        ? _acharParcela(item.description, item.amount, item.installmentCurrent, item.installmentTotal)
+        : null;
+
+      if (existente && existente.isProjected) {
+        // A fatura é a confirmação da previsão: atualiza a linha que já existe,
+        // com o valor e a data reais, e a tira do estado "projetada". Criar uma
+        // segunda linha seria a duplicata de verdade.
+        await saveTx(tx, existente.id);
+        reconciliadas++;
+      } else if (existente) {
         skippedDuplicates++;
       } else {
         await saveTx(tx);
@@ -783,10 +879,10 @@ async function _confirmarImportacao() {
 
       if (item.installmentTotal > 1) {
         for (let p = item.installmentCurrent + 1; p <= item.installmentTotal; p++) {
-          if (_parcelaJaExiste(item.description, item.amount, p, item.installmentTotal)) {
-            skippedDuplicates++;
-            continue;
-          }
+          const jaProjetada = _acharParcela(item.description, item.amount, p, item.installmentTotal);
+          // Parcela futura já lançada de verdade: não mexe. Já projetada: deixa
+          // como está — reprojetar por cima só reescreveria o mesmo palpite.
+          if (jaProjetada) { if (!jaProjetada.isProjected) skippedDuplicates++; continue; }
           const delta = p - item.installmentCurrent;
           const [y, mo] = competenceMonth.split('-').map(Number);
           const futureDate = new Date(y, mo - 1 + delta, 1);
@@ -833,11 +929,20 @@ async function _confirmarImportacao() {
     }
 
     if (skippedDuplicates > 0) {
-      toast(`${skippedDuplicates} parcela(s) já existente(s) foram ignoradas para evitar duplicidade.`, 'info');
+      toast(`${skippedDuplicates} parcela(s) já lançada(s) de verdade foram ignoradas para não duplicar.`, 'info');
     }
 
     document.getElementById('modal-pdf').classList.add('hidden');
-    toast(`${saved} lançamentos importados!`, 'success');
+    // O resumo nomeia as duas coisas separadamente: o que entrou novo e o que
+    // apenas deixou de ser previsão. Somar os dois num número só era o que
+    // fazia a fatura inteira parecer "já importada".
+    const resumo = [
+      `${saved} lançamento${saved === 1 ? '' : 's'} novo${saved === 1 ? '' : 's'}`,
+      reconciliadas > 0
+        ? `${reconciliadas} parcela${reconciliadas === 1 ? '' : 's'} prevista${reconciliadas === 1 ? '' : 's'} confirmada${reconciliadas === 1 ? '' : 's'}`
+        : '',
+    ].filter(Boolean).join(' · ');
+    toast(`${resumo} em ${monthLabel(competenceMonth)}.`, 'success');
     if (_onDoneCallback) _onDoneCallback();
 
   } catch (err) {

@@ -65,7 +65,17 @@ function _initReceitasEvents() {
 
     if (!amount || amount <= 0) return toast('Informe um valor válido.', 'error');
 
-    await saveIncome({ type: tipo, description: desc, amount, date, month: state.currentMonth }, id);
+    // Editar preserva a procedência. saveIncome grava o objeto inteiro; montar
+    // um objeto só com os campos do formulário apagava `source`, `bankName` e
+    // `importBatchId` de uma receita vinda de extrato — e sem importBatchId
+    // "Excluir importação" deixava a receita órfã no Firestore para sempre.
+    const anterior = id ? state.incomes.find(i => i.id === id) : null;
+    const { id: _ignorado, ...preservado } = anterior || {};
+
+    await saveIncome({
+      ...preservado,
+      type: tipo, description: desc, amount, date, month: state.currentMonth,
+    }, id);
     document.getElementById('modal-receita').classList.add('hidden');
     toast('Receita salva!', 'success');
     _renderReceitasTable();

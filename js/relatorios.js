@@ -2,7 +2,7 @@
  * relatorios.js — Relatórios exportáveis (CSV e JSON)
  */
 
-import { state, fmt, monthLabel, offsetMonth, esc, toast, isOfMonth } from './utils.js';
+import { state, fmt, monthLabel, offsetMonth, esc, toast, isOfMonth, getInvestCatIds } from './utils.js';
 import { allExpensesOfMonth, incomesOfMonth } from './db.js';
 
 // ─── RENDER DA SEÇÃO ──────────────────────────────────────────
@@ -149,9 +149,9 @@ function _runExport(id, format) {
 
 // ─── BUILDERS DE DADOS ────────────────────────────────────────
 function _gastosPorCategoria(month) {
-  const investIds = state.categories
-    .filter(c => (c.id + c.name).toLowerCase().includes('investiment'))
-    .map(c => c.id);
+  // Regra única do app (js/utils.js). A cópia local aqui comparava `id + name`
+  // concatenados — ver o comentário em getInvestCatIds.
+  const investIds = getInvestCatIds();
 
   const txs = allExpensesOfMonth(month).filter(t => !investIds.includes(t.categoryId));
   const total = txs.reduce((s, t) => s + (t.amount || 0), 0);
@@ -174,17 +174,26 @@ function _gastosPorCategoria(month) {
 }
 
 function _evolucaoMensal() {
+  // Investimento sai da despesa e vira coluna própria — mesma decomposição do
+  // KPI e do gráfico de evolução do Dashboard. Antes o relatório somava tudo
+  // junto: a mesma pessoa exportava um CSV que discordava da tela que estava
+  // olhando, e o "saldo" descontava o aporte como se fosse consumo.
+  const investIds = getInvestCatIds();
   const rows = [];
   for (let i = 11; i >= 0; i--) {
     const m     = offsetMonth(state.currentMonth, -i);
     const txs   = allExpensesOfMonth(m);
-    const receita  = incomesOfMonth(m).reduce((s, t) => s + (t.amount || 0), 0);
-    const despesa  = txs.reduce((s, t) => s + (t.amount || 0), 0);
+    const receita   = incomesOfMonth(m).reduce((s, t) => s + (t.amount || 0), 0);
+    const despesa   = txs.filter(t => !investIds.includes(t.categoryId))
+                         .reduce((s, t) => s + (t.amount || 0), 0);
+    const investido = txs.filter(t =>  investIds.includes(t.categoryId))
+                         .reduce((s, t) => s + (t.amount || 0), 0);
     rows.push({
-      mes:      monthLabel(m),
-      receita:  receita.toFixed(2),
-      despesa:  despesa.toFixed(2),
-      saldo:    (receita - despesa).toFixed(2),
+      mes:       monthLabel(m),
+      receita:   receita.toFixed(2),
+      despesa:   despesa.toFixed(2),
+      investido: investido.toFixed(2),
+      saldo:     (receita - despesa - investido).toFixed(2),
     });
   }
   return rows;
@@ -192,8 +201,12 @@ function _evolucaoMensal() {
 
 function _orcamentoRealizado(month) {
   const budgets = state.budgets[month] || {};
+  // Mesma base da aba Orçamento: despesas do mês sem investimento. Sem o filtro,
+  // uma categoria de investimento com limite legado aparecia aqui e não lá.
+  const investIds = getInvestCatIds();
   const catTotals = {};
   for (const tx of allExpensesOfMonth(month)) {
+    if (investIds.includes(tx.categoryId)) continue;
     catTotals[tx.categoryId] = (catTotals[tx.categoryId] || 0) + (tx.amount || 0);
   }
   return Object.entries(budgets).map(([catId, limit]) => {
@@ -260,12 +273,25 @@ function _statusMetas() {
 }
 
 // ─── DOWNLOAD ─────────────────────────────────────────────────
+/**
+ * Uma célula que começa com = + - @ (ou tab/CR) é lida como FÓRMULA pelo Excel
+ * e pelo Sheets. A descrição vem de fatura e extrato importados, texto que o
+ * app não escreveu — prefixar com apóstrofo mantém o conteúdo visível e o
+ * desarma. Também trata 0 e false: `row[h] || ''` transformava um zero
+ * legítimo em célula vazia.
+ */
+function _celulaCSV(v) {
+  const s = v === null || v === undefined ? '' : String(v);
+  const perigosa = /^[=+\-@\t\r]/.test(s);
+  return `"${(perigosa ? `'${s}` : s).replace(/"/g, '""')}"`;
+}
+
 function _downloadCSV(data, filename) {
   if (!data.length) return;
   const headers = Object.keys(data[0]);
   const rows    = [
     headers.join(';'),
-    ...data.map(row => headers.map(h => `"${String(row[h] || '').replace(/"/g, '""')}"`).join(';')),
+    ...data.map(row => headers.map(h => _celulaCSV(row[h])).join(';')),
   ];
   _download(rows.join('\r\n'), `${filename}.csv`, 'text/csv;charset=utf-8');
   toast(`${filename}.csv exportado!`, 'success');

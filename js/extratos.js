@@ -4,7 +4,7 @@
  */
 
 import {
-  state, esc, fmt, toast, resolveCategoryId,
+  state, esc, fmt, toast, resolveCategoryId, getInvestCatIds,
   renderImportSummary, updateImportSummary, toggleImportFilter, updateImportConfirmButton,
 } from './utils.js';
 import { detectDuplicates }        from './parsers/base-parser.js';
@@ -436,10 +436,17 @@ function _showReview(items, bank, format) {
   // Cabeçalho da tabela — mostra coluna extra "Tipo de receita" se houver entradas
   const hasIncomes = items.some(t => t.type === 'income');
   const theadEl = document.querySelector('#extrato-preview-tbody')?.closest('table')?.querySelector('thead tr');
-  if (theadEl && hasIncomes) {
+  if (theadEl) {
     // Sem coluna "Status": a marca de duplicata passou para junto da descrição,
     // no mesmo lugar em que o usuário decide se desmarca a linha.
-    theadEl.innerHTML = '<th><input type="checkbox" id="extrato-check-all" checked /></th><th>Data</th><th>Descrição</th><th>Tipo</th><th>Categoria / Tipo receita</th><th class="col-value">Valor</th>';
+    // O `else` importa: o cabeçalho é global ao modal e sobrevive entre
+    // importações. Sem ele, o primeiro extrato com receitas deixava
+    // "Categoria / Tipo receita" preso na tela para todos os seguintes.
+    const col5 = hasIncomes ? 'Categoria / Tipo receita' : 'Categoria';
+    theadEl.innerHTML =
+      '<th scope="col"><input type="checkbox" id="extrato-check-all" aria-label="Selecionar todas as transações" checked /></th>'
+      + '<th scope="col">Data</th><th scope="col">Descrição</th><th scope="col">Tipo</th>'
+      + `<th scope="col">${col5}</th><th scope="col" class="col-value">Valor</th>`;
   }
 
   const INCOME_TYPES = [
@@ -458,10 +465,9 @@ function _showReview(items, bank, format) {
     // Resolve slug do parser → ID real, e já grava no item para o save usar
     if (!tx.categoryId) tx.categoryId = resolveCategoryId(tx.category);
 
-    const isInvestCat = (() => {
-      const c = state.categories.find(x => x.id === tx.categoryId);
-      return !!c && (c.id + c.name).toLowerCase().includes('investiment');
-    })();
+    // Regra única do app (js/utils.js) — ver comentário em getInvestCatIds
+    // sobre por que `id + name` concatenado dá falso positivo.
+    const isInvestCat = !!tx.categoryId && getInvestCatIds().includes(tx.categoryId);
     const investAssets = state.assets.filter(a => a.type === 'investimento');
     const assetOptions = investAssets.map(a =>
       `<option value="${esc(a.id)}" ${tx.assetId === a.id ? 'selected' : ''}>${esc(a.name)}</option>`
@@ -544,8 +550,7 @@ function _showReview(items, bank, format) {
         // Campo tocado troca de vocabulário: dedução (âmbar) → edição (azul).
         el.classList.toggle('field-editado', !!el.value);
         _recomputeAtencaoExtrato();
-        const cat = state.categories.find(c => c.id === el.value);
-        const isInvest = !!cat && (cat.id + cat.name).toLowerCase().includes('investiment');
+        const isInvest = !!el.value && getInvestCatIds().includes(el.value);
         const assetSel = el.closest('td')?.querySelector('.asset-select');
         if (assetSel) {
           assetSel.classList.toggle('hidden', !isInvest);

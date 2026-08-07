@@ -1,7 +1,7 @@
 /**
  * Testes das funções puras de js/parsers/base-parser.js (+ regex genérico do
  * parser de extrato em PDF).
- * Roda com: node --test test/
+ * Roda com: node --test test/*.test.mjs
  *
  * Todos os valores e nomes de estabelecimento são fictícios — nenhum dado de
  * fatura real entra aqui.
@@ -12,7 +12,7 @@ import assert from 'node:assert/strict';
 import {
   parseMoney, parseDate, dedupKey, normalizeDesc, detectDuplicates, autoClassify,
 } from '../js/parsers/base-parser.js';
-import { GENERIC_LINE_RE } from '../js/parsers/pdf-statement-parser.js';
+import { GENERIC_LINE_RE, _parseLinesGenerico } from '../js/parsers/pdf-statement-parser.js';
 
 // ─── parseMoney ─────────────────────────────────────────────────────────────
 
@@ -230,4 +230,40 @@ test('regex ancorado aceita lançamento normal', () => {
   assert.equal(m[2].trim(), 'PADARIA FICTICIA');
   assert.equal(m[3], '123,45');
   assert.equal(m[4], 'D');
+});
+
+// ─── EXTRATO PDF GENÉRICO: ARGUMENTOS NA ORDEM CERTA ───────────────────────
+// Regressão: _genericParser declarava (lines, bankName, userRules) mas era
+// chamado como (lines, fullText, bankName, userRules). O banco recebia o texto
+// inteiro do PDF e as regras do usuário eram ignoradas em silêncio.
+
+const LINHAS_FICTICIAS = [
+  '10/07/2026  PADARIA FICTICIA          123,45 D',
+  '11/07/2026  MERCADO FICTICIO           88,00 D',
+  '12/07/2026  DEPOSITO FICTICIO       1.500,00 C',
+];
+
+test('extrato PDF genérico grava o NOME do banco, não o texto do PDF', () => {
+  const itens = _parseLinesGenerico(LINHAS_FICTICIAS, 'santander', []);
+  assert.ok(itens.length >= 3, 'as três linhas deveriam virar lançamento');
+  for (const it of itens) {
+    assert.equal(it.bankName, 'santander');
+    assert.ok(it.bankName.length < 30, 'bankName não pode carregar o PDF inteiro');
+  }
+});
+
+test('extrato PDF genérico aplica as regras do usuário', () => {
+  const regras = [{ pattern: 'PADARIA', category: 'alimentacao', type: 'expense' }];
+  const itens = _parseLinesGenerico(LINHAS_FICTICIAS, 'generico', regras);
+  const padaria = itens.find(i => i.description.includes('PADARIA'));
+  assert.ok(padaria, 'a linha da padaria precisa existir');
+  assert.equal(padaria.category, 'alimentacao');
+  assert.equal(padaria.classificationOrigin, 'user-rule',
+    'a regra do usuário precisa ser reconhecida como tal');
+});
+
+test('extrato PDF genérico distingue crédito de débito', () => {
+  const itens = _parseLinesGenerico(LINHAS_FICTICIAS, 'bradesco', []);
+  assert.equal(itens.find(i => i.description.includes('DEPOSITO')).type, 'income');
+  assert.equal(itens.find(i => i.description.includes('MERCADO')).type, 'expense');
 });

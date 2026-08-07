@@ -84,7 +84,7 @@ const BANK_PARSERS = {
   },
 
   nubank(lines, fullText, bankName, userRules) {
-    return _genericParser(lines, bankName, userRules);
+    return _genericParser(lines, fullText, bankName, userRules);
   },
 
   inter(lines, fullText, bankName, userRules) {
@@ -108,16 +108,30 @@ const BANK_PARSERS = {
     return items;
   },
 
-  santander: _genericParser,
-  bradesco:  _genericParser,
-  generico:  _genericParser,
+  santander: (l, f, b, r) => _genericParser(l, f, b, r),
+  bradesco:  (l, f, b, r) => _genericParser(l, f, b, r),
+  generico:  (l, f, b, r) => _genericParser(l, f, b, r),
 };
 
-function _genericParser(lines, bankName, userRules) {
-  if (typeof lines === 'string') {
-    // chamado como banco-parser com fullText
-    lines = lines.split('\n');
-  }
+/** Exportado só para teste: roda o parser genérico sem precisar de um PDF. */
+export function _parseLinesGenerico(lines, bankName, userRules = []) {
+  return _genericParser(lines, lines.join('\n'), bankName, userRules);
+}
+
+/**
+ * ATENÇÃO À ASSINATURA: é a MESMA dos parsers por banco acima
+ * `(lines, fullText, bankName, userRules)`, porque `parsePDFStatement` chama
+ * todos por `parser(lines, fullText, bankName, userRules)`.
+ *
+ * Antes esta função declarava `(lines, bankName, userRules)` e estava
+ * registrada direto em BANK_PARSERS para santander/bradesco/generico. Os
+ * argumentos entravam deslocados: `bankName` recebia o TEXTO INTEIRO do PDF —
+ * que ia parar no Firestore, num campo por transação, e no filtro de banco da
+ * aba Extratos — e `userRules` recebia a string do nome do banco, então iterar
+ * sobre ela dava caractere por caractere e NENHUMA regra do usuário era
+ * aplicada. Falhava em silêncio: as transações apareciam, só sem categoria.
+ */
+function _genericParser(lines, _fullText, bankName, userRules) {
   const items   = [];
   const batchId = genId();
 

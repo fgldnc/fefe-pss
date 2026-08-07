@@ -108,7 +108,7 @@ tokens do `:root`. Já houve regressão por passar `var(--accent-primary)`.
 ## Convenções observadas no código
 
 - **`state` global exportado de `utils.js`** (`js/utils.js:7`). Todos os módulos importam e mutam o mesmo objeto: `user`, `currentMonth`, `categories`, `transactions`, `incomes`, `budgets`, `assets`, `goals`, `extratoTransactions`, `importRules`, `fluxoConfig`. Não há encapsulamento nem notificação de mudança.
-- **`getInvestCatIds()` (`js/utils.js`) é a regra única de "categoria é de investimento"**, consumida por `dashboard.js`, `orcamento.js` e `saldos.js`. Compara `id` e `name` **separadamente**: concatenar casa "investiment" atravessando a fronteira dos dois campos. Investimento sai do total de despesas em toda tela que fala de gasto — duas leituras diferentes viram dois totais para o mesmo mês. (`gastos.js`, `extratos.js` e `relatorios.js` ainda têm cópias da versão concatenada; as três estavam fora do escopo da rodada 4.)
+- **`getInvestCatIds()` (`js/utils.js`) é a regra única de "categoria é de investimento"**, consumida por `dashboard.js`, `orcamento.js` e `saldos.js`. Compara `id` e `name` **separadamente**: concatenar casa "investiment" atravessando a fronteira dos dois campos. Investimento sai do total de despesas em toda tela que fala de gasto — duas leituras diferentes viram dois totais para o mesmo mês. **Não existe mais nenhuma cópia local dessa regra:** `gastos.js`, `extratos.js` e `relatorios.js` chamam `getInvestCatIds()`. `relatorios.js` também parou de somar investimento dentro de "despesa" — a evolução mensal tem coluna `investido` própria, como o gráfico do Dashboard.
 - **`esc()` obrigatório em toda interpolação de `innerHTML`** (`js/utils.js:44`). Escapa `& < > " ' /`. Todo dado vindo do Firestore ou de arquivo importado passa por `esc()` antes de entrar no HTML.
 - **`toast(msg, type)`** (`js/utils.js:76`) é o canal padrão de feedback — tipos `success | error | warning | info`. `alert()` só sobrevive no erro de login (`js/auth.js:23`); `confirm()` nativo é usado nas exclusões, deliberadamente.
 - **Cada módulo de aba exporta uma função `render*`** sem argumentos (`renderDashboard`, `renderGastos`, `renderMetas`, …), registrada em `TAB_MODULES` (`js/app.js:19-31`). É o único ponto de entrada da aba.
@@ -141,8 +141,12 @@ Cada item abaixo é uma regra de negócio real codificada como literal, sem cons
 - `js/dashboard.js:272` — lista no máx. **10** parcelas.
 
 **Importação de fatura — `js/pdf-import.js`**
-- `js/pdf-import.js` (`_showPreview` e `_confirmarImportacao`) — competência da fatura = mês da 1ª transação **−1** (offset lido de `localStorage.fluxo_billing_offset`, default `'-1'`); só usado quando o campo de competência não está preenchido.
-- `js/pdf-import.js` (`_tolerancia`) — parcela é considerada já existente se a diferença de valor couber na tolerância: `clamp((N-1)/100 + R$ 0,01, R$ 0,02, R$ 1,00)`, onde N é o total de parcelas. A checagem roda no preview (aviso) **e** no save (proteção).
+- `competenciaDaFatura(items, vencimento, offset)` — competência = **mês do vencimento declarado na fatura** + offset (`localStorage.fluxo_billing_offset`, default `-1`). Fatura que vence em agosto é a fatura de julho. Sem vencimento no PDF, a âncora é a compra **mais recente** (o mês em que a fatura fechou), e a tela declara qual das duas deduções usou. *Já foi `items[0].date + offset` — a primeira linha na ordem de leitura do PDF, que numa fatura de julho é de junho: a fatura inteira caía dois meses atrás e o usuário não a encontrava. Testado em `test/pdf-import.test.mjs`.*
+- `js/pdf-import.js` (`_tolerancia`) — parcela é considerada a mesma se a diferença de valor couber na tolerância: `clamp((N-1)/100 + R$ 0,01, R$ 0,02, R$ 1,00)`, onde N é o total de parcelas.
+- **Parcela projetada não é duplicata — é previsão a confirmar.** `_acharParcela` devolve o registro que bateu (não um booleano) justamente para distinguir os dois casos:
+  - o registro é `isProjected` → a fatura **reconcilia**: `saveTx(tx, existente.id)` atualiza a linha no lugar, com valor/data reais e `isProjected: false`. É o único ponto do app que converte projeção em fato.
+  - o registro **não** é projetado → duplicata de verdade, pulada, e a mensagem nomeia o mês e o valor.
+  *A versão anterior tratava os dois como duplicata e pulava em silêncio. Como o próprio app cria todas as parcelas futuras como projeção, toda fatura seguinte era acusada de já ter sido importada — e não havia duplicata nenhuma para o usuário achar.*
 - `js/pdf-import.js` (`SECTION_HEADERS`/`_parseStreams`) — o parser de um banco só é aceito se devolver `≥ 3` itens; abaixo disso cai no genérico.
 - `js/pdf-import.js` (`PDF_MAX_BYTES`) — PDF limitado a **20 MB**.
 

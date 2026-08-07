@@ -458,6 +458,30 @@ export async function deleteCategory(id) {
 // então divide em lotes se necessário.
 const WIPABLE_COLLECTIONS = ['transactions', 'incomes', 'budgets', 'assets', 'goals'];
 
+/**
+ * Apaga o registro de faturas importadas (fingerprints). Não entra em
+ * WIPABLE_COLLECTIONS porque não é uma coleção que o usuário escolhe apagar:
+ * ela é um índice sobre `transactions` e some junto com elas.
+ * Falha de leitura/escrita aqui não pode derrubar o wipe que já aconteceu.
+ */
+async function _wipeInvoiceRegistry() {
+  try {
+    const { db, collection, getDocs, writeBatch, doc } = fb();
+    const uid = getUid();
+    if (!uid) return;
+    const path = `users/${uid}/importedInvoices`;
+    const snap = await getDocs(collection(db, path));
+    if (snap.empty) return;
+    for (let i = 0; i < snap.docs.length; i += 450) {
+      const batch = writeBatch(db);
+      for (const d of snap.docs.slice(i, i + 450)) batch.delete(doc(db, path, d.id));
+      await batch.commit();
+    }
+  } catch (err) {
+    console.warn('Não foi possível limpar o registro de faturas importadas:', err);
+  }
+}
+
 export async function wipeCollection(colName) {
   if (!WIPABLE_COLLECTIONS.includes(colName)) {
     throw new Error(`Coleção "${colName}" não pode ser limpa por aqui.`);
@@ -490,6 +514,11 @@ export async function wipeCollection(colName) {
   if (colName === 'transactions') {
     state.transactions = [];
     state.extratoTransactions = [];
+    // A trava de reimportação de fatura (importedInvoices) só faz sentido
+    // enquanto as transações daquela fatura existem. Sobrevivendo ao wipe, ela
+    // passa a afirmar "esta fatura já foi importada" sobre dados que não estão
+    // em lugar nenhum — e não havia como limpá-la pela interface.
+    await _wipeInvoiceRegistry();
   } else if (colName === 'incomes') {
     state.incomes = [];
   } else if (colName === 'budgets') {

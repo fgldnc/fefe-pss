@@ -1,6 +1,6 @@
 /**
  * Testes de detectColumnBands (js/parsers/pdf-layout.js).
- * Roda com: node --test test/
+ * Roda com: node --test test/*.test.mjs
  *
  * Os itens são construídos programaticamente com coordenadas sintéticas —
  * nenhum dump de fatura real. O formato imita o de page.getTextContent().items:

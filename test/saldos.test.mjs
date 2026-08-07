@@ -1,7 +1,7 @@
 /**
  * Testes das funções puras do fluxo de caixa (js/saldos.js): agrupamento por
  * dia, série diária de saldo, busca do mínimo e contexto da sublinha.
- * Roda com: node --test test/
+ * Roda com: node --test test/*.test.mjs
  *
  * É a parte que erra em silêncio — um saldo errado não lança exceção, só mostra
  * o dia errado como "menor saldo do mês".
