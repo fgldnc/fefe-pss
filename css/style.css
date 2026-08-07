@@ -389,7 +389,10 @@ body {
 .hero-bar .seg-invest { background: var(--accent-bright); }
 
 .hero-legend { display: flex; gap: 1.1rem; flex-wrap: wrap; font-size: 0.72rem; color: var(--text-secondary); }
-.hero-legend span { display: flex; align-items: center; gap: 0.35rem; }
+/* `button` junto de `span`: a legenda de "não conferido" vira botão no mês
+   encerrado (leva aos Gastos projetados). Só o seletor muda — um item da
+   legenda continua sendo um item da legenda, clique ou não. */
+.hero-legend span, .hero-legend button { display: flex; align-items: center; gap: 0.35rem; }
 .hero-legend .num { font-family: var(--font-mono); color: var(--text-primary); font-weight: 500; }
 .hero-legend .dot { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; }
 .hero-legend .dot.real   { background: var(--accent-primary); }

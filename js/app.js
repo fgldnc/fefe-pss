@@ -65,12 +65,30 @@ async function _goto(el) {
   const tab = el.dataset.goto;
   if (!tab) return;
   await switchTab(tab);
+
   const filtroCat = el.dataset.filtroCat;
-  if (!filtroCat) return;
-  const sel = document.getElementById('filter-categoria');
-  if (!sel) return;
-  sel.value = filtroCat;
-  sel.dispatchEvent(new Event('change', { bubbles: true }));
+  if (filtroCat) {
+    const sel = document.getElementById('filter-categoria');
+    if (sel) {
+      sel.value = filtroCat;
+      sel.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+  }
+
+  // `data-filtro-proj` leva à aba Gastos já filtrada nas parcelas projetadas.
+  // Mesmo mecanismo do filtro de categoria: liga o controle que a própria aba
+  // já registrou e dispara 'change' — nada novo precisa ser exportado.
+  if (el.dataset.filtroProj) {
+    const cb = document.getElementById('filter-apenas-projetadas');
+    const painel = document.getElementById('advanced-filter-panel');
+    if (cb) {
+      // O checkbox mora no painel avançado: abrir junto, senão o usuário chega
+      // numa tabela filtrada sem enxergar o filtro que a está filtrando.
+      painel?.classList.remove('hidden');
+      cb.checked = true;
+      cb.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+  }
 }
 
 function updateMonthLabel() {

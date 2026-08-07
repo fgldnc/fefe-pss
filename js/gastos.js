@@ -89,6 +89,9 @@ function _renderTable() {
         <td>${parcTag} ${projTag}</td>
         <td class="col-value"><span class="val-mono val-negative">${fmt(tx.amount)}</span></td>
         <td class="col-actions">
+          ${tx.isProjected ? `<button class="btn-icon-only" data-action="confirm-tx" data-id="${tx.id}"
+             title="Confirmar: este valor saiu mesmo, do jeito que está aqui"
+             aria-label="Confirmar parcela projetada ${esc(tx.description || '')}">✓</button>` : ''}
           <button class="btn-icon-only" title="Editar" aria-label="Editar lançamento ${esc(tx.description || '')}" data-action="edit-tx" data-id="${tx.id}">✎</button>
           <button class="btn-icon-only danger" title="Excluir" aria-label="Excluir lançamento ${esc(tx.description || '')}" data-action="delete-tx" data-id="${tx.id}">✕</button>
         </td>
@@ -162,6 +165,7 @@ function _initGastosEvents() {
       toast('Lançamento excluído.', 'success');
       _renderTable();
     }
+    if (action === 'confirm-tx') await _confirmarProjecao(id);
   });
 
   // Salvar gasto
@@ -177,6 +181,40 @@ function _initGastosEvents() {
 // campos — um id terminado em "invest" ao lado de um nome começado em "iment"
 // virava categoria de investimento. Duas leituras diferentes do que é
 // investimento produzem dois totais para o mesmo mês.
+/**
+ * Tira uma parcela do estado "projetada" — a única saída manual que existe.
+ *
+ * O app cria as parcelas futuras como projeção e, até a rodada desta correção,
+ * NADA as convertia de volta em lançamento confirmado: uma parcela de fevereiro
+ * seguia marcada como previsão em agosto, contando no total de um mês que já
+ * fechou. Importar a fatura correspondente reconcilia automaticamente
+ * (js/pdf-import.js); este botão é para quem não vai reimportar a fatura antiga.
+ *
+ * Só mexe em `isProjected`. Valor, data, categoria e procedência ficam como
+ * estão — confirmar é dizer "foi isto mesmo", não é uma edição.
+ */
+async function _confirmarProjecao(id) {
+  const tx = state.transactions.find(t => t.id === id);
+  if (!tx) return;
+  const parcela = tx.installmentTotal > 1
+    ? ` (parcela ${tx.installmentCurrent}/${tx.installmentTotal})` : '';
+  if (!confirm(
+    `Confirmar "${tx.description}"${parcela} no valor de ${fmt(tx.amount)}?\n\n`
+    + `Deixa de ser parcela prevista e passa a contar como gasto confirmado. `
+    + `Se o valor cobrado foi outro, cancele e use Editar.`
+  )) return;
+
+  try {
+    const { id: _ignorado, ...dados } = tx;
+    await saveTx({ ...dados, isProjected: false }, id);
+    toast('Parcela confirmada.', 'success');
+    _renderTable();
+  } catch (err) {
+    console.error('Erro ao confirmar parcela:', err);
+    toast('Não foi possível confirmar a parcela.', 'error');
+  }
+}
+
 function _isInvestCat(catId) {
   return !!catId && getInvestCatIds().includes(catId);
 }
@@ -236,7 +274,17 @@ async function _salvarGasto() {
   if (!amount || amount <= 0) return toast('Informe um valor válido.', 'error');
   if (!catId)          return toast('Selecione uma categoria.', 'error');
 
+  // Editar preserva o que o formulário não mostra. Montar o objeto do zero
+  // apagava, a cada edição, `importedFrom`, `invoiceFingerprint`,
+  // `classificationOrigin`, `competenceSource` e `dateYearSource` — toda a
+  // procedência do lançamento — e ainda virava `isProjected: false` em
+  // silêncio: corrigir o valor de uma parcela prevista a promovia a confirmada
+  // sem ninguém pedir. Promover é o botão ✓, que pergunta antes.
+  const anterior = id ? state.transactions.find(t => t.id === id) : null;
+  const { id: _ignorado, ...preservado } = anterior || {};
+
   const data = {
+    ...preservado,
     date,
     description: desc,
     amount,
@@ -247,8 +295,8 @@ async function _salvarGasto() {
     competenceMonth:    mes,
     notes,
     assetId: assetId || null,
-    isProjected: false,
-    importedFrom: 'manual',
+    isProjected:  anterior ? !!anterior.isProjected : false,
+    importedFrom: anterior?.importedFrom || 'manual',
   };
 
   try {

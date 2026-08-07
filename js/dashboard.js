@@ -158,7 +158,13 @@ export function renderDashboard() {
          </div>
          <div class="hero-legend">
            <span class="leg-real"><i class="dot real"></i>Já gasto <b class="num">${fmt(jaGasto)}</b></span>
-           ${projetado > 0 ? `<span class="leg-proj"><i class="dot proj"></i>${rotuloProj} <b class="num">${fmt(projetado)}</b></span>` : ''}
+           ${projetado > 0 ? (isEncerrado
+              // Mês encerrado: "não conferido" agora tem porta de saída. A aba
+              // Gastos ganhou o botão ✓ que tira a parcela do estado projetado,
+              // então o rótulo deixa de ser constatação e vira destino.
+              ? `<button type="button" class="leg-proj orc-link" data-goto="gastos" data-filtro-proj="1"
+                   title="Ver e confirmar as parcelas que ainda são estimativa"><i class="dot proj"></i>${rotuloProj} <b class="num">${fmt(projetado)}</b> ›</button>`
+              : `<span class="leg-proj"><i class="dot proj"></i>${rotuloProj} <b class="num">${fmt(projetado)}</b></span>`) : ''}
            ${totalInvested > 0 ? `<span class="leg-invest"><i class="dot invest"></i>Investido <b class="num">${fmt(totalInvested)}</b></span>` : ''}
            <span class="leg-livre"><i class="dot livre"></i>${rotuloSobra} <b class="num">${fmt(livre)}</b></span>
          </div>
