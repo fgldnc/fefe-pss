@@ -265,7 +265,12 @@ export function renderSaldos() {
 
   const sugerido = _fechamentoAnterior(month);
 
+  // A aba inteira numa dobra: o cabeçalho e os KPIs ficam parados e a tabela
+  // de movimentos é que rola. A frase de abertura vem do mockup 03-calendario.
+  container.classList.add('fit');
+
   container.innerHTML = `
+    <p class="page-intro">O saldo da conta dia a dia até o fim do mês. <b>Olhe o número do meio:</b> ele diz qual é o dia mais apertado e por quê. Se a abertura não estiver preenchida, preencha primeiro.</p>
     <div class="page-header">
       <div class="fx-abertura">
         <label for="fx-saldo-inicial">Saldo inicial de ${esc(monthLabel(month).split(' ')[0])}</label>
@@ -395,10 +400,6 @@ function _renderCorpo({ month, ano, mes, daysInMonth, serie, min, mov, venc, tem
     // Sem gráfico nesta tela, a instância do mês anterior ficaria viva sobre um
     // canvas já removido do DOM — com o listener de resize junto.
     if (chartSaldo) { chartSaldo.destroy(); chartSaldo = null; }
-
-  // Resolvidas agora, não no topo do módulo: o tema pode ter mudado desde o
-  // último desenho.
-  const C = coresGrafico();
     alvo.innerHTML = `
       <div class="fx-card"><div class="fx-empty">
         <div class="fx-empty-t">Nenhum movimento em ${esc(monthLabel(month).split(' ')[0].toLowerCase())}</div>
@@ -422,9 +423,10 @@ function _renderCorpo({ month, ano, mes, daysInMonth, serie, min, mov, venc, tem
           <span><i class="zero"></i>zero</span>
         </span>
       </div>
+      <p class="card-sub">A curva é o dinheiro na conta a cada dia. O ponto âmbar é o dia mais apertado do mês.</p>
       <div class="fx-chart-box"><canvas id="fx-chart"></canvas></div>
     </div>
-    <div class="fx-card" id="fx-tabela-card"></div>`;
+    <div class="fx-card fx-card-tabela" id="fx-tabela-card"></div>`;
 
   _renderTabela({ month, daysInMonth, serie, min, mov, venc, diaHoje, temAbertura });
   _renderChart({ serie, daysInMonth, diaHoje, min, month });
@@ -505,6 +507,7 @@ function _renderTabela({ month, daysInMonth, serie, min, mov, venc, diaHoje, tem
       <span class="fx-card-title">Movimentos</span>
       <span class="fx-ref">Referência de orçamento: <b>${esc(fmt(diario))}</b>/dia · ${omitidos} ${omitidos === 1 ? 'dia sem movimento omitido' : 'dias sem movimento omitidos'}${notaFatura}</span>
     </div>
+    <p class="card-sub">Só aparecem os dias em que algo entra ou sai. Os dias parados são contados nas linhas cinzas, para você saber que não sumiu nada.</p>
     <table class="fx-table">
       <thead>
         <tr>
@@ -533,6 +536,9 @@ function _renderTabela({ month, daysInMonth, serie, min, mov, venc, diaHoje, tem
 }
 
 function _renderChart({ serie, daysInMonth, diaHoje, min, month }) {
+  // Resolvidas agora, não no topo do módulo: o tema pode ter mudado desde o
+  // último desenho.
+  const C = coresGrafico();
   const cv = document.getElementById('fx-chart');
   if (!cv || typeof Chart === 'undefined') return;
 

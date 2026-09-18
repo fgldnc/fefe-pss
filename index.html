@@ -177,6 +177,7 @@
 
     <!-- ════ DASHBOARD ════════════════════════════════════════ -->
     <section id="tab-dashboard" class="tab-content fit active">
+      <p class="page-intro">A fotografia do mês escolhido acima. <b>Comece pelo número grande</b> — ele diz quanto ainda dá para gastar.</p>
       <!-- Insights strip -->
       <div class="insights-strip" id="insights-strip">
         <div class="insight-chip info">
@@ -291,7 +292,8 @@
       </div>
     </section>
     <!-- ════ EXTRATOS ═════════════════════════════════════════ -->
-    <section id="tab-extratos" class="tab-content hidden">
+    <section id="tab-extratos" class="tab-content fit hidden">
+      <p class="page-intro">A porta de entrada dos dados. <b>Arraste o arquivo do banco em “Importar Extrato”</b> — o Radar lê no seu navegador, classifica o que reconhece e marca em âmbar só o que ficou em dúvida.</p>
       <div class="page-header" style="justify-content:flex-end">
         <div class="page-actions">
           <button class="btn btn-primary btn-sm" id="btn-novo-extrato">
@@ -304,6 +306,7 @@
       <!-- Histórico de importações -->
       <div class="card">
         <div class="card-header"><span class="card-title">Importações recentes</span></div>
+        <p class="card-sub">Cada linha é um arquivo que você trouxe. Se importou errado, “excluir lote” desfaz aquele arquivo inteiro de uma vez.</p>
         <div id="importacoes-list">
           <div class="empty-state">
             <div class="empty-state-icon">🏦</div>
@@ -315,7 +318,7 @@
       </div>
 
       <!-- Transações do extrato -->
-      <div class="card" style="margin-top:1rem">
+      <div class="card grow" style="margin-top:1rem">
         <div class="card-header">
           <span class="card-title">Transações importadas</span>
           <div style="display:flex;gap:0.5rem">
@@ -323,6 +326,7 @@
             <select id="filter-extrato-tipo" class="filter-select" style="min-width:110px"><option value="">Todos os tipos</option><option value="income">Receitas</option><option value="expense">Despesas</option></select>
           </div>
         </div>
+        <p class="card-sub">As linhas em âmbar são as que o Radar não conseguiu classificar — clique no ✎ para escolher a categoria.</p>
         <div class="table-wrapper">
           <table class="data-table">
             <thead>
@@ -336,7 +340,8 @@
       </div>
     </section>
     <!-- ════ GASTOS ═══════════════════════════════════════════ -->
-    <section id="tab-gastos" class="tab-content hidden">
+    <section id="tab-gastos" class="tab-content fit hidden">
+      <p class="page-intro">Tudo que saiu no mês, numa tabela só. <b>Se a fatura do cartão ainda não entrou, comece por “Importar Fatura PDF”</b> — depois use os filtros para achar um lançamento específico.</p>
       <div class="page-header" style="justify-content:flex-end">
         <div class="page-actions">
           <button class="btn btn-ghost btn-sm" id="btn-import-pdf">
@@ -395,7 +400,8 @@
         </div>
       </div>
 
-      <div class="card">
+      <div class="card grow">
+        <p class="card-sub">Clique no ✎ para corrigir um lançamento. O ✓ nas linhas em âmbar confirma que aquela parcela realmente caiu.</p>
         <div class="table-wrapper">
           <table class="data-table">
             <thead>

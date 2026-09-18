@@ -1057,3 +1057,109 @@ body { overflow: hidden; }
   #tab-dashboard > .dashboard-row > .card > .card-header ~ * { overflow: visible; }
   .card-evolucao .evolucao-box { height: 220px; }
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   A FRASE DE ABERTURA E A LINHA DE APOIO
+   Toda tela abre dizendo o que ela responde e o que fazer nela, com
+   a AÇÃO em negrito; todo bloco principal tem uma linha de apoio
+   abaixo do título. O alvo é alguém que não construiu o app
+   entender a tela sem ninguém explicando. Os textos vêm dos
+   mockups em /redesign — são para copiar, não reescrever.
+════════════════════════════════════════════════════════════════ */
+.page-intro {
+  font-size: 0.92rem; color: var(--text-secondary); line-height: 1.55;
+  max-width: 70ch; margin: 0 0 1.1rem;
+}
+.page-intro b { color: var(--text-primary); font-weight: 700; }
+.card-sub {
+  font-size: 0.79rem; color: var(--text-muted); line-height: 1.5;
+  max-width: 70ch; padding: 0.7rem 1.25rem 0; margin: 0;
+}
+/* Depois de um .card-header a linha de apoio encosta no título, sem o
+   respiro que ela precisa quando é o primeiro elemento do card. */
+.card-header + .card-sub { padding-top: 0.6rem; }
+
+/* ─── Gastos e Extratos na dobra ───────────────────────────────
+   Mesma regra da Visão do mês: os controles ficam parados e a TABELA
+   é que rola, com o cabeçalho preso. Numa aba de conferência linha a
+   linha, perder a barra de filtros ao descer é perder a ferramenta
+   no meio do uso. */
+#tab-gastos.fit > .page-header,
+#tab-gastos.fit > .filter-bar,
+#tab-gastos.fit > .advanced-filter-panel,
+#tab-extratos.fit > .page-header,
+#tab-extratos.fit > .card:not(.grow) { flex: 0 0 auto; }
+#tab-extratos.fit > .card:not(.grow) { margin-bottom: 0; }
+#tab-extratos.fit { gap: 1rem; }
+#tab-extratos.fit > .card[style*="margin-top"] { margin-top: 0 !important; }
+#tab-gastos.fit > .card.grow > .table-footer { flex: 0 0 auto; }
+/* O card com a tabela leva a sobra da tela; o `.card.grow` da rodada A3 faz o
+   resto (rolagem por dentro e <thead> preso). */
+#tab-gastos.fit > .card.grow,
+#tab-extratos.fit > .card.grow { margin-bottom: 0; }
+
+@media (max-width: 768px) {
+  #tab-gastos.fit, #tab-extratos.fit { display: block; }
+  #tab-extratos.fit > .card[style*="margin-top"] { margin-top: 1rem !important; }
+}
+
+/* ─── Fluxo de Caixa na dobra ──────────────────────────────────
+   `.fx-card` não é `.card` — a aba tem vocabulário próprio (`.fx-*`,
+   por decisão da rodada 4 do redesign), então a regra de rolar por
+   dentro precisa ser escrita de novo aqui em vez de reusar `.grow`. */
+#tab-calendario.fit > .page-intro,
+#tab-calendario.fit > .page-header,
+#tab-calendario.fit > #fx-kpis { flex: 0 0 auto; }
+#tab-calendario.fit > #fx-corpo {
+  flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; gap: 1rem;
+}
+#tab-calendario.fit .fx-card { margin-bottom: 0; }
+/* O gráfico fica com altura própria; a tabela leva a sobra e rola por dentro. */
+#tab-calendario.fit .fx-card-tabela {
+  flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; overflow: hidden;
+}
+#tab-calendario.fit .fx-card-tabela .fx-table-head,
+#tab-calendario.fit .fx-card-tabela > .card-sub { flex: 0 0 auto; }
+#tab-calendario.fit .fx-card-tabela .fx-table { display: block; overflow: auto; flex: 1 1 auto; min-height: 0; }
+#tab-calendario.fit .fx-card-tabela .fx-table thead,
+#tab-calendario.fit .fx-card-tabela .fx-table tbody,
+#tab-calendario.fit .fx-card-tabela .fx-table tfoot { display: table; width: 100%; table-layout: fixed; }
+#tab-calendario.fit .fx-card-tabela .fx-table thead { position: sticky; top: 0; z-index: 1; background: var(--bg-card); }
+#tab-calendario.fit .fx-card .card-sub { padding-left: 0; padding-right: 0; padding-top: 0; margin: -0.4rem 0 0.7rem; }
+
+@media (max-width: 768px) {
+  #tab-calendario.fit { display: block; }
+  #tab-calendario.fit > #fx-corpo { display: block; }
+  #tab-calendario.fit .fx-card { margin-bottom: 1rem; }
+  #tab-calendario.fit .fx-card-tabela,
+  #tab-calendario.fit .fx-card-tabela .fx-table { display: block; overflow-x: auto; }
+  #tab-calendario.fit .fx-card-tabela .fx-table { display: table; }
+}
+
+/* O histórico de importações não pode comer a dobra inteira: com o estado
+   vazio (ilustração + texto + botão) ele empurrava a tabela para três linhas
+   visíveis. Teto de 40% da altura, rolando por dentro se passar disso. */
+#tab-extratos.fit > .card:not(.grow) { max-height: 40%; overflow: auto; }
+@media (max-width: 768px) {
+  #tab-extratos.fit > .card:not(.grow) { max-height: none; overflow: visible; }
+}
+
+/* Repartição da dobra entre a curva e a tabela. Os 230px fixos do gráfico
+   deixavam a tabela com 80px — uma linha e meia de movimento, que é o oposto
+   do que a aba serve para responder. A curva encolhe, a tabela ganha. */
+#tab-calendario.fit .fx-card:not(.fx-card-tabela) {
+  flex: 1.15 1 0; min-height: 0; display: flex; flex-direction: column;
+}
+#tab-calendario.fit .fx-card:not(.fx-card-tabela) .fx-card-head { flex: 0 0 auto; }
+#tab-calendario.fit .fx-chart-box {
+  flex: 1 1 auto; height: auto; min-height: 130px; overflow: hidden;
+}
+/* Canvas absoluto pelo mesmo motivo do gráfico de evolução: retângulo já
+   resolvido, sem laço de redimensionamento. */
+#tab-calendario.fit .fx-chart-box canvas { position: absolute; inset: 0; }
+#tab-calendario.fit .fx-card-tabela { flex: 1 1 0; }
+
+@media (max-width: 768px) {
+  #tab-calendario.fit .fx-card:not(.fx-card-tabela) { display: block; }
+  #tab-calendario.fit .fx-chart-box { height: 230px; }
+}

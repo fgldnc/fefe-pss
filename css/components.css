@@ -380,7 +380,11 @@
 
 /* Botão primário quando o lote tem pendência: obriga a ler o número antes de
    clicar, mas nunca bloqueia — salvar sem categoria é escolha legítima. */
-.btn-atencao { background: var(--warning) !important; border-color: var(--warning) !important; color: var(--text-inverse) !important; }
+/* Âmbar significa UMA coisa — "o app deduziu isto e você precisa conferir". Um
+   botão pintado de âmbar faz a ação primária parecer o próprio alerta. O botão
+   é a ação primária (contraste puro); o âmbar fica no contador ao lado, que é
+   o que de fato é pendência. */
+.btn-atencao { background: var(--accent-primary) !important; border-color: var(--accent-primary) !important; color: var(--accent-fg) !important; }
 
 /* ── REVISÃO DE IMPORTAÇÃO EM TELA ESTREITA ───────────────────── */
 /* Abaixo de 480px a tabela vira cartão por lançamento: com 6–7 colunas não há

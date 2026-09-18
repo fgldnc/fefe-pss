@@ -915,3 +915,41 @@ altos demais, com meia tela de buraco embaixo de uma rosca de três categorias.
 Conferido no navegador a 1440×900 com 10 categorias de orçamento, 6 e depois 3
 de rosca: a tela inteira cabe numa dobra, e quem rola é o card de orçamento.
 Testes: 68 passando.
+
+### Rodada A5 — Fluxo de Caixa, Gastos e Extratos · FEITA
+
+**Bug encontrado e corrigido antes do design** (regra do roteiro): a rodada A2
+deixou `const C = coresGrafico()` dentro do ramo "sem movimento" de
+`_renderCorpo`, e não em `_renderChart`, onde as cores são usadas. O Fluxo de
+Caixa **quebrava inteiro** (`ReferenceError: C is not defined`) sempre que havia
+movimento no mês — que é o caso normal. A rodada A2 não pegou porque a aba nunca
+chegou a ser renderizada na conferência. Lição para o resto: conferir a aba
+renderizando de verdade, não só a folha de estilo.
+
+- **A frase de abertura entrou nas quatro telas já mexidas** (Visão do mês,
+  Gastos, Extratos, Fluxo de Caixa), com a ação em negrito, e a linha de apoio
+  (`.card-sub`) nos blocos principais. Textos copiados dos mockups, com um
+  ajuste: o nome do botão citado na frase é o nome real do botão no app
+  ("Importar Fatura PDF", "Importar Extrato"), senão a instrução manda procurar
+  o que não existe.
+- **Gastos e Extratos na dobra.** Barra de filtros, painel avançado e cabeçalho
+  ficam parados; a tabela rola por dentro com `<thead>` preso e o rodapé de
+  total sempre visível. Numa aba de conferência linha a linha, perder a barra de
+  filtros ao descer é perder a ferramenta no meio do uso.
+- **Histórico de importações com teto de 40%** da altura: com o estado vazio
+  (ilustração + texto + botão) ele empurrava a tabela para três linhas visíveis.
+- **Fluxo de Caixa na dobra.** `.fx-card` não é `.card` — a aba tem vocabulário
+  `.fx-*` próprio desde a rodada 4 —, então a rolagem por dentro foi escrita de
+  novo em vez de reusar `.grow`. A curva perdeu os 230px fixos e reparte a sobra
+  com a tabela (1,15 : 1): com os 230px, a tabela ficava com 80px, uma linha e
+  meia de movimento, que é o oposto do que a aba serve para responder. Medido
+  depois: curva 195px, tabela 115px de área visível, rolando por dentro.
+- **`.btn-atencao` deixou de ser âmbar** — pendência fechada da rodada A1. Âmbar
+  significa uma coisa só, e um botão pintado de âmbar faz a ação primária
+  parecer o próprio alerta. O botão é contraste puro; o âmbar fica no contador
+  ao lado, que é o que de fato é pendência. **Corrigido em `components.css`**,
+  não em `style.css`: a folha de componentes carrega depois e venceria.
+
+Conferido no navegador a 1440×900, com 50 linhas em Gastos, 40 em Extratos e o
+Fluxo de Caixa renderizado de verdade (25 lançamentos e uma receita).
+Testes: 68 passando.
