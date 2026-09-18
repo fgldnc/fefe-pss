@@ -857,3 +857,27 @@ mockup). É função nova, não rótulo — precisa de uma fonte para o número.
 **Conferido no navegador** (`localhost:4321`, servido por `.claude/launch.json`):
 os quatro grupos, a troca de tema nos dois sentidos, zero erro no console.
 Testes: 68 passando.
+
+### Rodada A3 — Caber na dobra · FEITA (esqueleto)
+
+Bloco novo no fim de `css/style.css`. Nenhum HTML e nenhum JS tocado.
+
+- **A página não rola mais.** `.app` trava em `100vh`, `body` fica
+  `overflow: hidden`, e quem rola é `.tab-content`. Sidebar e topbar ficam
+  paradas: não se perde a navegação nem a barra do mês ao procurar um
+  lançamento lá embaixo. A topbar deixou de ser `sticky` — não há mais nada
+  rolando por baixo dela.
+- **`.tab-content.fit` + `.card.grow`** são o opt-in por aba: a tela vira uma
+  coluna, a faixa de KPIs fica parada e o card da lista longa fica com a sobra
+  da altura, rolando por dentro, com o `<thead>` preso. **Ainda não foi aplicado
+  em nenhuma aba** — cada tela tem um bloco diferente que merece a sobra, e essa
+  escolha é das rodadas A4 a A6. O que esta rodada entrega é o esqueleto, já
+  testado no navegador com 60 linhas na tabela de Patrimônio: KPIs parados,
+  tabela rolando, cabeçalho preso.
+- **No celular (≤768px) a página rola mesmo** — não há dobra que caiba tudo, e o
+  uso real ali é consulta. Mesma quebra em que a sidebar vira gaveta.
+- **Cuidado que quase passou:** `.sidebar { position: static }` do bloco novo é
+  mais tardia no arquivo e venceria o `position: fixed` da gaveta em 768px. O
+  bloco mobile reafirma o `fixed`. Conferido: gaveta abre e fecha.
+
+Testes: 68 passando.

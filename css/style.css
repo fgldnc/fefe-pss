@@ -932,3 +932,62 @@ body {
   .fx-td-dia { width: 26px; }
   .fx-kpi { padding: 0.85rem 0.9rem; }
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   CABER NUMA TELA SÓ
+   A PÁGINA não rola. Quem rola é a região que tem lista longa. O
+   usuário nunca perde a barra do mês e a navegação ao procurar um
+   lançamento lá embaixo, que é o que rolagem de página faz.
+
+   Esta rodada entrega o esqueleto: `.app` trava na altura da tela,
+   `.tab-content` vira a região que rola, e o cabeçalho de tabela
+   fica preso. Fazer a FAIXA DE KPIs ficar parada enquanto só a
+   tabela rola depende da estrutura de cada aba — é `.fit`/`.grow`
+   abaixo, adotado tela a tela nas rodadas seguintes, porque cada
+   aba tem um bloco diferente que merece ficar com a sobra da altura.
+════════════════════════════════════════════════════════════════ */
+html, body { height: 100%; }
+body { overflow: hidden; }
+
+.app { height: 100vh; min-height: 0; overflow: hidden; }
+.sidebar { height: 100%; min-height: 0; position: static; }
+.main-content { min-height: 0; height: 100%; overflow: hidden; }
+/* A topbar não precisa mais ser sticky: nada rola por baixo dela. */
+.topbar { position: static; flex: 0 0 auto; }
+.tab-content { flex: 1 1 auto; min-height: 0; overflow: auto; }
+
+/* Opt-in por aba: transforma a tela numa coluna em que um bloco fica
+   com a sobra da altura, em vez de tudo rolar junto. */
+.tab-content.fit { display: flex; flex-direction: column; }
+.tab-content.fit > .page-header,
+.tab-content.fit > .page-intro,
+.tab-content.fit > .kpi-grid { flex: 0 0 auto; }
+
+/* O card que contém a lista longa cresce até o limite e rola por dentro. */
+.card.grow { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; margin-bottom: 0; }
+.card.grow > .card-header { flex: 0 0 auto; }
+.card.grow .table-wrapper { flex: 1 1 auto; min-height: 0; overflow: auto; }
+
+/* Cabeçalho preso enquanto o corpo rola. `background` explícito: sem ele a
+   linha de dados aparece por baixo do <th>, que é transparente por padrão. */
+.card.grow .data-table thead th {
+  position: sticky; top: 0; z-index: 1;
+  background: var(--bg-card);
+  box-shadow: inset 0 -1px 0 var(--border-soft);
+}
+
+/* No celular a página rola mesmo — não há dobra que caiba tudo, e o uso real
+   ali é consulta, com o polegar rolando. Mesma quebra da sidebar em gaveta. */
+@media (max-width: 768px) {
+  body { overflow: auto; }
+  /* Reafirma o `fixed` da gaveta: a regra `.sidebar { position: static }` acima
+     é mais tardia no arquivo e venceria a do bloco responsivo original. */
+  .sidebar { position: fixed; height: 100vh; }
+  .app { height: auto; min-height: 100vh; overflow: visible; }
+  .main-content { height: auto; min-height: 100vh; overflow: visible; }
+  .topbar { position: sticky; top: 0; }
+  .tab-content { overflow: visible; }
+  .tab-content.fit { display: block; }
+  .card.grow { display: block; }
+  .card.grow .table-wrapper { overflow-x: auto; }
+}
