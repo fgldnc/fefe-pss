@@ -881,3 +881,37 @@ Bloco novo no fim de `css/style.css`. Nenhum HTML e nenhum JS tocado.
   bloco mobile reafirma o `fixed`. Conferido: gaveta abre e fecha.
 
 Testes: 68 passando.
+
+### Rodada A4 — Visão do mês na dobra · FEITA
+
+Primeira aba a adotar o `.fit` da rodada A3. Motivada por observação da Fefe
+sobre a tela real: os cards de Distribuição e de Orçamento × Real ficavam
+altos demais, com meia tela de buraco embaixo de uma rosca de três categorias.
+
+- **`#tab-dashboard` virou `.fit`.** Tira de insights e faixa de KPIs ficam
+  paradas; as duas linhas de cards repartem a sobra da tela (1,15 para a de
+  cima, que é onde estão as duas leituras do mesmo total).
+- **Card não estica mais até a altura do vizinho** (`align-items: start` em vez
+  do `stretch` padrão do grid). Cada card tem a altura do próprio conteúdo e
+  cresce só até o teto da linha, onde passa a rolar por dentro. Era esta a
+  queixa: a altura era ditada pela categoria mais numerosa do card ao lado.
+  Medido: com 3 categorias na rosca e 10 no orçamento, 223px e 331px — antes
+  os dois teriam a mesma altura.
+- **Densidade do corpo, não do valor.** Linha de orçamento passou de `0.65rem`
+  para `0.4rem` de padding, texto de `0.83` para `0.79rem`, barra de 4px para
+  3px; linha da legenda de `0.42rem` para `0.34rem`. **O valor monetário não
+  encolheu junto** — é o que se vem ler. Dez categorias cabem sem rolar.
+- **A rosca encostou na margem do card.** A moldura de `1.5rem` cravada no
+  HTML saiu; passa a usar o padding padrão do card e a alinhar com o título.
+  Diâmetro de 168px para 150px.
+- **O gráfico de evolução perdeu os 220px fixos.** Altura elástica: ele recebe a
+  sobra da linha de baixo. O canvas é absoluto dentro da caixa para o Chart.js
+  medir um retângulo já resolvido — canvas que empurra o próprio container entra
+  em laço de redimensionamento. Conferido: altura estável em duas medições
+  (167px → 167px) depois de montar um gráfico de verdade.
+- **No celular nada disso vale**: `.fit` volta a `display: block`, os cards
+  voltam à altura do conteúdo e a evolução volta aos 220px.
+
+Conferido no navegador a 1440×900 com 10 categorias de orçamento, 6 e depois 3
+de rosca: a tela inteira cabe numa dobra, e quem rola é o card de orçamento.
+Testes: 68 passando.

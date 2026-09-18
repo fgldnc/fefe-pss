@@ -991,3 +991,69 @@ body { overflow: hidden; }
   .card.grow { display: block; }
   .card.grow .table-wrapper { overflow-x: auto; }
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   VISÃO DO MÊS — a tela inteira numa dobra só
+   Os quatro cards não têm mais altura de conteúdo: têm a altura da
+   SOBRA da tela, dividida entre as duas linhas. Card com lista
+   curta para de esticar até a altura do vizinho (era o buraco
+   embaixo da rosca com três categorias); card com lista longa rola
+   por dentro em vez de empurrar a página. A faixa de KPIs e a
+   tira de insights nunca saem de vista.
+════════════════════════════════════════════════════════════════ */
+#tab-dashboard.fit { gap: 1rem; }
+#tab-dashboard > .insights-strip,
+#tab-dashboard > .kpi-grid { flex: 0 0 auto; }
+#tab-dashboard > .kpi-grid { margin-bottom: 0; }
+
+/* As duas linhas repartem o que sobra. A de cima leva um pouco mais: é onde
+   estão as duas leituras do mesmo total, que é o que se vem ver aqui. */
+#tab-dashboard > .dashboard-row { margin-top: 0; min-height: 0; }
+#tab-dashboard > .dashboard-row:nth-of-type(1) { flex: 1.15 1 0; }
+#tab-dashboard > .dashboard-row:nth-of-type(2) { flex: 1 1 0; }
+/* `start` em vez do `stretch` padrão: cada card tem a altura do PRÓPRIO
+   conteúdo e cresce só até o teto da linha, onde passa a rolar por dentro.
+   Sem isso, o card da rosca com três categorias esticava até a altura do card
+   de orçamento com dez — meia tela de buraco embaixo de um círculo. */
+#tab-dashboard > .dashboard-row { align-items: start; }
+#tab-dashboard > .dashboard-row > .card {
+  min-height: 0; max-height: 100%; display: flex; flex-direction: column;
+}
+#tab-dashboard > .dashboard-row > .card > .card-header { flex: 0 0 auto; }
+/* O corpo do card é quem rola — o cabeçalho fica. */
+#tab-dashboard > .dashboard-row > .card > .card-header ~ * {
+  flex: 1 1 auto; min-height: 0; overflow: auto;
+}
+
+/* Rosca encostada na margem do card, alinhada com o título, e um pouco menor:
+   a legenda é que carrega o número, o círculo só reparte. */
+.card-pizza .pizza-wrap { padding: 0.9rem 1.25rem; align-items: flex-start; gap: 1rem; }
+.card-pizza .pizza-donut { width: 150px; height: 150px; }
+.card-pizza #pizza-legend { min-width: 170px; }
+
+/* Gráfico de evolução: altura elástica em vez dos 220px fixos. O canvas é
+   absoluto dentro da caixa para o Chart.js medir um retângulo já resolvido —
+   canvas que empurra o próprio container entra em laço de redimensionamento. */
+#tab-dashboard .card-evolucao .evolucao-box { position: relative; padding: 0.9rem 1.25rem; overflow: hidden; }
+#tab-dashboard .card-evolucao .evolucao-box canvas { position: absolute; inset: 0.9rem 1.25rem; }
+
+/* ─── Densidade ────────────────────────────────────────────────
+   Dez categorias de orçamento cabendo na dobra sem rolar é questão de
+   fôlego de linha, não de esconder linha. O corpo do texto encolhe; o
+   VALOR não encolhe junto, porque é o que se vem ler. */
+#orcamento-list .orcamento-item { padding: 0.4rem 1.25rem; }
+#orcamento-list .orcamento-row  { margin-bottom: 0.22rem; font-size: 0.79rem; }
+#orcamento-list .orcamento-vals { font-size: 0.78rem; }
+#orcamento-list .progress-bar   { height: 3px; }
+.card-pizza .lg-row  { padding: 0.34rem 0; }
+.card-pizza .lg-name { font-size: 0.79rem; }
+
+/* No celular nada disso vale: lá a página rola e o card volta a ter a altura
+   do conteúdo. */
+@media (max-width: 768px) {
+  #tab-dashboard.fit { display: block; }
+  #tab-dashboard > .dashboard-row { margin-top: 1rem; }
+  #tab-dashboard > .dashboard-row > .card { display: block; }
+  #tab-dashboard > .dashboard-row > .card > .card-header ~ * { overflow: visible; }
+  .card-evolucao .evolucao-box { height: 220px; }
+}

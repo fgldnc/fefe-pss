@@ -176,7 +176,7 @@
     </header>
 
     <!-- ════ DASHBOARD ════════════════════════════════════════ -->
-    <section id="tab-dashboard" class="tab-content active">
+    <section id="tab-dashboard" class="tab-content fit active">
       <!-- Insights strip -->
       <div class="insights-strip" id="insights-strip">
         <div class="insight-chip info">
@@ -197,8 +197,8 @@
            lado a lado. A evolução desceu para a linha de baixo porque o
            sparkline de cada KPI já entrega a tendência nos primeiros segundos. -->
       <div class="dashboard-row">
-        <div class="card" style="padding:1.5rem">
-          <div class="card-header" style="padding:0 0 0.9rem"><span class="card-title">Distribuição dos gastos</span><span class="card-subtitle" id="chart-cat-month"></span></div>
+        <div class="card card-pizza">
+          <div class="card-header"><span class="card-title">Distribuição dos gastos</span><span class="card-subtitle" id="chart-cat-month"></span></div>
           <div class="pizza-wrap">
             <div class="pizza-donut">
               <canvas id="chart-categorias"></canvas>
@@ -241,9 +241,11 @@
             </div>
           </div>
         </div>
-        <div class="card" style="padding:1.25rem">
-          <div class="card-header" style="padding:0 0 0.6rem"><span class="card-title">Evolução — 6 meses</span></div>
-          <div style="position:relative;height:220px">
+        <div class="card card-evolucao">
+          <div class="card-header"><span class="card-title">Evolução — 6 meses</span></div>
+          <!-- Altura elástica, não 220px fixos: o card recebe a sobra da dobra,
+               e um número fixo aqui ou sobraria buraco ou estouraria a tela. -->
+          <div class="evolucao-box">
             <canvas id="chart-evolucao"></canvas>
           </div>
         </div>
