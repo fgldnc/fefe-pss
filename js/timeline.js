@@ -8,7 +8,11 @@ export function renderTimeline() {
   const container = document.getElementById('tab-timeline');
   if (!container) return;
 
+  // A aba inteira numa dobra: o filtro fica parado e o feed é que rola.
+  container.classList.add('fit');
+
   container.innerHTML = `
+    <p class="page-intro">Tudo que aconteceu no mês em ordem de data. <b>Use os filtros do topo</b> para isolar um tipo de evento. Esta é a única tela que mostra extrato e gasto manual lado a lado.</p>
     <div class="page-header" style="justify-content:flex-end">
       <div class="page-actions">
         <select id="timeline-filter" class="filter-select">
@@ -21,7 +25,7 @@ export function renderTimeline() {
         </select>
       </div>
     </div>
-    <div class="card">
+    <div class="card grow">
       <div id="timeline-feed" style="padding:0.5rem 0"></div>
     </div>`;
 

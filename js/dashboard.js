@@ -177,7 +177,8 @@ export function renderDashboard() {
            ${totalInvested > 0 ? `<span class="leg-invest"><i class="dot invest"></i>Investido <b class="num">${fmt(totalInvested)}</b></span>` : ''}
            <span class="leg-livre"><i class="dot livre"></i>${rotuloSobra} <b class="num">${fmt(livre)}</b></span>
          </div>
-         <div class="kpi-foot">${heroRodape}</div>`;
+         <div class="kpi-foot">${heroRodape}</div>
+         <button type="button" class="kpi-goto" data-goto="calendario">ver dia a dia no Fluxo de Caixa</button>`;
 
     kpiGrid.innerHTML = `
       <div class="kpi-card kpi-hero">
@@ -200,6 +201,7 @@ export function renderDashboard() {
           ${dDespesa.html || `<span class="kpi-delta flat">excluindo investimentos</span>`}
           ${_sparkline(serie.despesas, dDespesa.tone, isMesAtual, 'Despesas nos últimos 6 meses')}
         </div>
+        <button type="button" class="kpi-goto" data-goto="gastos">ver linha a linha</button>
       </div>
       <div class="kpi-card">
         <span class="kpi-label">Investido</span>
@@ -208,6 +210,7 @@ export function renderDashboard() {
           ${dInvest.html || `<span class="kpi-delta flat" id="kpi-investido-total">${totalAssetInvest > 0 ? 'Patrimônio: ' + fmt(totalAssetInvest) : 'no mês'}</span>`}
           ${_sparkline(serie.investido, dInvest.tone, isMesAtual, 'Investimento nos últimos 6 meses')}
         </div>
+        <button type="button" class="kpi-goto" data-goto="patrimonio">ver no Patrimônio</button>
       </div>`;
 
     // import() dinâmico: app.js é quem carrega este módulo, importá-lo
@@ -515,6 +518,8 @@ function renderParcelasPrevisao() {
     </div>`;
     return;
   }
+  const verTodas = `
+    <button type="button" class="kpi-goto parcelas-goto" data-goto="gastos" data-filtro-proj="1">ver todas em Gastos</button>`;
   list.innerHTML = parcelas.slice(0,10).map(p => `
     <div class="parcela-item">
       <span class="parcela-desc" title="${esc(p.description)}">${esc(p.description)}</span>
@@ -523,7 +528,7 @@ function renderParcelasPrevisao() {
         <span class="parcela-val">${fmt(p.amount)}</span>
         <span class="parcela-mes">${monthLabel(p.competenceMonth).slice(0,3).toLowerCase()}</span>
       </div>
-    </div>`).join('');
+    </div>`).join('') + verTodas;
 }
 
 // ─── ORÇAMENTO × REAL ─────────────────────────────────────────────────────

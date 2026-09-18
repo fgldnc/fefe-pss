@@ -255,7 +255,8 @@
     <!-- ════ CALENDÁRIO ══════════════════════════════════════ -->
     <section id="tab-calendario" class="tab-content hidden"></section>
     <!-- ════ PATRIMÔNIO ═══════════════════════════════════════ -->
-    <section id="tab-patrimonio" class="tab-content hidden">
+    <section id="tab-patrimonio" class="tab-content fit hidden">
+      <p class="page-intro">Tudo que você tem: investimento, dinheiro em conta e bens. <b>Atualize o valor atual de vez em quando</b> — é o que mantém o total certo.</p>
       <div class="page-header" style="justify-content:flex-end">
         <button class="btn btn-primary btn-sm" id="btn-novo-ativo">
           <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
@@ -281,8 +282,9 @@
           <span class="kpi-value" id="pat-bens">R$ —</span>
         </div>
       </div>
-      <div class="card" style="margin-top:1rem">
+      <div class="card grow" style="margin-top:1rem">
         <div class="card-header"><span class="card-title">Todos os ativos e bens</span></div>
+        <p class="card-sub">Use o + para registrar um aporte e o ✎ para atualizar o valor atual. Bem com taxa de depreciação se atualiza sozinho.</p>
         <div class="table-wrapper">
           <table class="data-table">
             <thead><tr><th scope="col">Nome</th><th scope="col">Tipo</th><th scope="col">Valor Inicial</th><th scope="col">Valor Atual</th><th scope="col">Aquisição</th><th scope="col">Obs.</th><th scope="col" class="col-actions"></th></tr></thead>
@@ -418,7 +420,8 @@
       </div>
     </section>
     <!-- ════ RECEITAS ═════════════════════════════════════════ -->
-    <section id="tab-receitas" class="tab-content hidden">
+    <section id="tab-receitas" class="tab-content fit hidden">
+      <p class="page-intro">O que entrou no mês. <b>Cadastre pelo menos o salário:</b> sem receita lançada, o Radar não consegue calcular quanto sobra e o número da tela inicial fica negativo.</p>
       <div class="page-header" style="justify-content:flex-end;gap:0.5rem">
         <button class="btn btn-ghost btn-sm" id="btn-copiar-receitas" title="Copia as receitas manuais do mês anterior para este mês">⟳ Copiar do mês anterior</button>
         <button class="btn btn-primary btn-sm" id="btn-nova-receita">
@@ -426,8 +429,9 @@
           Nova Receita
         </button>
       </div>
-      <div class="card">
+      <div class="card grow">
         <div class="card-header"><span class="card-title">💰 Receitas do mês</span></div>
+        <p class="card-sub">Se o seu salário se repete todo mês, use “Copiar do mês anterior” em vez de digitar tudo de novo.</p>
         <div class="table-wrapper">
           <table class="data-table">
             <thead><tr><th scope="col">Tipo</th><th scope="col">Descrição</th><th scope="col" class="col-value">Valor</th><th scope="col" class="col-actions"></th></tr></thead>
@@ -438,17 +442,20 @@
       </div>
     </section>
     <!-- ════ ORÇAMENTO ════════════════════════════════════════ -->
-    <section id="tab-orcamento" class="tab-content hidden">
+    <section id="tab-orcamento" class="tab-content fit hidden">
+      <p class="page-intro">Quanto você pretende gastar em cada categoria. <b>Digite o limite na caixinha e salve</b> — a barra ao lado mostra quanto disso já foi usado neste mês.</p>
       <div class="page-header" style="justify-content:flex-end">
         <button class="btn btn-primary btn-sm" id="btn-salvar-orcamento">Salvar orçamento</button>
       </div>
-      <div class="card">
+      <div class="card grow">
         <div class="card-header"><span class="card-title">Orçamento mensal por categoria</span></div>
+        <p class="card-sub">Digite quanto pretende gastar em cada categoria e clique em Salvar. Deixar em branco é válido — só significa que aquela categoria não tem teto.</p>
         <div id="orcamento-editor" class="orcamento-editor"><p style="color:var(--text-muted);font-size:0.83rem;padding:1rem">Carregando categorias…</p></div>
       </div>
     </section>
     <!-- ════ METAS ════════════════════════════════════════════ -->
-    <section id="tab-metas" class="tab-content hidden">
+    <section id="tab-metas" class="tab-content fit hidden">
+      <p class="page-intro">Alvos com prazo. <b>Use “+ Aporte” para registrar quanto guardou</b>; se a meta estiver ligada a um ativo do Patrimônio, o aporte lá credita aqui sozinho.</p>
       <div class="page-header" style="justify-content:flex-end">
         <button class="btn btn-primary btn-sm" id="btn-nova-meta">
           <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
@@ -465,57 +472,10 @@
       </div>
     </section>
     <!-- ════ CONFIGURAÇÕES ════════════════════════════════════ -->
-    <section id="tab-configuracoes" class="tab-content hidden">
-      <div class="config-grid">
-        <div class="card">
-          <div class="card-header">
-            <span class="card-title">Categorias de Gastos</span>
-            <button class="btn btn-xs btn-primary" id="btn-nova-categoria">+ Nova</button>
-          </div>
-          <div id="categorias-list" class="categorias-list"><p style="color:var(--text-muted);font-size:0.83rem;padding:1.5rem;text-align:center">Carregando…</p></div>
-        </div>
-        <div class="card">
-          <div class="card-header"><span class="card-title">Backup dos Dados</span></div>
-          <div class="backup-section">
-            <div class="backup-info">
-              <p>Exporte todos os seus dados em JSON com versão e data. Para restaurar, importe o arquivo gerado.</p>
-              <div class="backup-version-row">
-                <label class="form-label">Versão</label>
-                <input type="text" id="backup-version" class="form-input sm" value="1.0.0" placeholder="ex: 1.2.0" />
-              </div>
-            </div>
-            <div class="backup-actions">
-              <button class="btn btn-primary btn-sm" id="btn-export-backup">
-                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                Exportar
-              </button>
-              <label class="btn btn-ghost btn-sm" style="cursor:pointer">
-                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-                Importar
-                <input type="file" id="input-import-backup" accept=".json" style="display:none" />
-              </label>
-            </div>
-          </div>
-        </div>
-        <div class="card">
-          <div class="card-header"><span class="card-title">Preferências</span></div>
-          <div class="prefs-section">
-            <div class="form-row">
-              <label class="form-label">Offset de competência da fatura</label>
-              <select id="billing-offset" class="form-select">
-                <option value="-1" selected>Vencimento em mês X → competência X-1</option>
-                <option value="0">Sem offset (mesmo mês do vencimento)</option>
-              </select>
-              <span class="form-hint">Define como faturas importadas são alocadas nos meses.</span>
-            </div>
-            <div class="form-row" style="margin-top:0.85rem">
-              <label class="form-label">Regras de categorização automática</label>
-              <div id="rules-list" style="font-size:0.82rem;color:var(--text-muted);padding:0.5rem 0">Carregando regras…</div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
+    <!-- Configurações é montada inteira por js/configuracoes.js (ele reescreve
+         o innerHTML desta seção). O markup que existia aqui era cópia morta:
+         nunca chegava à tela e divergia do que o módulo monta. -->
+    <section id="tab-configuracoes" class="tab-content hidden"></section>
     <!-- ════ TIMELINE ════════════════════════════════════════ -->
     <section id="tab-timeline" class="tab-content hidden"></section>
     <!-- ════ RELATÓRIOS ══════════════════════════════════════ -->

@@ -1163,3 +1163,79 @@ body { overflow: hidden; }
   #tab-calendario.fit .fx-card:not(.fx-card-tabela) { display: block; }
   #tab-calendario.fit .fx-chart-box { height: 230px; }
 }
+
+/* ─── As sete abas restantes na dobra ──────────────────────────
+   Mesma regra: os controles ficam parados e a região com lista longa
+   rola por dentro. O que muda de aba para aba é QUAL região é essa —
+   tabela, editor, grade de cards ou feed. */
+#tab-receitas.fit > .page-header,
+#tab-orcamento.fit > .page-header,
+#tab-metas.fit > .page-header,
+#tab-patrimonio.fit > .page-header,
+#tab-patrimonio.fit > .kpi-grid,
+#tab-timeline.fit > .page-header { flex: 0 0 auto; }
+#tab-patrimonio.fit > .kpi-grid { margin-bottom: 0; }
+#tab-patrimonio.fit > .card.grow[style] { margin-top: 1rem !important; margin-bottom: 0; }
+#tab-receitas.fit > .card.grow > .table-footer { flex: 0 0 auto; }
+
+/* Orçamento: quem rola é o editor de limites. */
+#tab-orcamento.fit > .card.grow > .orcamento-editor {
+  flex: 1 1 auto; min-height: 0; overflow: auto;
+}
+
+/* Metas e Configurações são grades de cards, não tabelas: a própria grade
+   rola, mantendo os cards na altura do conteúdo (`align-content: start`,
+   senão os cards esticam para preencher a sobra). */
+#tab-metas.fit > .metas-grid,
+#tab-configuracoes.fit > .config-grid {
+  flex: 1 1 auto; min-height: 0; overflow: auto; align-content: start; padding-right: 2px;
+}
+
+/* Timeline: o feed rola dentro do card. */
+#tab-timeline.fit > .card.grow > #timeline-feed {
+  flex: 1 1 auto; min-height: 0; overflow: auto;
+}
+#tab-timeline.fit > .card.grow { margin-bottom: 0; }
+
+/* Relatórios: a grade de cards de exportação rola. */
+#tab-relatorios.fit > .gridscroll {
+  flex: 1 1 auto; min-height: 0; overflow: auto; padding-right: 2px;
+}
+
+@media (max-width: 768px) {
+  #tab-receitas.fit, #tab-orcamento.fit, #tab-metas.fit, #tab-patrimonio.fit,
+  #tab-timeline.fit, #tab-relatorios.fit, #tab-configuracoes.fit { display: block; }
+  #tab-metas.fit > .metas-grid,
+  #tab-configuracoes.fit > .config-grid,
+  #tab-relatorios.fit > .gridscroll,
+  #tab-timeline.fit > .card.grow > #timeline-feed,
+  #tab-orcamento.fit > .card.grow > .orcamento-editor { overflow: visible; }
+}
+
+/* ─── Atalhos entre abas ───────────────────────────────────────
+   Cinco blocos que antes eram beco sem saída passam a levar à tela que
+   responde a pergunta seguinte. São <button>, não <a>: não há URL para onde
+   ir — a navegação é `switchTab`. Sem cor: o sublinhado é a afordância, e
+   azul de link foi o que a paleta A tirou de circulação. */
+.kpi-goto, .cat-goto {
+  font: inherit; background: none; border: 0; padding: 0; cursor: pointer;
+  color: var(--text-secondary); text-decoration: underline;
+  text-underline-offset: 3px; text-decoration-color: var(--border-md);
+}
+.kpi-goto { font-size: 0.74rem; margin-top: 0.45rem; align-self: flex-start; }
+.cat-goto { font-size: inherit; display: inline-flex; align-items: center; text-align: left; }
+.kpi-goto:hover, .cat-goto:hover,
+.kpi-goto:focus-visible, .cat-goto:focus-visible {
+  color: var(--text-primary); text-decoration-color: currentColor; outline: none;
+}
+.parcelas-goto { margin: 0.6rem 1.25rem 0.9rem; }
+
+/* Configurações: a régua de seções fica parada e a seção ativa rola. */
+#tab-configuracoes.fit > .page-intro,
+#tab-configuracoes.fit > .config-tabs { flex: 0 0 auto; }
+#tab-configuracoes.fit > .config-section:not(.hidden) {
+  flex: 1 1 auto; min-height: 0; overflow: auto; padding-right: 2px;
+}
+@media (max-width: 768px) {
+  #tab-configuracoes.fit > .config-section:not(.hidden) { overflow: visible; }
+}

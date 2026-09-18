@@ -12,8 +12,11 @@ export function renderRelatorios() {
 
   const month = state.currentMonth;
 
+  container.classList.add('fit');
+
   container.innerHTML = `
-    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:1rem">
+    <p class="page-intro">Para levar os números para fora do Radar. <b>Escolha o relatório e clique em CSV</b> para abrir em planilha, ou JSON para usar em outro programa.</p>
+    <div class="gridscroll" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:1rem;align-content:start">
 
       ${_reportCard({
         icon: '📊',

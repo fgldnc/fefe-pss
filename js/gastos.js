@@ -64,8 +64,10 @@ function _renderTable() {
 
   tbody.innerHTML = txs.map(tx => {
     const cat   = state.categories.find(c => c.id === tx.categoryId);
+    // O nome da categoria leva ao limite dela no Orçamento: responde "esse gasto
+    // me estourou?" sem sair procurando. Botão, não <a>: não há URL para onde ir.
     const catDot = cat
-      ? `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${esc(cat.color)};margin-right:0.4rem"></span>${esc(cat.name)}`
+      ? `<button type="button" class="cat-goto" data-goto="orcamento" title="Ver o limite de ${esc(cat.name)} no Orçamento"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${esc(cat.color)};margin-right:0.4rem"></span>${esc(cat.name)}</button>`
       : '—';
 
     const tipoTag = _tipoTag(tx.paymentType);

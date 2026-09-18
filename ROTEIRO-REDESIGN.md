@@ -953,3 +953,60 @@ renderizando de verdade, não só a folha de estilo.
 Conferido no navegador a 1440×900, com 50 linhas em Gastos, 40 em Extratos e o
 Fluxo de Caixa renderizado de verdade (25 lançamentos e uma receita).
 Testes: 68 passando.
+
+### Rodada A6 — As sete abas restantes · FEITA
+
+Frase de abertura em todas (textos dos mockups) e a regra da dobra aplicada,
+com a região certa rolando em cada uma: tabela em Receitas e Patrimônio, editor
+de limites em Orçamento, grade de cards em Metas, Configurações e Relatórios,
+feed em Timeline.
+
+- **Achado no caminho: o markup de Configurações no `index.html` era código
+  morto.** `renderConfiguracoes()` reescreve o `innerHTML` da seção inteira, com
+  uma estrutura diferente (`.config-tabs` + `.config-section`) da que estava no
+  HTML. A frase de abertura que pus lá nunca apareceu na tela. Movida para o
+  módulo, e a cópia morta do HTML foi removida com um comentário explicando por
+  quê — o risco era alguém (eu, de novo) editar o lugar errado.
+- **O que NÃO entrou, por serem funções novas sem aprovação:** os dois gráficos
+  de Patrimônio (composição e evolução) e o card "Contratos em aberto" da
+  Timeline. Patrimônio recebeu só a frase, a linha de apoio e a dobra; a aba
+  segue marcada como "não mexer" no resto.
+
+### Rodada A7 — Os cinco atalhos novos · FEITA
+
+Nenhum cria tela: todos ligam o que já existe, via o `data-goto` que `app.js`
+já delega em `document`.
+
+| Onde | Leva para | Estado |
+|---|---|---|
+| KPI Despesas · "ver linha a linha" | Gastos | sem filtro |
+| KPI Investido · "ver no Patrimônio" | Patrimônio | — |
+| KPI hero · "ver dia a dia no Fluxo de Caixa" | Fluxo de Caixa | o par que faltava: um diz quanto sobra, o outro em que dia |
+| Card de parcelas · "ver todas em Gastos" | Gastos | filtro de projetadas ligado e painel avançado aberto |
+| Nome da categoria na tabela de Gastos | Orçamento | — |
+
+**Desvio consciente do mockup:** o mockup sugere o KPI inteiro clicável; virou
+um link dentro do card. O hero já tem botão dentro (cadastrar receita, legenda
+de projetadas), e card clicável com botão dentro rouba o clique do botão —
+`closest('[data-goto]')` acha o card antes do controle que a pessoa mirou.
+
+Conferido no navegador clicando os cinco: todos trocam de aba, e o das parcelas
+chega em Gastos com o filtro ligado e o painel aberto. As 11 abas renderizam sem
+nenhum erro de console, cabem numa dobra a 1440×900 e voltam a rolar a 375px.
+Testes: 68 passando.
+
+---
+
+## Aplicação do redesign — encerrada
+
+As sete rodadas (A1 a A7) estão aplicadas. O que ficou **deliberadamente de
+fora**, tudo por depender de decisão da Fefe e não de implementação:
+
+1. **Gráficos de composição e evolução do Patrimônio** (marcados NOVO no mockup).
+2. **Card "Contratos em aberto" da Timeline** (NOVO; ataca problema real
+   registrado no roteiro, mas é função nova).
+3. **Contador âmbar de pendências em Extratos** na sidebar (`sb-badge`): precisa
+   de uma fonte para o número.
+4. **Estado de erro de `_guard()`** no Dashboard — a única função sem desenho,
+   marcada em vermelho no mockup. A mensagem precisa ser decidida antes.
+5. **`settings/fluxo` fora do backup/restore** — pendência antiga, não de design.

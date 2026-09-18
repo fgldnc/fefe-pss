@@ -9,7 +9,12 @@ export function renderConfiguracoes() {
   const section = document.getElementById('tab-configuracoes');
   if (!section) return;
 
+  // Este módulo reescreve a seção inteira: a frase de abertura e a dobra
+  // precisam nascer aqui, não no index.html — o que está lá nunca aparece.
+  section.classList.add('fit');
+
   section.innerHTML = `
+    <p class="page-intro">Onde se ajusta o que as outras telas usam. <b>As duas que mais mudam resultado:</b> as regras, que classificam a importação sozinhas, e o dia de vencimento da fatura, em Preferências.</p>
     <div class="config-tabs" id="config-tabs">
       <button class="config-tab active" data-section="categorias">Categorias</button>
       <button class="config-tab" data-section="regras">Regras</button>
@@ -56,6 +61,7 @@ export function renderConfiguracoes() {
       <div class="config-grid">
         <div class="card">
           <div class="card-header"><span class="card-title">Exportar Backup</span></div>
+          <p class="card-sub">Baixe antes de qualquer mudança grande. É o seu desfazer.</p>
           <div style="padding:1.25rem;display:flex;flex-direction:column;gap:0.85rem">
             <p style="font-size:0.83rem;color:var(--text-secondary);line-height:1.5">Exporta todos seus dados em JSON para migração ou segurança.</p>
             <div class="form-row">
@@ -67,6 +73,7 @@ export function renderConfiguracoes() {
         </div>
         <div class="card">
           <div class="card-header"><span class="card-title">Importar Backup</span></div>
+          <p class="card-sub">Use o arquivo baixado ao lado. Restaurar soma ao que já existe, não substitui.</p>
           <div style="padding:1.25rem;display:flex;flex-direction:column;gap:0.85rem">
             <p style="font-size:0.83rem;color:var(--text-secondary);line-height:1.5">Dados existentes são mesclados — não apagados.</p>
             <label class="btn btn-ghost btn-sm" style="cursor:pointer;width:fit-content">

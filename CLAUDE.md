@@ -198,6 +198,52 @@ Cada item abaixo é uma regra de negócio real codificada como literal, sem cons
 - `js/db.js:154` — gasto de extrato: `date.slice(0,7) === month`.
 - `js/db.js:197-200` — receita: `month`, senão `competenceMonth`, senão `date.slice(0,7)`.
 
+## Regras de interface que valem em toda tela (redesign aplicado)
+
+O redesign de `/redesign` foi aplicado ao app em sete rodadas (A1–A7), todas
+registradas em `ROTEIRO-REDESIGN.md`. O que passou a ser contrato:
+
+- **Paleta A "Galo": o chrome não tem cor.** A ação primária é o próprio
+  contraste — preto no tema claro, branco no escuro. Cor na tela significa
+  sempre alguma coisa: receita, gasto, inferido, ou série categórica de gráfico.
+  **Nada de azul em nenhum papel.** Os nomes de token antigos (`--accent-primary`,
+  `--accent-bright`, `--border-strong`…) foram mantidos e reapontados para
+  neutros; `--accent-fg` é o texto que vai em cima do acento. `--gold` **não
+  existe mais** — era idêntico a `--warning`.
+- **Dois temas, mesmos nomes de token.** `[data-theme="light"]` em
+  `css/style.css`; escuro é o padrão. O botão está na topbar (`#btn-tema`) e a
+  escolha vai para `localStorage.fluxo_tema`. O tema é aplicado no topo de
+  `app.js`, antes do `DOMContentLoaded`, para não piscar.
+- **Chart.js pinta em canvas e não resolve `var(--…)`.** As cores vêm de
+  `getComputedStyle` no momento de montar o gráfico — `coresGrafico()` em
+  `js/saldos.js`, `token()` em `js/dashboard.js` — e **o gráfico é refeito
+  quando o tema muda** (o botão re-renderiza a aba). HEX fixo aqui é regressão:
+  a curva do tema errado some no fundo.
+- **Nunito, e número não usa monoespaçada.** A coluna de valores alinha por
+  `font-variant-numeric: tabular-nums lining-nums`, aplicado globalmente.
+  `--font-mono` continua existindo como nome mas aponta para Nunito;
+  `--font-code` (DM Mono) é o monoespaçado de verdade, só para código.
+- **A página não rola; quem rola é a região.** `.app` trava em `100vh`,
+  `body` é `overflow: hidden`, e cada aba é `.tab-content.fit` (coluna) com um
+  bloco marcado `.card.grow` levando a sobra da altura e rolando por dentro, com
+  `<thead>` preso. **Abaixo de 768px a regra se desliga inteira** — no celular a
+  página rola, porque não há dobra que caiba tudo.
+- **Toda tela abre com uma frase** (`.page-intro`) dizendo o que ela responde e
+  o que fazer, com a ação em `<b>`; todo bloco principal tem uma linha de apoio
+  (`.card-sub`). Os textos vêm dos mockups `redesign/03-*.html` — **copiar, não
+  reescrever**; só o nome de botão citado foi ajustado para bater com o botão
+  real do app.
+- **Navegação em quatro grupos por horizonte de tempo**: Este mês · O que vem ·
+  Longo prazo · Registro. Os `data-tab` continuam sendo os ids internos de
+  sempre: `dashboard` só mudou de **rótulo** para "Visão do mês".
+- **Atalho entre abas é `data-goto`**, delegado uma única vez em `document` por
+  `app.js` (`_goto`), com `data-filtro-cat` e `data-filtro-proj` para chegar já
+  filtrado. Nunca ligar listener no elemento: os cards são reinjetados por
+  `innerHTML` a cada render.
+- **Configurações é montada inteira por `js/configuracoes.js`** — a seção em
+  `index.html` é um `<section>` vazio de propósito. Editar markup de
+  Configurações no HTML não tem efeito nenhum.
+
 ## Redesign em andamento
 
 `ROTEIRO-REDESIGN.md` é o estado do redesign entre sessões: diagnóstico por aba,
