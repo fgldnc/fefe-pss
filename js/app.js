@@ -138,15 +138,22 @@ function renderCmdResults(q) {
   const sections = [];
 
   // Navegação
+  // Mesma ordem e mesmos rótulos da sidebar — a paleta é um atalho para ela,
+  // não uma segunda navegação com outros nomes. Fluxo de Caixa, Timeline e
+  // Relatórios faltavam aqui: três das onze abas não tinham como ser alcançadas
+  // pelo Ctrl+K.
   const navItems = [
-    { icon: '📊', label: 'Dashboard',     tab: 'dashboard' },
-    { icon: '💳', label: 'Gastos',        tab: 'gastos' },
-    { icon: '🏦', label: 'Extratos',      tab: 'extratos' },
-    { icon: '💰', label: 'Receitas',      tab: 'receitas' },
-    { icon: '📋', label: 'Orçamento',     tab: 'orcamento' },
-    { icon: '📈', label: 'Patrimônio',    tab: 'patrimonio' },
-    { icon: '🎯', label: 'Metas',         tab: 'metas' },
-    { icon: '⚙️',  label: 'Configurações', tab: 'configuracoes' },
+    { icon: '📊', label: 'Visão do mês',   tab: 'dashboard' },
+    { icon: '💳', label: 'Gastos',         tab: 'gastos' },
+    { icon: '💰', label: 'Receitas',       tab: 'receitas' },
+    { icon: '🏦', label: 'Extratos',       tab: 'extratos' },
+    { icon: '📉', label: 'Fluxo de Caixa', tab: 'calendario' },
+    { icon: '📋', label: 'Orçamento',      tab: 'orcamento' },
+    { icon: '🎯', label: 'Metas',          tab: 'metas' },
+    { icon: '📈', label: 'Patrimônio',     tab: 'patrimonio' },
+    { icon: '🕒', label: 'Timeline',       tab: 'timeline' },
+    { icon: '📄', label: 'Relatórios',     tab: 'relatorios' },
+    { icon: '⚙️',  label: 'Configurações',  tab: 'configuracoes' },
   ].filter(n => !q || n.label.toLowerCase().includes(q));
 
   if (navItems.length) {
@@ -277,10 +284,32 @@ async function finishOnboarding() {
   toast('Tudo pronto! Bem-vindo ao Radar.', 'success');
 }
 
+// ─── TEMA ──────────────────────────────────────────────────────
+// A paleta A existe nos dois temas com os mesmos nomes de token: trocar é pôr
+// `data-theme` no <html>. Escuro segue sendo o padrão, que é como o app sempre
+// foi. Aplicado antes do DOMContentLoaded para não haver piscada de tema errado.
+function aplicarTema(tema) {
+  document.documentElement.setAttribute('data-theme', tema);
+  localStorage.setItem('fluxo_tema', tema);
+}
+
+function temaAtual() {
+  return localStorage.getItem('fluxo_tema') === 'light' ? 'light' : 'dark';
+}
+
+aplicarTema(temaAtual());
+
 // ─── INIT ──────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
   state.currentMonth = thisMonth();
   updateMonthLabel();
+
+  document.getElementById('btn-tema')?.addEventListener('click', () => {
+    aplicarTema(temaAtual() === 'light' ? 'dark' : 'light');
+    // Chart.js pinta em canvas e não reage a troca de token: o gráfico precisa
+    // ser refeito, e re-renderizar a aba corrente é o caminho mais barato.
+    rerenderCurrentTab();
+  });
 
   // Month picker: clicar no nome do mês abre o seletor nativo (pula N meses de uma vez)
   const monthPicker = document.getElementById('month-picker');

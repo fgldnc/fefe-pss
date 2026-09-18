@@ -49,30 +49,19 @@
       <span class="sidebar-logo">Radar</span>
     </div>
 
+    <!-- Quatro grupos por HORIZONTE DE TEMPO, não por tipo de tela. Ninguém
+         pensa "vou usar um cadastro"; pensa "o que já aconteceu este mês" e
+         "o que ainda vem". Nenhuma aba sumiu ou fundiu — só mudaram de vizinho.
+         Os `data-tab` continuam sendo os ids internos de sempre: só o rótulo
+         visível de `dashboard` mudou, para "Visão do mês". -->
     <nav class="sidebar-nav">
-      <!-- Visão Geral -->
+      <!-- Este mês — o que se abre em toda sessão de início de mês: importa,
+           confere, corrige. As quatro respondem sobre o mês que está correndo. -->
       <div class="nav-group">
-        <div class="nav-group-label">Visão Geral</div>
+        <div class="nav-group-label">Este mês</div>
         <a class="nav-link active" data-tab="dashboard">
           <svg class="nav-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-          Dashboard
-        </a>
-        <a class="nav-link" data-tab="calendario">
-          <svg class="nav-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-          Fluxo de Caixa
-        </a>
-        <a class="nav-link" data-tab="patrimonio">
-          <svg class="nav-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 21h18M5 21V7l7-4 7 4v14"/><path d="M9 21v-6h6v6"/></svg>
-          Patrimônio
-        </a>
-      </div>
-
-      <!-- Lançamentos -->
-      <div class="nav-group">
-        <div class="nav-group-label">Lançamentos</div>
-        <a class="nav-link" data-tab="extratos">
-          <svg class="nav-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-          Extratos
+          Visão do mês
         </a>
         <a class="nav-link" data-tab="gastos">
           <svg class="nav-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
@@ -82,35 +71,56 @@
           <svg class="nav-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2v20M17 7H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
           Receitas
         </a>
+        <a class="nav-link" data-tab="extratos">
+          <svg class="nav-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+          Extratos
+        </a>
       </div>
 
-      <!-- Planejamento -->
+      <!-- O que vem — as duas telas que falam de dinheiro que ainda não
+           aconteceu, e as duas que consomem parcela projetada. -->
       <div class="nav-group">
-        <div class="nav-group-label">Planejamento</div>
+        <div class="nav-group-label">O que vem</div>
+        <a class="nav-link" data-tab="calendario">
+          <svg class="nav-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 17l5-6 4 4 5-8"/><path d="M3 21h18"/></svg>
+          Fluxo de Caixa
+        </a>
         <a class="nav-link" data-tab="orcamento">
           <svg class="nav-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
           Orçamento
         </a>
+      </div>
+
+      <!-- Longo prazo — Metas e Patrimônio juntos porque o código já os junta:
+           aporte em ativo vinculado (`linkedGoalId`) credita a meta. -->
+      <div class="nav-group">
+        <div class="nav-group-label">Longo prazo</div>
         <a class="nav-link" data-tab="metas">
           <svg class="nav-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
           Metas
         </a>
+        <a class="nav-link" data-tab="patrimonio">
+          <svg class="nav-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 21h18M5 21V7l7-4 7 4v14"/><path d="M9 21v-6h6v6"/></svg>
+          Patrimônio
+        </a>
       </div>
 
-      <!-- Sistema -->
+      <!-- Registro — o que só lê e o que só configura. Timeline e Relatórios
+           não escrevem nada; Configurações escreve o cadastro que alimenta as
+           outras dez. -->
       <div class="nav-group">
-        <div class="nav-group-label">Sistema</div>
-        <a class="nav-link" data-tab="configuracoes">
-          <svg class="nav-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2m-3.05-7.95-1.41 1.41M6.46 17.54l-1.41 1.41m14.9 0-1.41-1.41M6.46 6.46 5.05 5.05"/></svg>
-          Configurações
-        </a>
+        <div class="nav-group-label">Registro</div>
         <a class="nav-link" data-tab="timeline">
-          <svg class="nav-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="2" x2="12" y2="22"/><polyline points="17 7 12 2 7 7"/><path d="M20 12H4"/></svg>
+          <svg class="nav-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="3" x2="12" y2="21"/><circle cx="12" cy="8" r="2"/><circle cx="12" cy="16" r="2"/></svg>
           Timeline
         </a>
         <a class="nav-link" data-tab="relatorios">
           <svg class="nav-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
           Relatórios
+        </a>
+        <a class="nav-link" data-tab="configuracoes">
+          <svg class="nav-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2m-3.05-7.95-1.41 1.41M6.46 17.54l-1.41 1.41m14.9 0-1.41-1.41M6.46 6.46 5.05 5.05"/></svg>
+          Configurações
         </a>
       </div>
     </nav>
@@ -155,6 +165,11 @@
       </div>
 
       <div class="topbar-actions">
+        <!-- Troca de tema: a paleta A existe nos dois, e a escolha fica no
+             localStorage (`fluxo_tema`), junto das outras preferências. -->
+        <button class="btn-icon" id="btn-tema" title="Alternar tema claro/escuro" aria-label="Alternar tema claro/escuro">
+          <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2m-3.05-7.95-1.41 1.41M6.46 17.54l-1.41 1.41m14.9 0-1.41-1.41M6.46 6.46 5.05 5.05"/></svg>
+        </button>
         <span class="user-name" id="user-name">—</span>
         <div class="user-avatar" id="user-avatar">?</div>
       </div>

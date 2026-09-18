@@ -25,14 +25,25 @@ import {
 } from './utils.js';
 import { incomesOfMonth, saveFluxoConfig } from './db.js';
 
-// Chart.js desenha em canvas e não resolve var(--…): as cores vão em HEX
-// literal, iguais aos tokens do :root de css/style.css. Já houve regressão por
-// passar `var(--accent-primary)` para cá e a linha sumir.
-const HEX_LINHA = '#F2F2F3';  // --accent-primary (neutro: o chrome não tem cor)
-const HEX_VERM  = '#FF7A7A';  // --danger
-const HEX_CINZA = '#87878F';  // --text-muted
-const HEX_FUNDO = '#0B0B0C';  // --bg-main
-const HEX_GRID  = 'rgba(255,255,255,.07)'; // --border-soft
+// Chart.js desenha em canvas e não resolve var(--…): as cores precisam chegar
+// já resolvidas. Antes eram HEX literais espelhando o :root, o que quebrou no
+// dia em que o app ganhou tema claro — a curva branca sumia no fundo branco.
+// Agora vêm do próprio token, lidas no momento de montar o gráfico, e o
+// gráfico é refeito quando o tema muda (o botão em app.js re-renderiza a aba).
+function token(nome, fallback) {
+  const v = getComputedStyle(document.documentElement).getPropertyValue(nome).trim();
+  return v || fallback;
+}
+
+function coresGrafico() {
+  return {
+    linha: token('--accent-primary', '#F2F2F3'),
+    verm:  token('--danger',         '#FF7A7A'),
+    cinza: token('--text-muted',     '#87878F'),
+    fundo: token('--bg-main',        '#0B0B0C'),
+    grid:  token('--border-soft',    'rgba(255,255,255,.07)'),
+  };
+}
 
 let chartSaldo   = null;
 let _initialized = false;
@@ -384,6 +395,10 @@ function _renderCorpo({ month, ano, mes, daysInMonth, serie, min, mov, venc, tem
     // Sem gráfico nesta tela, a instância do mês anterior ficaria viva sobre um
     // canvas já removido do DOM — com o listener de resize junto.
     if (chartSaldo) { chartSaldo.destroy(); chartSaldo = null; }
+
+  // Resolvidas agora, não no topo do módulo: o tema pode ter mudado desde o
+  // último desenho.
+  const C = coresGrafico();
     alvo.innerHTML = `
       <div class="fx-card"><div class="fx-empty">
         <div class="fx-empty-t">Nenhum movimento em ${esc(monthLabel(month).split(' ')[0].toLowerCase())}</div>
@@ -542,14 +557,14 @@ function _renderChart({ serie, daysInMonth, diaHoje, min, month }) {
     data: {
       labels: serie.map(p => p.dia),
       datasets: [
-        { label: 'Efetivado', data: efetivado, borderColor: HEX_LINHA, borderWidth: 2,
+        { label: 'Efetivado', data: efetivado, borderColor: C.linha, borderWidth: 2,
           pointRadius: 0, tension: 0, fill: false },
-        { label: 'Projetado', data: projetado, borderColor: HEX_LINHA, borderWidth: 2,
+        { label: 'Projetado', data: projetado, borderColor: C.linha, borderWidth: 2,
           borderDash: [5, 4], pointRadius: 0, tension: 0, fill: false },
         { label: 'Menor saldo',
           data: dados.map((v, i) => (min && i + 1 === min.dia ? v : null)),
           borderColor: 'transparent', pointRadius: 4.5,
-          pointBackgroundColor: HEX_VERM, pointBorderColor: HEX_FUNDO, pointBorderWidth: 1.5 },
+          pointBackgroundColor: C.verm, pointBorderColor: C.fundo, pointBorderWidth: 1.5 },
       ],
     },
     options: {
@@ -567,9 +582,9 @@ function _renderChart({ serie, daysInMonth, diaHoje, min, month }) {
       },
       scales: {
         x: {
-          grid: { display: false }, border: { color: HEX_GRID },
+          grid: { display: false }, border: { color: C.grid },
           ticks: {
-            color: HEX_CINZA, font: { size: 10, family: 'Nunito' },
+            color: C.cinza, font: { size: 10, family: 'Nunito' },
             maxRotation: 0, autoSkip: false,
             // 31 rótulos não cabem nem no desktop.
             callback: (v, i) => ([0, 4, 9, 14, 19, 24, daysInMonth - 1].includes(i) ? i + 1 : ''),
@@ -579,12 +594,12 @@ function _renderChart({ serie, daysInMonth, diaHoje, min, month }) {
           // A linha do zero em vermelho é o que faz "cruzou o zero" virar forma,
           // em vez de uma célula a caçar na tabela.
           grid: {
-            color: c => (c.tick.value === 0 ? HEX_VERM : HEX_GRID),
+            color: c => (c.tick.value === 0 ? C.verm : C.grid),
             lineWidth: c => (c.tick.value === 0 ? 1.5 : 1),
           },
           border: { display: false },
           ticks: {
-            color: HEX_CINZA, font: { size: 10, family: 'Nunito' },
+            color: C.cinza, font: { size: 10, family: 'Nunito' },
             // "k" só no eixo; dentro da tabela, nunca.
             callback: v => (v === 0 ? '0' : `${(v / 1000).toLocaleString('pt-BR')}k`),
           },

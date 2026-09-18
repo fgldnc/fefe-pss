@@ -825,3 +825,35 @@ Só pele: nenhuma estrutura de tela, nenhum seletor novo, nenhum HTML tocado.
 **Pendente desta rodada:** o botão de troca de tema (vai na A2) e
 `.btn-atencao`, que no mockup é preto/branco e no app ainda é âmbar — muda
 junto dos modais de importação, na rodada A5.
+
+### Rodada A2 — Sidebar, rótulos e tema · FEITA
+
+- **Os quatro grupos por horizonte de tempo** em `index.html`: Este mês (Visão
+  do mês, Gastos, Receitas, Extratos) · O que vem (Fluxo de Caixa, Orçamento) ·
+  Longo prazo (Metas, Patrimônio) · Registro (Timeline, Relatórios,
+  Configurações). **Nenhuma aba sumiu ou fundiu** — só mudaram de vizinho.
+- **`Dashboard` virou `Visão do mês`** só no rótulo visível. O `data-tab`, o id
+  da seção (`#tab-dashboard`), a chave em `TAB_MODULES` e o nome do módulo
+  continuam `dashboard`: renomear o id seria mexer em roteamento dentro de uma
+  rodada de rótulo.
+- **Botão de troca de tema** na topbar (`#btn-tema`), que ficou devendo da
+  rodada A1. A escolha vai para `localStorage.fluxo_tema`, junto das outras
+  preferências com prefixo `fluxo_`; escuro segue sendo o padrão. O tema é
+  aplicado no topo de `app.js`, antes do `DOMContentLoaded`, para não haver
+  piscada de tema errado.
+- **Cores de gráfico passaram a ser resolvidas por token**, em `saldos.js`
+  (`coresGrafico()`) e `dashboard.js` (`token()`). Era consequência direta do
+  botão: HEX fixo do tema escuro faz a curva branca sumir no fundo branco. O
+  botão re-renderiza a aba corrente porque Chart.js pinta em canvas e não reage
+  a troca de token.
+- **A paleta de comandos (Ctrl+K) estava sem três abas** — Fluxo de Caixa,
+  Timeline e Relatórios não tinham como ser alcançadas por ela. Corrigido, e a
+  ordem passou a ser a mesma da sidebar: a paleta é atalho para a navegação, não
+  uma segunda navegação com outros nomes.
+
+**Não entrou:** o contador âmbar de pendências em Extratos (`sb-badge` no
+mockup). É função nova, não rótulo — precisa de uma fonte para o número.
+
+**Conferido no navegador** (`localhost:4321`, servido por `.claude/launch.json`):
+os quatro grupos, a troca de tema nos dois sentidos, zero erro no console.
+Testes: 68 passando.
