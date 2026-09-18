@@ -31,7 +31,7 @@
 .btn:active { transform: scale(0.98); }
 
 .btn-primary {
-  background: var(--accent-primary); border-color: var(--accent-primary); color: #fff;
+  background: var(--accent-primary); border-color: var(--accent-primary); color: var(--accent-fg);
 }
 .btn-primary:hover { background: var(--accent-bright); border-color: var(--accent-bright); box-shadow: 0 4px 16px var(--accent-glow); transform: translateY(-1px); }
 
@@ -43,8 +43,8 @@
 .btn-ghost { background: transparent; border-color: var(--border-soft); color: var(--text-secondary); }
 .btn-ghost:hover { background: var(--accent-dim); border-color: var(--accent-primary); color: var(--text-primary); }
 
-.btn-danger { background: var(--danger-dim); border-color: rgba(248,113,113,0.35); color: var(--danger); }
-.btn-danger:hover { background: rgba(248,113,113,0.22); }
+.btn-danger { background: var(--danger-dim); border-color: var(--danger); color: var(--danger); }
+.btn-danger:hover { background: var(--danger-dim); }
 
 .btn-xs { font-size: 0.75rem; padding: 0.28rem 0.65rem; }
 .btn-sm { font-size: 0.8rem; padding: 0.4rem 0.8rem; }
@@ -58,7 +58,7 @@
   display: inline-flex; align-items: center;
 }
 .btn-icon-only:hover { background: var(--bg-hover); color: var(--text-primary); border-color: var(--border-md); }
-.btn-icon-only.danger:hover { color: var(--danger); border-color: rgba(248,113,113,0.35); background: var(--danger-dim); }
+.btn-icon-only.danger:hover { color: var(--danger); border-color: var(--danger); background: var(--danger-dim); }
 
 /* ── TABLES ──────────────────────────────────────────────────── */
 .table-wrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; }
@@ -76,7 +76,7 @@
 }
 .data-table tbody tr:last-child td { border-bottom: none; }
 .data-table tbody tr { transition: background var(--transition); }
-.data-table tbody tr:hover td { background: rgba(192,24,136,0.07); color: var(--text-primary); }
+.data-table tbody tr:hover td { background: var(--bg-hover); color: var(--text-primary); }
 
 .col-value   { text-align: right; }
 .col-actions { text-align: right; width: 72px; }
@@ -84,7 +84,7 @@
 .val-mono    { font-family: var(--font-mono); font-size: 0.82rem; }
 .val-negative { color: var(--danger); }
 .val-positive { color: var(--success); }
-.val-gold    { color: var(--gold); }
+.val-gold    { color: var(--warning); }
 .val-accent  { color: var(--accent-bright); }
 
 .empty-row { text-align: center; color: var(--text-muted); font-style: italic; padding: 2.5rem !important; }
@@ -94,16 +94,16 @@
 
 /* Tags */
 .tag-tipo { display: inline-flex; align-items: center; font-size: 0.68rem; font-weight: 600; padding: 0.12rem 0.5rem; border-radius: 20px; border: 1px solid; }
-.tag-cartao   { color: var(--info);    border-color: rgba(167,139,250,0.35); background: var(--info-dim); }
-.tag-pix      { color: var(--success); border-color: rgba(52,211,153,0.35);  background: var(--success-dim); }
-.tag-debito   { color: var(--gold);    border-color: rgba(251,191,36,0.35);  background: var(--gold-dim); }
-.tag-dinheiro { color: var(--accent-bright); border-color: rgba(192,24,136,0.35); background: var(--accent-dim); }
+.tag-cartao   { color: var(--info);    border-color: var(--border-md); background: var(--info-dim); }
+.tag-pix      { color: var(--success); border-color: var(--success);  background: var(--success-dim); }
+.tag-debito   { color: var(--warning);    border-color: var(--warning);  background: var(--warning-dim); }
+.tag-dinheiro { color: var(--accent-bright); border-color: var(--border-md); background: var(--accent-dim); }
 .tag-outro    { color: var(--text-muted); border-color: var(--border-md); background: var(--bg-card-raised); }
-.tag-ted      { color: var(--info); border-color: rgba(167,139,250,0.35); background: var(--info-dim); }
-.tag-doc      { color: var(--info); border-color: rgba(167,139,250,0.35); background: var(--info-dim); }
+.tag-ted      { color: var(--info); border-color: var(--border-md); background: var(--info-dim); }
+.tag-doc      { color: var(--info); border-color: var(--border-md); background: var(--info-dim); }
 
 .tag-projetada { font-size: 0.67rem; color: var(--text-muted); background: var(--bg-hover); border: 1px solid var(--border-soft); border-radius: 20px; padding: 0.08rem 0.42rem; }
-.tag-duplicata { font-size: 0.67rem; color: var(--warning); background: var(--warning-dim); border: 1px solid rgba(251,191,36,0.35); border-radius: 20px; padding: 0.08rem 0.42rem; }
+.tag-duplicata { font-size: 0.67rem; color: var(--warning); background: var(--warning-dim); border: 1px solid var(--warning); border-radius: 20px; padding: 0.08rem 0.42rem; }
 
 /* ── MODAIS ───────────────────────────────────────────────────── */
 .modal-overlay {
@@ -144,13 +144,13 @@
 .form-label { font-size: 0.77rem; font-weight: 600; color: var(--text-secondary); letter-spacing: 0.2px; }
 
 .form-input, .form-select, .form-textarea {
-  background: rgba(0, 0, 0, 0.5); border: 1px solid var(--border-soft);
+  background: var(--bg-main); border: 1px solid var(--border-soft);
   border-radius: var(--radius-sm); color: var(--text-primary);
   font-family: var(--font-sans); font-size: 0.875rem;
   padding: 0.55rem 0.85rem; transition: border-color var(--transition); width: 100%;
 }
 .form-input:focus, .form-select:focus, .form-textarea:focus {
-  outline: none; border-color: var(--accent-primary); background: rgba(0,0,0,0.7);
+  outline: none; border-color: var(--accent-primary); background: var(--bg-main);
 }
 .form-input.sm { padding: 0.38rem 0.6rem; font-size: 0.82rem; width: auto; min-width: 80px; }
 .form-textarea { resize: vertical; min-height: 60px; }
@@ -236,7 +236,7 @@
 .meta-card:hover { border-color: var(--border-md); transform: translateY(-2px); box-shadow: var(--shadow-card); }
 .meta-card-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 0.75rem; gap: 0.5rem; }
 .meta-nome { font-size: 0.95rem; font-weight: 600; color: var(--text-primary); }
-.meta-tipo-tag { font-size: 0.68rem; font-weight: 600; padding: 0.12rem 0.5rem; border-radius: 20px; background: var(--accent-dim); color: var(--accent-bright); border: 1px solid rgba(192,24,136,0.35); white-space: nowrap; flex-shrink: 0; }
+.meta-tipo-tag { font-size: 0.68rem; font-weight: 600; padding: 0.12rem 0.5rem; border-radius: 20px; background: var(--accent-dim); color: var(--accent-bright); border: 1px solid var(--border-md); white-space: nowrap; flex-shrink: 0; }
 .meta-values { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 0.5rem; font-family: var(--font-mono); font-size: 0.82rem; }
 .meta-atual-val { color: var(--text-primary); font-size: 1.1rem; font-weight: 500; }
 .meta-alvo-val  { color: var(--text-muted); }
@@ -337,10 +337,13 @@
    corrigido, não numa coluna de status à parte — sinal e correção no mesmo
    lugar, senão o olho vai para a direita e a mão age na esquerda. */
 .field-inferido  { border-color: var(--warning) !important; color: var(--warning) !important; }
-.field-editado   { border-color: var(--border-strong) !important; }
+.field-editado   { border-color: var(--border-strong) !important; border-width: 2px !important; }
+/* "Editado" virou ênfase, não cor: --border-strong deixou de ser azul e passou
+   a ser o neutro de maior contraste, para não disputar com o âmbar do inferido
+   nem com a ação primária. */
 
 /* Fundo, não borda: a linha precisa se destacar sem competir com o campo. */
-.row-atencao { background: rgba(251, 191, 36, 0.05); }
+.row-atencao { background: var(--warning-dim); }
 .row-hidden-filter { display: none !important; }
 
 .row-marks { display: flex; flex-wrap: wrap; gap: 0.3rem; margin-top: 0.2rem; }
@@ -450,7 +453,7 @@
   font-family: var(--font-sans);
 }
 .config-tab:hover  { color: var(--text-secondary); background: var(--bg-hover); }
-.config-tab.active { background: var(--accent-primary); color: #fff; font-weight: 600; }
+.config-tab.active { background: var(--accent-primary); color: var(--accent-fg); font-weight: 600; }
 
 /* ── CALENDÁRIO ──────────────────────────────────────────────── */
 .cal-header-row {
@@ -484,12 +487,12 @@
   position: relative;
 }
 .cal-cell:nth-child(7n) { border-right: none; }
-.cal-cell:hover         { background: rgba(192,24,136,0.07); }
+.cal-cell:hover         { background: var(--bg-hover); }
 .cal-cell.selected      { background: var(--accent-dim); }
-.cal-cell-empty         { background: rgba(0,0,0,0.12); }
+.cal-cell-empty         { background: var(--bg-card-raised); }
 .cal-cell-today .cal-day-num {
   background: var(--accent-primary);
-  color: #fff;
+  color: var(--accent-fg);
   border-radius: 50%;
   width: 22px; height: 22px;
   display: flex; align-items: center; justify-content: center;
@@ -582,4 +585,4 @@
 
 /* ── CALENDÁRIO ────────────────────────────────────────────────── */
 /* Hover do dia: era onmouseenter inline, movido para CSS por causa da CSP. */
-.cal-day:hover { background: rgba(192,24,136,0.07); }
+.cal-day:hover { background: var(--bg-hover); }

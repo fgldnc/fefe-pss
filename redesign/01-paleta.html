@@ -1,0 +1,492 @@
+<!doctype html>
+<html lang="pt-BR" data-theme="light" data-var="a">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Radar · Etapa 1 — Paleta</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════════════════════════
+   ETAPA 1 — PALETA. Mockup estático. Não é código do app.
+   Dois eixos independentes:
+     data-var   = "a" (Galo) | "b" (Galo + Uva)
+     data-theme = "light" | "dark"
+   Ambos funcionam em QUALQUER elemento, não só no <html>, para que
+   as amostras dos dois temas apareçam lado a lado na mesma página.
+   Todo token é hex literal — a tabela de contraste lê o CSS de
+   verdade com getComputedStyle e calcula em cima do valor aplicado.
+════════════════════════════════════════════════════════════════ */
+
+/* ---------- NEUTROS: iguais nas duas variações ---------- */
+:root,
+[data-theme="light"] {
+  --bg:             #F2F2F3;
+  --surface:        #FFFFFF;
+  --surface-raised: #E9E9EB;
+  --border:         #D8D8DC;
+  --border-strong:  #17171A;
+  --text-1:         #101013;
+  --text-2:         #55555C;
+  --text-3:         #6D6D76;
+
+  --receita:        #0F6B33;
+  --gasto:          #A81F16;
+  --alerta:         #7A5000;
+  --alerta-bg:      #FBF1D8;
+  --sucesso:        #0F6B33;
+  --editado:        #17171A;
+
+  --c1: #C7414F;  --c2: #C4661A;  --c3: #A88414;
+  --c4: #5E8A2C;  --c5: #2E8B6E;  --c6: #A34E9E;
+}
+[data-theme="dark"] {
+  --bg:             #0B0B0C;
+  --surface:        #141416;
+  --surface-raised: #1D1D20;
+  --border:         #2B2B31;
+  --border-strong:  #F2F2F3;
+  --text-1:         #F2F2F3;
+  --text-2:         #A9A9B1;
+  --text-3:         #87878F;
+
+  --receita:        #4ADE80;
+  --gasto:          #FF7A7A;
+  --alerta:         #FBBF24;
+  --alerta-bg:      #2A2106;
+  --sucesso:        #4ADE80;
+  --editado:        #F2F2F3;
+
+  --c1: #C7414F;  --c2: #C4661A;  --c3: #A88414;
+  --c4: #5E8A2C;  --c5: #2E8B6E;  --c6: #A34E9E;
+}
+
+/* ---------- VARIAÇÃO A — "Galo": sem acento cromático ---------- */
+[data-var="a"][data-theme="light"] { --accent: #17171A; --accent-fg: #FFFFFF; --accent-quiet: #E9E9EB; }
+[data-var="a"][data-theme="dark"]  { --accent: #F2F2F3; --accent-fg: #0B0B0C; --accent-quiet: #24242A; }
+
+/* ---------- VARIAÇÃO B — "Galo + Uva": um acento, não-azul ---------- */
+[data-var="b"][data-theme="light"] { --accent: #7B2D8E; --accent-fg: #FFFFFF; --accent-quiet: #F3E6F6; --c6: #C2185B; }
+[data-var="b"][data-theme="dark"]  { --accent: #D08CE0; --accent-fg: #180520; --accent-quiet: #241028; --c6: #C2185B; }
+
+/* ═══════════════ chrome da página de apresentação ═══════════════ */
+*,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 15px; -webkit-font-smoothing: antialiased; }
+body {
+  font-family: 'Outfit', system-ui, sans-serif;
+  background: var(--bg); color: var(--text-1);
+  line-height: 1.55; padding: 0 0 80px;
+}
+.wrap { max-width: 1180px; margin: 0 auto; padding: 0 20px; }
+.mono { font-family: var(--font-num); }
+
+header.top {
+  position: sticky; top: 0; z-index: 20;
+  background: var(--surface); border-bottom: 1px solid var(--border);
+  padding: 14px 0; margin-bottom: 28px;
+}
+header.top .wrap { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
+header.top h1 { font-size: 1.05rem; font-weight: 600; letter-spacing: -.01em; }
+header.top .sub { font-size: .8rem; color: var(--text-3); }
+.spacer { flex: 1 1 auto; }
+
+.seg { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+.seg button {
+  font: inherit; font-size: .8rem; font-weight: 500; cursor: pointer;
+  padding: 7px 13px; border: 0; background: transparent; color: var(--text-2);
+}
+.seg button[aria-pressed="true"] { background: var(--accent); color: var(--accent-fg); }
+.seg button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+h2 { font-size: 1.28rem; font-weight: 600; letter-spacing: -.015em; margin: 44px 0 6px; }
+h2:first-of-type { margin-top: 8px; }
+h3 { font-size: .74rem; font-weight: 600; text-transform: uppercase; letter-spacing: .09em; color: var(--text-3); margin: 22px 0 10px; }
+p.lede { color: var(--text-2); font-size: .92rem; max-width: 74ch; margin-bottom: 8px; }
+.note { font-size: .82rem; color: var(--text-3); max-width: 78ch; }
+code { font-family: var(--font-num); font-size: .85em; background: var(--surface-raised); padding: 1px 5px; border-radius: 4px; }
+
+/* ---- swatches ---- */
+.sw-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(148px, 1fr)); gap: 10px; }
+.sw { border: 1px solid var(--border); border-radius: 10px; overflow: hidden; background: var(--surface); }
+.sw .chip { height: 52px; }
+.sw .meta { padding: 7px 9px; }
+.sw .name { font-size: .76rem; font-weight: 500; }
+.sw .hex { font-family: var(--font-num); font-size: .68rem; color: var(--text-3); text-transform: uppercase; }
+
+/* ---- tabela de contraste ---- */
+.tbl-scroll { overflow-x: auto; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); }
+table.ct { width: 100%; border-collapse: collapse; font-size: .82rem; min-width: 620px; }
+table.ct th { text-align: left; font-weight: 600; font-size: .7rem; text-transform: uppercase; letter-spacing: .07em; color: var(--text-3); padding: 10px 12px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+table.ct td { padding: 9px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+table.ct tr:last-child td { border-bottom: 0; }
+.dot { display: inline-block; width: 13px; height: 13px; border-radius: 3px; vertical-align: -2px; margin-right: 7px; border: 1px solid var(--border); }
+.ratio { font-family: var(--font-num); font-weight: 500; }
+.verd { font-size: .7rem; font-weight: 600; padding: 2px 7px; border-radius: 20px; white-space: nowrap; }
+.verd.ok   { color: var(--receita); background: color-mix(in srgb, var(--receita) 13%, transparent); }
+.verd.fail { color: var(--gasto);   background: color-mix(in srgb, var(--gasto) 13%, transparent); }
+.verd.na   { color: var(--text-3);  background: var(--surface-raised); }
+.prova { padding: 3px 8px; border-radius: 5px; font-size: .8rem; white-space: nowrap; }
+
+/* ═══════════════ amostras ═══════════════ */
+.panes { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; align-items: start; }
+/* min-width:0 é obrigatório: item de grid tem min-width:auto por padrão e a
+   tabela de contraste (min-width 620px) empurraria a página inteira. */
+.pane { background: var(--bg); border: 1px solid var(--border); border-radius: 14px; padding: 16px; color: var(--text-1); min-width: 0; }
+.panes > *, .charts > * { min-width: 0; }
+.pane-tag { font-size: .68rem; font-weight: 600; text-transform: uppercase; letter-spacing: .09em; color: var(--text-3); margin-bottom: 12px; }
+
+.kpis { display: grid; grid-template-columns: 1fr 1.35fr 1fr; gap: 9px; margin-bottom: 12px; }
+.kpi { background: var(--surface); border: 1px solid var(--border); border-radius: 11px; padding: 11px 12px; }
+.kpi.hero { background: var(--surface-raised); }
+.kpi .lbl { font-size: .67rem; text-transform: uppercase; letter-spacing: .07em; color: var(--text-3); }
+.kpi .val { font-family: var(--font-num); font-size: 1.16rem; font-weight: 500; letter-spacing: -.02em; margin-top: 3px; }
+.kpi.hero .val { font-size: 1.5rem; }
+.kpi .sub { font-size: .7rem; color: var(--text-2); margin-top: 2px; }
+.up { color: var(--receita); } .down { color: var(--gasto); }
+
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 11px; padding: 12px; margin-bottom: 12px; }
+.card > .ttl { font-size: .72rem; font-weight: 600; text-transform: uppercase; letter-spacing: .07em; color: var(--text-3); margin-bottom: 9px; }
+
+table.tx { width: 100%; border-collapse: collapse; font-size: .8rem; }
+table.tx th { text-align: left; font-size: .64rem; text-transform: uppercase; letter-spacing: .07em; color: var(--text-3); font-weight: 600; padding: 0 6px 7px; }
+table.tx td { padding: 7px 6px; border-top: 1px solid var(--border); }
+table.tx td.num { text-align: right; font-family: var(--font-num); }
+tr.row-atencao { background: color-mix(in srgb, var(--alerta) 9%, transparent); }
+.mark-inferido { color: var(--alerta); font-size: .7rem; white-space: nowrap; }
+.mark-inferido::before { content: "◇"; margin-right: 3px; }
+.field { font: inherit; font-size: .76rem; padding: 3px 6px; border-radius: 6px; background: var(--surface); color: var(--text-1); border: 1px solid var(--border); }
+.field-inferido { border-color: var(--alerta); }
+.field-editado  { border-color: var(--editado); border-width: 2px; padding: 2px 5px; }
+.tag { font-size: .64rem; padding: 1px 6px; border-radius: 20px; border: 1px solid var(--border); color: var(--text-2); }
+
+.btn { font: inherit; font-size: .78rem; font-weight: 500; padding: 7px 13px; border-radius: 8px; cursor: pointer; border: 1px solid transparent; }
+.btn-primary { background: var(--accent); color: var(--accent-fg); }
+.btn-ghost { background: transparent; color: var(--text-1); border-color: var(--border); }
+.btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+a.link { color: var(--accent); text-underline-offset: 3px; }
+
+.charts { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.chart-box { position: relative; height: 172px; }
+.legend { list-style: none; font-size: .72rem; }
+.legend li { display: flex; align-items: center; gap: 6px; padding: 2px 0; }
+.legend .k { width: 9px; height: 9px; border-radius: 2px; flex: 0 0 auto; }
+.legend .nm { flex: 1 1 auto; color: var(--text-2); }
+.legend .vl { font-family: var(--font-num); color: var(--text-1); }
+
+.rec { background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--accent); border-radius: 11px; padding: 16px 18px; }
+.rec h3 { margin-top: 0; }
+.rec ul { margin: 8px 0 0 18px; font-size: .88rem; color: var(--text-2); }
+.rec li { margin-bottom: 5px; }
+.rec li strong { color: var(--text-1); font-weight: 600; }
+
+@media (max-width: 900px) {
+  .panes { grid-template-columns: 1fr; }
+  .charts { grid-template-columns: 1fr; }
+  .kpis { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <div>
+      <h1>Radar · Etapa 1 — Paleta</h1>
+      <div class="sub">Mockup estático. Nenhum arquivo do app foi tocado.</div>
+    </div>
+    <div class="spacer"></div>
+    <div class="seg" role="group" aria-label="Variação">
+      <button id="vA" aria-pressed="true">A · Galo</button>
+      <button id="vB" aria-pressed="false">B · Galo + Uva</button>
+    </div>
+    <div class="seg" role="group" aria-label="Tema desta página">
+      <button id="tL" aria-pressed="true">Claro</button>
+      <button id="tD" aria-pressed="false">Escuro</button>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+<h2 id="vtitle">Variação A</h2>
+<p class="lede" id="vdesc"></p>
+
+<h3>Tokens</h3>
+<p class="note">Os mesmos tokens em tema claro e escuro. Neutros e semânticos são idênticos nas duas variações; só o acento (e, na B, a 6ª cor categórica) muda.</p>
+
+<div class="panes" style="margin-top:12px">
+  <div class="pane" data-theme="light" data-scope>
+    <div class="pane-tag">Claro</div>
+    <div class="sw-grid" data-swatches></div>
+  </div>
+  <div class="pane" data-theme="dark" data-scope>
+    <div class="pane-tag">Escuro</div>
+    <div class="sw-grid" data-swatches></div>
+  </div>
+</div>
+
+<h2>Contraste (WCAG 2.1)</h2>
+<p class="lede">Calculado ao vivo a partir do CSS aplicado — não é número digitado à mão. Texto normal exige <strong>4.5:1</strong>; elementos gráficos (borda forte, fatia de gráfico) exigem <strong>3:1</strong>. Borda sutil é decorativa e não tem requisito.</p>
+
+<div class="panes" style="margin-top:12px">
+  <div class="pane" data-theme="light" data-scope>
+    <div class="pane-tag">Claro</div>
+    <div class="tbl-scroll"><table class="ct" data-ct><thead><tr><th>Papel</th><th>Sobre</th><th>Razão</th><th>Exige</th><th>Veredito</th><th>Prova</th></tr></thead><tbody></tbody></table></div>
+  </div>
+  <div class="pane" data-theme="dark" data-scope>
+    <div class="pane-tag">Escuro</div>
+    <div class="tbl-scroll"><table class="ct" data-ct><thead><tr><th>Papel</th><th>Sobre</th><th>Razão</th><th>Exige</th><th>Veredito</th><th>Prova</th></tr></thead><tbody></tbody></table></div>
+  </div>
+</div>
+<p class="note" id="ctsum" style="margin-top:10px"></p>
+
+<h2>Paleta aplicada</h2>
+<p class="lede">KPI, linha de tabela de gasto (com um campo inferido e um editado), rosca de categorias e linha de evolução. Dados fictícios.</p>
+
+<div class="panes" style="margin-top:12px">
+  <div class="pane" data-theme="light" data-scope data-samples>
+    <div class="pane-tag">Claro</div>
+    <div data-sample-slot></div>
+  </div>
+  <div class="pane" data-theme="dark" data-scope data-samples>
+    <div class="pane-tag">Escuro</div>
+    <div data-sample-slot></div>
+  </div>
+</div>
+
+<h2>Recomendação</h2>
+<div class="rec" id="rec"></div>
+
+</div>
+
+<script>
+/* ═══════════ 1. contraste WCAG ═══════════ */
+const hex2rgb = h => { h = h.trim().replace('#',''); if (h.length===3) h = h.split('').map(c=>c+c).join('');
+  return [0,2,4].map(i=>parseInt(h.slice(i,i+2),16)); };
+const lum = hex => { const [r,g,b] = hex2rgb(hex).map(v=>{ v/=255; return v<=0.03928 ? v/12.92 : Math.pow((v+0.055)/1.055, 2.4); });
+  return 0.2126*r + 0.7152*g + 0.0722*b; };
+const ratio = (a,b) => { const L1 = lum(a), L2 = lum(b); const hi = Math.max(L1,L2), lo = Math.min(L1,L2);
+  return (hi + 0.05) / (lo + 0.05); };
+const tok = (el, name) => getComputedStyle(el).getPropertyValue(name).trim();
+
+/* ═══════════ 2. definições ═══════════ */
+const SWATCHES = [
+  ['Fundo','--bg'], ['Superfície','--surface'], ['Superfície elevada','--surface-raised'],
+  ['Borda','--border'], ['Borda forte','--border-strong'],
+  ['Texto primário','--text-1'], ['Texto secundário','--text-2'], ['Texto terciário','--text-3'],
+  ['Acento','--accent'], ['Sobre o acento','--accent-fg'],
+  ['Receita','--receita'], ['Gasto','--gasto'],
+  ['Alerta (inferido)','--alerta'], ['Editado','--editado'], ['Sucesso','--sucesso'],
+  ['Categórica 1','--c1'], ['Categórica 2','--c2'], ['Categórica 3','--c3'],
+  ['Categórica 4','--c4'], ['Categórica 5','--c5'], ['Categórica 6','--c6'],
+];
+
+const PAIRS = [
+  ['Texto primário',   '--text-1','--surface', 4.5, 'Texto'],
+  ['Texto primário',   '--text-1','--bg',      4.5, 'Texto'],
+  ['Texto secundário', '--text-2','--surface', 4.5, 'Texto'],
+  ['Texto terciário',  '--text-3','--surface', 4.5, 'Texto'],
+  ['Texto terciário',  '--text-3','--bg',      4.5, 'Texto'],
+  ['Sobre o acento',   '--accent-fg','--accent', 4.5, 'Botão'],
+  ['Acento como texto','--accent','--surface', 4.5, 'Link'],
+  ['Receita',          '--receita','--surface',4.5, '+R$ 6.478'],
+  ['Gasto',            '--gasto','--surface',  4.5, '-R$ 2.795'],
+  ['Alerta (inferido)','--alerta','--surface', 4.5, 'inferido'],
+  ['Sucesso',          '--sucesso','--surface',4.5, 'Salvo'],
+  ['Editado (borda)',  '--editado','--surface',3.0, 'campo'],
+  ['Borda forte',      '--border-strong','--surface', 3.0, '—'],
+  ['Borda sutil',      '--border','--surface', null, '—'],
+  ['Categórica 1',     '--c1','--surface', 3.0, '—'],
+  ['Categórica 2',     '--c2','--surface', 3.0, '—'],
+  ['Categórica 3',     '--c3','--surface', 3.0, '—'],
+  ['Categórica 4',     '--c4','--surface', 3.0, '—'],
+  ['Categórica 5',     '--c5','--surface', 3.0, '—'],
+  ['Categórica 6',     '--c6','--surface', 3.0, '—'],
+];
+
+const VAR_TEXT = {
+  a: {
+    title: 'Variação A — "Galo"',
+    desc: 'Preto, branco e grafites. <strong>Nenhum acento cromático no chrome.</strong> A ação primária é o próprio contraste — botão preto no claro, branco no escuro. Consequência: a única cor na tela é cor que <em>significa</em> alguma coisa (receita, gasto, inferido, categoria do gráfico). É a leitura mais literal do Atlético-MG e a que mais se afasta de Visor, Mobills e Organizze, que afogam a interface inteira numa cor de marca saturada.'
+  },
+  b: {
+    title: 'Variação B — "Galo + Uva"',
+    desc: 'Mesmos neutros, mais <strong>um único acento: uva</strong> (<code>#7B2D8E</code> claro / <code>#D08CE0</code> escuro). Escolhi roxo-uva porque é a única família cromática que sobra: azul está proibido; verde e vermelho já são receita e gasto; âmbar já é <code>.mark-inferido</code>; magenta é acento categórico de gráfico. O acento cobre link, foco, item ativo da sidebar e botão primário. Custo: a 6ª cor categórica sai de ameixa para rosa-vinho (<code>#C2185B</code>) para não colidir com o acento.'
+  }
+};
+
+const REC = [
+'<h3>Recomendo a A</h3>',
+'<p class="lede">Com a ressalva de que a B é defensável se o app precisar de uma cara própria ao lado do logo.</p>',
+'<ul>',
+'<li><strong>O problema que você descreveu é excesso de cor sem significado.</strong> A paleta atual tem azul, ciano, magenta, âmbar, roxo e ouro no chrome — antes de qualquer dado aparecer. Na A, cor na tela passa a ser sempre informação.</li>',
+'<li><strong>O app é lido pelo seu chefe.</strong> Sem acento de marca, não há nada para aprender: preto é ação, verde entrou, vermelho saiu, âmbar é chute do app. Quatro regras.</li>',
+'<li><strong>Sobrevive ao gráfico.</strong> Com 6 categóricas na rosca, um acento cromático no chrome vira a sétima cor competindo por atenção. Na A, o gráfico é a única coisa colorida do card.</li>',
+'<li><strong>O que a A perde:</strong> distinção de marca. Preto e branco é elegante e genérico. Se isso incomodar, a B resolve trocando um único token, sem mexer em mais nada.</li>',
+'</ul>',
+'<h3 style="margin-top:18px">Decisões que dependem de você</h3>',
+'<ul>',
+'<li><strong>Substituto do azul em <code>.field-editado</code>:</strong> proponho neutro de alto contraste (preto no claro, branco no escuro), com borda de 2px. "Editado" vira <em>ênfase</em>, não cor — e assim não compete com o âmbar do inferido nem com o acento da ação primária. Vale nas duas variações.</li>',
+'<li><strong>Magenta:</strong> hoje o <code>CLAUDE.md</code> reserva magenta como acento categórico. Na A ele continua sendo a categórica 6. Na B ele vira rosa-vinho. Se você quiser magenta preservado exatamente como está, isso empurra para a A.</li>',
+'<li><strong><code>--gold</code> desaparece</strong> nas duas. Hoje é idêntico a <code>--warning</code> (<code>#fbbf24</code>) e o roteiro da rodada 4 já proibiu ouro no Fluxo de Caixa. Dois nomes para a mesma cor é como se perde a disciplina do âmbar.</li>',
+'</ul>'
+].join('');
+
+/* ═══════════ 3. render ═══════════ */
+const root = document.documentElement;
+const scopes = () => [...document.querySelectorAll('[data-scope]')];
+
+function setVar(v) {
+  root.dataset.var = v;
+  scopes().forEach(s => s.dataset.var = v);
+  vA.setAttribute('aria-pressed', v === 'a'); vB.setAttribute('aria-pressed', v === 'b');
+  document.getElementById('vtitle').textContent = VAR_TEXT[v].title;
+  document.getElementById('vdesc').innerHTML = VAR_TEXT[v].desc;
+  renderAll();
+}
+function setTheme(t) {
+  root.dataset.theme = t;
+  tL.setAttribute('aria-pressed', t === 'light'); tD.setAttribute('aria-pressed', t === 'dark');
+}
+
+function renderSwatches() {
+  document.querySelectorAll('[data-swatches]').forEach(grid => {
+    const scope = grid.closest('[data-scope]');
+    grid.innerHTML = SWATCHES.map(([nm, t]) => {
+      const hex = tok(scope, t);
+      return '<div class="sw"><div class="chip" style="background:' + hex + '"></div>' +
+        '<div class="meta"><div class="name">' + nm + '</div><div class="hex">' + hex + '</div>' +
+        '<div class="hex" style="opacity:.6">' + t + '</div></div></div>';
+    }).join('');
+  });
+}
+
+let failCount = 0;
+function renderContrast() {
+  failCount = 0;
+  document.querySelectorAll('[data-ct]').forEach(tbl => {
+    const scope = tbl.closest('[data-scope]');
+    const body = tbl.querySelector('tbody');
+    body.innerHTML = PAIRS.map(([nm, fg, bg, need, prova]) => {
+      const cFg = tok(scope, fg), cBg = tok(scope, bg);
+      const r = ratio(cFg, cBg);
+      let cls = 'na', txt = 'decorativa';
+      if (need !== null) {
+        const ok = r >= need;
+        cls = ok ? 'ok' : 'fail';
+        txt = ok ? 'passa' : 'REPROVA';
+        if (!ok) failCount++;
+      }
+      const proof = prova === '—'
+        ? '<span class="dot" style="background:' + cFg + '"></span>'
+        : '<span class="prova" style="background:' + cBg + ';color:' + cFg + '">' + prova + '</span>';
+      return '<tr>' +
+        '<td><span class="dot" style="background:' + cFg + '"></span>' + nm + '</td>' +
+        '<td class="mono" style="font-size:.72rem;color:var(--text-3)">' + bg.replace('--','') + '</td>' +
+        '<td class="ratio">' + r.toFixed(2) + ':1</td>' +
+        '<td class="mono" style="font-size:.72rem;color:var(--text-3)">' + (need === null ? '—' : need.toFixed(1)) + '</td>' +
+        '<td><span class="verd ' + cls + '">' + txt + '</span></td>' +
+        '<td>' + proof + '</td>' +
+      '</tr>';
+    }).join('');
+  });
+  document.getElementById('ctsum').textContent = failCount === 0
+    ? 'Nenhum par reprovado nos dois temas desta variação.'
+    : failCount + ' par(es) reprovado(s) — corrigir antes de seguir.';
+}
+
+const SAMPLE = [
+'<div class="kpis">',
+'<div class="kpi"><div class="lbl">Receitas</div><div class="val up">R$ 6.478</div><div class="sub">3 lançamentos</div></div>',
+'<div class="kpi hero"><div class="lbl">Livre para gastar</div><div class="val">R$ 2.183</div><div class="sub">de R$ 4.983 · faltam 12 dias</div></div>',
+'<div class="kpi"><div class="lbl">Gastos</div><div class="val down">R$ 2.795</div><div class="sub">-4,2% vs. julho</div></div>',
+'</div>',
+'<div class="card">',
+'<div class="ttl">Gastos de agosto</div>',
+'<table class="tx">',
+'<thead><tr><th>Data</th><th>Descrição</th><th>Categoria</th><th style="text-align:right">Valor</th></tr></thead>',
+'<tbody>',
+'<tr><td class="mono">04/08</td><td>Supermercado Zona Sul</td><td><select class="field"><option>Alimentação</option></select></td><td class="num down">R$ 412,90</td></tr>',
+'<tr class="row-atencao"><td class="mono">07/08 <span class="mark-inferido">ano</span></td><td>PG *LOJA 4471</td><td><select class="field field-inferido"><option>Sem categoria</option></select> <span class="mark-inferido">inferido</span></td><td class="num down">R$ 89,00</td></tr>',
+'<tr><td class="mono">11/08</td><td>Farmácia São João</td><td><select class="field field-editado"><option>Saúde</option></select></td><td class="num down">R$ 63,40</td></tr>',
+'<tr><td class="mono">15/08</td><td>SENAC · parcela 3/6 <span class="tag">projetada</span></td><td><select class="field"><option>Educação</option></select></td><td class="num down">R$ 267,30</td></tr>',
+'</tbody></table>',
+'<div style="display:flex;gap:8px;margin-top:11px;align-items:center;flex-wrap:wrap">',
+'<button class="btn btn-primary">Salvar assim mesmo · 1 sem categoria</button>',
+'<button class="btn btn-ghost">Cancelar</button>',
+'<a class="link" href="#" style="font-size:.78rem;margin-left:auto">ver só pendências</a>',
+'</div></div>',
+'<div class="charts">',
+'<div class="card" style="margin:0">',
+'<div class="ttl">Por categoria</div>',
+'<div class="chart-box"><canvas data-donut></canvas></div>',
+'<ul class="legend" data-legend style="margin-top:8px"></ul>',
+'</div>',
+'<div class="card" style="margin:0">',
+'<div class="ttl">Evolução · 6 meses</div>',
+'<div class="chart-box" style="height:266px"><canvas data-line></canvas></div>',
+'</div>',
+'</div>'
+].join('');
+
+const CATS = [
+  ['Moradia', 1487, '--c1'], ['Alimentação', 747, '--c2'], ['Transporte', 198, '--c3'],
+  ['Saúde', 129, '--c4'], ['Educação', 267, '--c5'], ['Outros', 128, '--c6'],
+];
+
+let charts = [];
+function renderSamples() {
+  charts.forEach(c => c.destroy()); charts = [];
+  document.querySelectorAll('[data-samples]').forEach(pane => {
+    pane.querySelector('[data-sample-slot]').innerHTML = SAMPLE;
+
+    const col = n => tok(pane, n);
+    const grid = col('--border'), txt3 = col('--text-3'), surf = col('--surface');
+    const cores = CATS.map(c => col(c[2]));
+
+    pane.querySelector('[data-legend]').innerHTML = CATS.map((c, i) =>
+      '<li><span class="k" style="background:' + cores[i] + '"></span><span class="nm">' + c[0] +
+      '</span><span class="vl">R$ ' + c[1].toLocaleString('pt-BR') + '</span></li>'
+    ).join('');
+
+    charts.push(new Chart(pane.querySelector('[data-donut]'), {
+      type: 'doughnut',
+      data: { labels: CATS.map(c => c[0]), datasets: [{ data: CATS.map(c => c[1]), backgroundColor: cores, borderColor: surf, borderWidth: 2 }] },
+      options: { responsive: true, maintainAspectRatio: false, cutout: '64%', plugins: { legend: { display: false } } }
+    }));
+
+    charts.push(new Chart(pane.querySelector('[data-line]'), {
+      type: 'line',
+      data: {
+        labels: ['Mar','Abr','Mai','Jun','Jul','Ago'],
+        datasets: [
+          { label: 'Receita', data: [6100,6180,6478,6478,6478,6478], borderColor: col('--receita'), backgroundColor: 'transparent', borderWidth: 2, pointRadius: 0, tension: .3 },
+          { label: 'Gasto', data: [3410,2980,3520,3105,2918,2795], borderColor: col('--gasto'), backgroundColor: 'transparent', borderWidth: 2, pointRadius: 0, tension: .3 },
+          { label: 'Investido', data: [800,800,1000,1000,1200,1200], borderColor: col('--text-3'), borderDash: [4,4], backgroundColor: 'transparent', borderWidth: 1.5, pointRadius: 0, tension: .3 }
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { labels: { color: txt3, boxWidth: 10, font: { size: 10 } } } },
+        scales: {
+          x: { grid: { color: grid }, ticks: { color: txt3, font: { size: 10 } }, border: { color: grid } },
+          y: { grid: { color: grid }, ticks: { color: txt3, font: { size: 10 }, callback: v => v >= 1000 ? (v/1000)+'k' : v }, border: { color: grid } }
+        }
+      }
+    }));
+  });
+}
+
+function renderAll() { renderSwatches(); renderContrast(); renderSamples(); }
+
+document.getElementById('rec').innerHTML = REC;
+vA.onclick = () => setVar('a');
+vB.onclick = () => setVar('b');
+tL.onclick = () => setTheme('light');
+tD.onclick = () => setTheme('dark');
+
+scopes().forEach(s => s.dataset.var = 'a');
+setVar('a');
+</script>
+</body>
+</html>

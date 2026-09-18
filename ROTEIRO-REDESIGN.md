@@ -770,3 +770,58 @@ Cole numa sessão nova:
   **Resolvido em 02/08/2026:** hoje é `js/firebase-init.js`, carregado em
   `index.html:14`. O mapa de arquivos de `CLAUDE.md` também não listava
   `js/extratos.js` nem `js/firebase-init.js` — corrigido.
+
+---
+
+## Aplicação do redesign no app (a partir de 18/09/2026)
+
+O redesign projetado em `/redesign` passa a ser portado para o app real, em
+rodadas pequenas, uma aba por vez, com conferência da Fefe entre cada uma.
+Ordem: **1 tokens e tipografia** · 2 sidebar e rótulos · 3 caber na dobra ·
+4 Visão do mês · 5 Fluxo de Caixa, Gastos, Extratos · 6 o resto das abas ·
+7 os 5 atalhos novos.
+
+### Rodada A1 — Tokens e tipografia · FEITA
+
+Só pele: nenhuma estrutura de tela, nenhum seletor novo, nenhum HTML tocado.
+
+- **Paleta A "Galo"** em `css/style.css`. Os **nomes de token antigos foram
+  mantidos e reapontados** — trocar `--accent-primary` por `--accent` em ~1.400
+  linhas de CSS e JS seria mudança estrutural, e esta rodada não é isso. Os
+  quatro nomes de acento (`--accent-primary`, `--accent-secondary`,
+  `--accent-bright`, e agora `--accent-fg`) apontam para o mesmo neutro, para
+  que nenhum azul sobreviva num seletor esquecido.
+- **Tema claro** existe como `[data-theme="light"]`, com os mesmos nomes. **Não
+  há botão de troca ainda** — ele entra junto da sidebar nova (rodada A2). Para
+  conferir agora: `data-theme="light"` no `<html>`.
+- **Nunito** substitui Outfit e JetBrains Mono. `--font-mono` continua existindo
+  como nome, mas aponta para Nunito; `--font-code` (DM Mono) é novo e sobra para
+  referência de código. O alinhamento da coluna de valores passou a vir de
+  `font-variant-numeric: tabular-nums lining-nums`, aplicado globalmente.
+- **`--gold` removido.** Era idêntico a `--warning`. As 9 ocorrências viraram
+  `--warning` (`gastos.js`, `patrimonio.js`, `timeline.js` e CSS).
+- **`--positive` era token inexistente** em `patrimonio.js:52` — bug
+  pré-existente, a cor simplesmente não se aplicava. Virou `--success`.
+- **`--info` deixou de ser roxo** e virou neutro: as tags de meio de pagamento
+  (cartão, TED, DOC) não carregam juízo nenhum.
+- **`.field-editado` deixou de ser azul** e virou o neutro de maior contraste,
+  com borda de 2px — "editado" é ênfase, não cor, e assim não disputa com o
+  âmbar do inferido nem com a ação primária.
+- **`.fx-hoje` deixou de ser ciano**: fundo elevado mais barra forte na borda
+  esquerda da linha.
+- **A faixa do hero do Dashboard perdeu as cores.** Os três segmentos (real,
+  investido, projetado) se distinguem por **opacidade** (1 · 0,66 · 0,34), não
+  por matiz — é tudo a mesma grandeza.
+- **Cores de gráfico atualizadas nos dois pontos onde são HEX literal**, porque
+  canvas não resolve `var(--…)`: `js/saldos.js` (a constante `HEX_AZUL` virou
+  `HEX_LINHA`, já que não é mais azul) e `js/dashboard.js` (evolução mensal e
+  rosca). Fonte dos eixos também passou para Nunito.
+- CSP não precisou mudar: a Nunito vem do mesmo `fonts.googleapis.com` já
+  liberado em `vercel.json:24`.
+- Testes: 68 passando, 0 falhando (`test/*.mjs`).
+- `.claude/launch.json` novo, só para servir o app estático em `localhost:4321`
+  e conferir no navegador — não faz parte do app.
+
+**Pendente desta rodada:** o botão de troca de tema (vai na A2) e
+`.btn-atencao`, que no mockup é preto/branco e no app ainda é âmbar — muda
+junto dos modais de importação, na rodada A5.

@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="pt-BR" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Radar · Fluxo de Caixa</title>
+<link rel="stylesheet" href="_radar.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  /* .fx-kpis é 1fr 1.35fr 1fr: o do meio é o único que induz decisão. */
+  .fx-kpis{display:grid;grid-template-columns:1fr 1.35fr 1fr;gap:11px;margin-bottom:16px}
+  .mobile .fx-kpis{grid-template-columns:1fr}
+  @media(max-width:860px){.fx-kpis{grid-template-columns:1fr}}
+  /* Estado de linha: a paleta A não tem azul, então "hoje" deixou de ser
+     ciano e virou ênfase neutra — borda forte à esquerda. */
+  tr.fx-hoje td{background:var(--surface-raised);font-weight:500}
+  tr.fx-hoje td:first-child{box-shadow:inset 3px 0 0 var(--border-strong)}
+  tr.fx-min td{box-shadow:inset 0 -1px 0 var(--border-strong)}
+  td.saldo-neg{color:var(--gasto)}
+  .omitido{font-size:.74rem;color:var(--text-3);text-align:center;padding:9px 0}
+</style>
+</head>
+<body>
+<script src="_shell.js"></script>
+<script>
+const { mount, checklist, fmt, fmt0, tok, skTable } = Radar;
+
+const ABERTURA = 3250.00;
+/* dia, descrição, entrada, saída, projetada */
+const MOV = [
+  [1,  'Saldo de abertura',            0,       0,    false],
+  [3,  'Fatura do cartão · Itaú',        0, 2318.55, false],
+  [5,  'Salário · GBA Advogados',   5200.00,    0,    false],
+  [5,  'Vale-alimentação',           780.00,    0,    false],
+  [5,  'Aluguel agosto',                  0, 1487.00, false],
+  [12, 'Tesouro Selic · aporte',          0, 1200.00, false],
+  [15, 'SENAC · parcela 4/6',             0,  267.30, true],
+  [19, null,                              0,       0, false],  // hoje, sem movimento
+  [20, 'Conta de luz',                    0,  214.80, false],
+  [25, 'Freela · landing page',      498.00,       0, false],
+];
+const HOJE = 19;
+
+let saldo = ABERTURA;
+const linhas = MOV.map(m => { saldo += m[2] - m[3]; return { d:m[0], t:m[1], e:m[2], s:m[3], p:m[4], saldo }; });
+/* Empate resolve pela PRIMEIRA ocorrência — é o que mantém o ponto do gráfico,
+   a linha destacada e o dia citado no KPI sendo o mesmo dia. */
+const MIN = linhas.reduce((a,b) => b.saldo < a.saldo ? b : a);
+const FINAL = linhas.at(-1).saldo;
+
+/* série diária para o gráfico */
+const DIAS = 31;
+const serie = []; let acc = ABERTURA;
+for (let d = 1; d <= DIAS; d++) {
+  MOV.filter(m => m[0] === d).forEach(m => acc += m[2] - m[3]);
+  serie.push(acc);
+}
+
+const dados = `
+<div class="fx-kpis">
+  <div class="kpi"><span class="kpi-lbl">Abertura de agosto</span>
+    <span class="kpi-val">${fmt(ABERTURA)}</span>
+    <span class="kpi-sub">fechamento de julho</span></div>
+
+  <div class="kpi hero"><span class="kpi-lbl">Menor saldo do mês</span>
+    <span class="kpi-val ${MIN.saldo < 0 ? 'down' : ''}">${fmt(MIN.saldo)}</span>
+    <span class="kpi-sub">no dia ${MIN.d}, véspera do salário do dia 5</span>
+    <a class="kpi-link" href="03-gastos.html">Ver o que sai até lá →</a></div>
+
+  <div class="kpi"><span class="kpi-lbl">Projeção de fechamento</span>
+    <span class="kpi-val">${fmt(FINAL)}</span>
+    <span class="kpi-sub"><span class="mark-inferido">inclui 1 parcela não conferida</span></span></div>
+</div>
+
+<div class="card">
+  <div class="card-head"><span class="card-ttl">Saldo diário · agosto 2026</span></div>
+  <p class="card-sub">A curva é o dinheiro na conta a cada dia. O ponto âmbar é o dia mais apertado do mês.</p>
+  <div class="chart-box tall"><canvas id="fx"></canvas></div>
+</div>
+
+<div class="card grow">
+  <div class="card-head"><span class="card-ttl">Dias com movimento</span><span class="sp"></span>
+    <span class="form-hint">A tabela mostra só os dias em que algo entra ou sai, mais o dia 1 e hoje.</span></div>
+  <p class="card-sub">Só aparecem os dias em que algo entra ou sai. Os dias parados são contados nas linhas cinzas, para você saber que não sumiu nada.</p>
+  <div class="table-wrapper">
+    <table class="data">
+      <thead><tr><th>Dia</th><th>Movimento</th><th class="num">Entra</th><th class="num">Sai</th><th class="num">Saldo</th></tr></thead>
+      <tbody>
+        ${linhas.map((l, i) => {
+          const gap = i > 0 ? l.d - linhas[i-1].d - 1 : 0;
+          const om = gap > 0
+            ? `<tr><td colspan="5" class="omitido">${gap} dia${gap>1?'s':''} sem movimento omitido${gap>1?'s':''}</td></tr>` : '';
+          const cls = [l.d === HOJE ? 'fx-hoje' : '', l === MIN ? 'fx-min' : ''].join(' ').trim();
+          return om + `
+            <tr class="${cls}">
+              <td class="mono">${String(l.d).padStart(2,'0')}/08${l.d === HOJE ? ' · hoje' : ''}</td>
+              <td>${l.t ? l.t : '<span style="color:var(--text-3)">sem movimento</span>'}
+                  ${l.p ? '<span class="tag tag-projetada">projetada</span>' : ''}
+                  ${l === MIN ? '<span class="tag">menor saldo</span>' : ''}</td>
+              <td class="num ${l.e ? 'up' : ''}">${l.e ? fmt(l.e) : '—'}</td>
+              <td class="num ${l.s ? 'down' : ''}">${l.s ? fmt(l.s) : '—'}</td>
+              <td class="num ${l.saldo < 0 ? 'saldo-neg' : ''}">${fmt(l.saldo)}</td>
+            </tr>`;
+        }).join('')}
+        <tr><td colspan="5" class="omitido">6 dias sem movimento omitidos</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="form-hint" style="margin-top:10px">
+    A fatura do cartão cai toda no dia 3 porque o dia de vencimento está definido nas Configurações.
+    Sem esse dia, cada compra cairia no dia em que foi feita e a linha viria marcada em âmbar.</p>
+</div>`;
+
+const vazio = `
+<div class="fx-kpis">
+  <div class="kpi"><span class="kpi-lbl">Abertura de agosto</span>
+    <span class="kpi-val" style="color:var(--text-3)">não definida</span>
+    <span class="kpi-sub">ausente não é zero</span></div>
+  <div class="kpi hero">
+    <span class="kpi-lbl">Menor saldo do mês</span>
+    <span class="kpi-val" style="color:var(--text-3)">—</span>
+    <span class="kpi-sub">precisa do saldo de abertura para existir</span>
+    <div class="form-row" style="margin:11px 0 0">
+      <input class="form-input" placeholder="Saldo em 01/08" style="max-width:170px">
+      <button class="btn btn-primary btn-sm">Salvar abertura</button>
+    </div>
+  </div>
+  <div class="kpi"><span class="kpi-lbl">Projeção de fechamento</span>
+    <span class="kpi-val" style="color:var(--text-3)">—</span>
+    <span class="kpi-sub">idem</span></div>
+</div>
+
+<div class="card">
+  <div class="card-head"><span class="card-ttl">Dias com movimento</span></div>
+  <div class="table-wrapper">
+    <table class="data">
+      <thead><tr><th>Dia</th><th>Movimento</th><th class="num">Entra</th><th class="num">Sai</th>
+        <th class="num">Acumulado</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">05/08</td><td>Salário · GBA Advogados</td>
+          <td class="num up">${fmt(5200)}</td><td class="num">—</td><td class="num">${fmt(5200)}</td></tr>
+        <tr><td class="mono">05/08</td><td>Aluguel agosto</td>
+          <td class="num">—</td><td class="num down">${fmt(1487)}</td><td class="num">${fmt(3713)}</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="form-hint" style="margin-top:10px">Sem saldo de abertura, a coluna deixa de se chamar
+    <b>Saldo</b> e passa a <b>Acumulado</b>: é a soma dos movimentos do mês, não o dinheiro que existe na conta.
+    Zero seria uma abertura legítima; ausente é outra coisa, e a tela não finge que são a mesma.</p>
+</div>`;
+
+const carregando = `
+<div class="fx-kpis">${[0,1,2].map(() =>
+  `<div class="kpi"><span class="sk sk-line" style="width:50%"></span>
+   <span class="sk sk-line" style="height:24px;width:70%"></span>
+   <span class="sk sk-line" style="width:60%"></span></div>`).join('')}</div>
+${Radar.skChart(260)}${skTable(8,5)}`;
+
+let c;
+
+/* Chart.js é canvas e não resolve var(--…): toda cor da curva é lida
+   com tok() antes de montar o gráfico, e o gráfico é refeito quando o
+   tema muda. Já houve regressão no app por passar var(--accent-primary). */
+function draw(root) {
+  const corLinha = tok('--text-1'), corNeg = tok('--gasto'), corMin = tok('--alerta');
+  const base = Radar.chartBase();
+  c = new Chart(root.querySelector('#fx'), {
+    type:'line',
+    data:{ labels: Array.from({length:DIAS}, (_,i)=>i+1),
+      datasets:[
+        { ...Radar.linha('Saldo', serie, corLinha), tension: 0.18,
+          /* trecho negativo muda de cor sem virar outra série */
+          segment:{ borderColor: ctx => ctx.p1.parsed.y < 0 ? corNeg : corLinha } },
+        { label:'Dia mais apertado', data: serie.map((v,i)=> i+1 === MIN.d ? v : null),
+          borderColor:'transparent', backgroundColor: corMin,
+          pointRadius:6, pointHoverRadius:8, pointBorderColor: tok('--surface'), pointBorderWidth:2.5 },
+      ]},
+    options:{ ...base,
+      plugins:{ ...base.plugins,
+        tooltip:{ ...base.plugins.tooltip,
+          callbacks:{ title: it => 'Dia ' + it[0].label + ' de agosto', label: ctx => ' ' + fmt(ctx.parsed.y) } } } }
+  });
+}
+
+mount({ tab:'calendario', title:'Fluxo de Caixa',
+  intro:"O saldo da conta dia a dia até o fim do mês. <b>Olhe o número do meio:</b> ele diz qual é o dia mais apertado e por quê. Se a abertura não estiver preenchida, preencha primeiro.",
+  states:{dados, vazio, carregando},
+  onRender(estado, root) { if (c) { c.destroy(); c = null; } if (estado === 'dados') draw(root); } });
+
+document.getElementById('screen').insertAdjacentHTML('beforeend', checklist('js/saldos.js', [
+  ['renderCalendario / renderSaldos', 'Ponto de entrada da aba', 'Tela inteira'],
+  ['buildMovimentos', 'Junta gasto, receita e fatura num movimento por dia', 'Tabela "Dias com movimento"'],
+  ['buildSerie', 'Saldo acumulado dia a dia a partir da abertura', 'Curva do gráfico'],
+  ['acharMinimo', 'Menor saldo; empate resolve pela primeira ocorrência', 'KPI do meio + ponto âmbar no gráfico'],
+  ['contextoDoMinimo', 'Entrada até 3 dias depois vira "véspera de"', '"véspera do salário do dia 5"'],
+  ['_fechamentoAnterior', 'Abertura sugerida a partir do mês anterior', 'KPI "Abertura de agosto"'],
+  ['_renderKpis', '3 KPIs, o do meio em destaque (1fr 1.35fr 1fr)', 'Faixa .fx-kpis'],
+  ['saldoInicial ausente ≠ zero', 'Esconde mínimo e projeção, troca Saldo por Acumulado', 'Estado "Vazio"'],
+  ['fx-saldo-inicial / _salvarAbertura', 'Campo para gravar a abertura do mês', 'Campo no estado "Vazio"'],
+  ['_renderTabela', 'Só dias com movimento, mais o dia 1 e hoje', 'Tabela'],
+  ['contador de dias omitidos', 'A omissão não é silenciosa', 'Linhas "N dias sem movimento omitidos"'],
+  ['linha de hoje', 'Destaque do dia corrente', 'Linha 19/08 · hoje'],
+  ['saldo negativo', 'Vermelho só para negativo — fato aritmético, não pendência', 'Coluna Saldo'],
+  ['tag-projetada', 'Parcela ainda não conferida', 'Linha SENAC 4/6'],
+  ['faturaVencimentoDia', 'Cartão vira uma linha só no dia do vencimento (1 a 28)', 'Linha 10/08 + nota'],
+  ['mark-inferido sem vencimento', 'Sem o dia, cai no dia da compra e marca em âmbar', 'Nota no rodapé + KPI de projeção'],
+  ['_renderChart', 'Curva do saldo diário em Chart.js', 'Card "Saldo diário"'],
+  ['cores em HEX literal', 'Canvas não resolve var(--…)', 'Lidas com tok() antes de montar o gráfico'],
+  ['ciano do .fx-hoje', 'A paleta A não tem azul: "hoje" virou ênfase neutra, não cor', 'Borda forte à esquerda da linha'],
+]));
+</script>
+</body>
+</html>

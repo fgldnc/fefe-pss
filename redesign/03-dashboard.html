@@ -1,0 +1,314 @@
+<!doctype html>
+<html lang="pt-BR" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Radar · Visão do mês</title>
+<link rel="stylesheet" href="_radar.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  /* ── A tela inteira cabe na dobra. Duas faixas: em cima o que
+        decide (quanto sobra) e para onde foi; embaixo três apoios.
+        Nada rola a página — o que passa do espaço rola dentro do card. ── */
+  .painel{grid-template-columns:1.3fr 1fr;grid-template-rows:minmax(0,1.08fr) minmax(0,.92fr)}
+  .painel .linha2{grid-column:1/-1;display:grid;grid-template-columns:1.25fr .85fr .9fr;gap:16px;min-height:0}
+  .painel .linha2 > *{min-height:0}
+  @media(max-width:1150px){.painel .linha2{grid-template-columns:1fr 1fr}}
+  @media(max-width:900px){.painel{grid-template-columns:1fr}.painel .linha2{grid-template-columns:1fr}}
+
+  .hero{background:var(--surface-raised);border:1px solid var(--border);border-radius:18px;
+    padding:20px 22px;display:flex;flex-direction:column;min-height:0;overflow:auto}
+  .hero-lbl{font-size:.82rem;font-weight:600;color:var(--text-3)}
+  .hero-val{font-size:2.5rem;font-weight:800;letter-spacing:-.035em;line-height:1.02;margin:2px 0 6px;
+    font-variant-numeric:tabular-nums lining-nums}
+  .hero-diz{font-size:.86rem;color:var(--text-2);line-height:1.5;max-width:46ch}
+  .hero-diz b{color:var(--text-1);font-weight:700}
+  .hero-bar{display:flex;height:12px;border-radius:20px;overflow:hidden;gap:2px;margin:14px 0 11px}
+  .hero-bar i{display:block;height:100%;border-radius:20px}
+  .hero-legend{display:grid;gap:6px}
+  .hero-legend > *{display:flex;align-items:center;gap:8px;background:none;border:0;padding:0;
+    font:inherit;font-size:.83rem;color:var(--text-2);text-align:left;width:100%}
+  .hero-legend button{cursor:pointer}
+  .hero-legend button .nm{text-decoration:underline;text-underline-offset:3px}
+  .hero-legend b{margin-left:auto;color:var(--text-1);font-weight:700;
+    font-variant-numeric:tabular-nums lining-nums}
+  .dot{width:10px;height:10px;border-radius:4px;flex:0 0 auto}
+  .dot.real{background:var(--gasto)} .dot.proj{background:var(--alerta)}
+  .dot.invest{background:var(--c5)} .dot.livre{background:var(--text-3)}
+  .hero-acoes{display:flex;gap:8px;margin-top:auto;padding-top:14px;flex-wrap:wrap}
+
+  .chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;flex:0 0 auto}
+  .chip-ins{display:inline-flex;align-items:center;gap:7px;font-size:.8rem;background:var(--surface);
+    border:1px solid var(--border);border-radius:20px;padding:5px 13px;color:var(--text-2)}
+  .chip-ins b{color:var(--text-1);font-weight:700}
+  .chip-ins.aviso{border-color:var(--alerta);color:var(--alerta)}
+  .chip-ins.aviso b{color:var(--alerta)}
+
+  .card.painel-card{margin-bottom:0;display:flex;flex-direction:column;min-height:0;padding:15px 17px}
+  .card.painel-card .card-ttl{font-size:.88rem}
+  .card.painel-card .card-sub{font-size:.76rem;margin:-4px 0 10px}
+  .card.painel-card .card-head{margin-bottom:6px}
+  .corpo{flex:1 1 auto;min-height:0;overflow:auto}
+
+  .pizza-wrap{display:grid;grid-template-columns:150px 1fr;gap:16px;align-items:center;height:100%}
+  @media(max-width:1150px){.pizza-wrap{grid-template-columns:130px 1fr;gap:12px}}
+  .pizza-center{position:relative}
+  .pizza-total{position:absolute;inset:0;display:grid;place-content:center;text-align:center;pointer-events:none}
+  .pizza-total .v{font-size:1.1rem;font-weight:800;letter-spacing:-.02em;
+    font-variant-numeric:tabular-nums lining-nums}
+  .pizza-total .l{font-size:.68rem;color:var(--text-3);font-weight:600}
+  .legend li{padding:3px 0;border-top:0}
+  .legend .nm{font-size:.81rem;color:var(--text-1)}
+  .legend .pc{font-size:.73rem}
+  .legend .vl{font-weight:700;font-size:.81rem}
+  .sem-cat{margin-top:9px;font-size:.78rem;border-top:1px solid var(--border);padding-top:9px;color:var(--alerta)}
+  .sem-cat button{background:none;border:0;font:inherit;font-weight:700;color:inherit;
+    text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+
+  .lin{display:flex;align-items:center;gap:10px;padding:6px 0;border-top:1px solid var(--border);font-size:.82rem}
+  .lin:first-child{border-top:0}
+  .lin .m{font-size:.73rem;color:var(--text-3);width:52px;flex:0 0 auto;font-weight:600}
+  .lin .d{flex:1 1 auto;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .lin .v{font-weight:700;font-variant-numeric:tabular-nums lining-nums}
+
+  .orc-row{display:grid;grid-template-columns:1fr 46px;gap:10px;align-items:center;padding:6px 0;
+    border-top:1px solid var(--border)}
+  .orc-row:first-child{border-top:0}
+  .orc-row .nm{display:flex;justify-content:space-between;gap:8px;margin-bottom:4px;font-size:.82rem}
+  .orc-row .nm span:last-child{color:var(--text-3);font-size:.75rem;
+    font-variant-numeric:tabular-nums lining-nums}
+  .orc-row .pct{text-align:right;font-size:.8rem;font-weight:700;
+    font-variant-numeric:tabular-nums lining-nums}
+
+  .mobile .hero{overflow:visible}
+  .mobile .pizza-wrap{grid-template-columns:1fr}
+  .mobile .corpo{overflow:visible}
+</style>
+</head>
+<body>
+<script src="_shell.js"></script>
+<script>
+const { mount, checklist, fmt, fmt0, tok, chartBase, linha, skKpis, skChart, skRing, skTable } = Radar;
+
+const CATS = [
+  ['Moradia', 1487.00, '--c1'], ['Alimentação', 747.30, '--c2'], ['Transporte', 412.55, '--c3'],
+  ['Educação', 267.30, '--c4'], ['Saúde', 192.40, '--c5'], ['Assinaturas', 128.90, '--c6'],
+];
+const SEM_CAT = 89.00;
+const TOTAL_DESP = CATS.reduce((s,c)=>s+c[1],0) + SEM_CAT;
+const RECEITA = 6478.00, INVESTIDO = 1200.00;
+const JA_GASTO = 2795.45, PROJETADO = 440.00;
+const COMPROMETIDO = JA_GASTO + PROJETADO + INVESTIDO;
+const LIVRE = RECEITA - COMPROMETIDO;
+
+/* ═══════════ COM DADOS ═══════════ */
+const dados = `
+<div class="chips">
+  <span class="chip-ins">Gastou <b>4,2% a menos</b> que em julho</span>
+  <span class="chip-ins aviso">Alimentação <b>38% acima</b> da média de 3 meses</span>
+  <span class="chip-ins">No ritmo atual, agosto fecha em <b>${fmt0(4120)}</b></span>
+  <span class="chip-ins aviso"><b>${fmt0(640)}</b> sem limite definido</span>
+</div>
+
+<div class="fit painel">
+
+  <div class="hero">
+    <div class="hero-lbl">Livre para gastar em agosto</div>
+    <div class="hero-val">${fmt(LIVRE)}</div>
+    <p class="hero-diz">De <b>${fmt(RECEITA)}</b> que entraram, <b>${fmt(COMPROMETIDO)}</b> já têm destino.
+      Faltam <b>12 dias</b> — dá <b>${fmt0(LIVRE/12)}</b> por dia.</p>
+    <div class="hero-bar">
+      <i style="background:var(--gasto);width:${JA_GASTO/RECEITA*100}%"></i>
+      <i style="background:var(--alerta);width:${PROJETADO/RECEITA*100}%"></i>
+      <i style="background:var(--c5);width:${INVESTIDO/RECEITA*100}%"></i>
+      <i style="background:var(--surface-sunken);border:1px solid var(--border);flex:1 1 auto"></i>
+    </div>
+    <div class="hero-legend">
+      <span><i class="dot real"></i><span class="nm">Já saiu da conta</span><b>${fmt(JA_GASTO)}</b></span>
+      <button type="button" title="Ver e confirmar as parcelas que ainda são estimativa">
+        <i class="dot proj"></i><span class="nm">Parcela prevista, não conferida</span><b>${fmt(PROJETADO)}</b></button>
+      <span><i class="dot invest"></i><span class="nm">Guardado em investimento</span><b>${fmt(INVESTIDO)}</b></span>
+      <span><i class="dot livre"></i><span class="nm">Sobra</span><b>${fmt(LIVRE)}</b></span>
+    </div>
+    <div class="hero-acoes">
+      <a class="btn btn-primary" href="03-calendario.html">Ver em que dia cada coisa sai</a>
+      <a class="btn btn-ghost" href="03-gastos.html">Ver os lançamentos</a>
+    </div>
+  </div>
+
+  <div class="card painel-card">
+    <div class="card-head"><span class="card-ttl">Para onde o dinheiro foi</span></div>
+    <p class="card-sub">Só despesa — investir não é gastar, então fica de fora.</p>
+    <div class="corpo">
+      <div class="pizza-wrap">
+        <div class="pizza-center">
+          <div class="chart-box" style="height:150px"><canvas id="pizza"></canvas></div>
+          <div class="pizza-total"><span class="l">Total</span><span class="v">${fmt0(TOTAL_DESP)}</span></div>
+        </div>
+        <div>
+          <ul class="legend" id="pizza-legend"></ul>
+          <div class="sem-cat">◇ <b>${fmt(SEM_CAT)}</b> sem categoria —
+            <button type="button">2 em Gastos</button>, <button type="button">1 em Extratos</button></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="linha2">
+    <div class="card painel-card">
+      <div class="card-head"><span class="card-ttl">Últimos 6 meses</span></div>
+      <p class="card-sub">Para ver tendência, não o mês isolado.</p>
+      <div class="corpo" style="overflow:hidden"><canvas id="evolucao"></canvas></div>
+    </div>
+
+    <div class="card painel-card">
+      <div class="card-head"><span class="card-ttl">O que ainda vai cair</span><span class="sp"></span>
+        <a class="kpi-link" href="03-gastos.html" style="margin:0">ver todas →</a></div>
+      <p class="card-sub">Parcelas já contratadas dos 3 meses seguintes.</p>
+      <div class="corpo">
+        <div class="lin"><span class="m">set/26</span><span class="d">SENAC · 4 de 6</span><span class="v">${fmt(267.30)}</span></div>
+        <div class="lin"><span class="m">set/26</span><span class="d">Notebook Dell · 8 de 12</span><span class="v">${fmt(412.90)}</span></div>
+        <div class="lin"><span class="m">out/26</span><span class="d">SENAC · 5 de 6</span><span class="v">${fmt(267.30)}</span></div>
+        <div class="lin"><span class="m">out/26</span><span class="d">Notebook Dell · 9 de 12</span><span class="v">${fmt(412.90)}</span></div>
+        <div class="lin"><span class="m">nov/26</span><span class="d">SENAC · 6 de 6</span><span class="v">${fmt(267.30)}</span></div>
+        <div class="lin"><span class="m">nov/26</span><span class="d">Notebook Dell · 10 de 12</span><span class="v">${fmt(412.90)}</span></div>
+      </div>
+    </div>
+
+    <div class="card painel-card">
+      <div class="card-head"><span class="card-ttl">Contra o limite</span><span class="sp"></span>
+        <a class="kpi-link" href="03-orcamento.html" style="margin:0">editar →</a></div>
+      <p class="card-sub">Vermelho passou; âmbar passou de 80%.</p>
+      <div class="corpo">
+        ${[['Moradia',1487,1400],['Alimentação',747.30,1200],['Transporte',412.55,600],
+           ['Educação',267.30,400],['Saúde',192.40,null],['Assinaturas',128.90,150]]
+          .map(([n,g,l]) => {
+            if (l === null) return `<div class="orc-row"><div>
+              <div class="nm"><span>${n}</span><span>${fmt0(g)} · sem limite</span></div>
+              <div class="bar"><i style="width:0"></i></div></div>
+              <span class="pct" style="color:var(--text-3)">—</span></div>`;
+            const p = g/l*100, cls = p>=100?'over':p>=80?'warn':'ok';
+            return `<div class="orc-row"><div>
+              <div class="nm"><span>${n}</span><span>${fmt0(g)} de ${fmt0(l)}</span></div>
+              <div class="bar ${cls}"><i style="width:${Math.min(p,100)}%"></i></div></div>
+              <span class="pct ${p>=100?'down':p>=80?'warn':''}">${Math.round(p)}%</span></div>`;
+          }).join('')}
+      </div>
+    </div>
+  </div>
+
+</div>`;
+
+/* ═══════════ VAZIO ═══════════ */
+const vazio = `
+<div class="fit painel">
+  <div class="hero">
+    <div class="hero-lbl">Livre para gastar em agosto</div>
+    <div class="hero-val" style="color:var(--text-3)">—</div>
+    <p class="hero-diz">Ainda não há nada lançado em agosto de 2026.
+      <b>Comece pelo extrato do banco:</b> ele traz o mês inteiro de uma vez e o Radar
+      tenta classificar cada linha sozinho.</p>
+    <div class="hero-acoes">
+      <a class="btn btn-primary" href="03-extratos.html">Importar extrato</a>
+      <a class="btn btn-ghost" href="03-gastos.html">Importar fatura do cartão</a>
+      <a class="btn btn-ghost" href="03-receitas.html">Cadastrar receita</a>
+    </div>
+  </div>
+  <div class="card painel-card"><div class="empty">
+    <div class="glyph">○</div><h3>Sem gasto em agosto</h3>
+    <p>A rosca de categorias aparece com o primeiro lançamento classificado.</p></div></div>
+  <div class="linha2">
+    <div class="card painel-card"><div class="empty" style="padding:24px 10px">
+      <p style="margin:0">Sem histórico para a linha de 6 meses.</p></div></div>
+    <div class="card painel-card"><div class="empty" style="padding:24px 10px">
+      <p style="margin:0">Nenhuma compra parcelada em aberto.</p></div></div>
+    <div class="card painel-card"><div class="empty" style="padding:24px 10px">
+      <p>Nenhum limite definido.</p>
+      <a class="btn btn-ghost btn-sm" href="03-orcamento.html">Definir limites</a></div></div>
+  </div>
+</div>`;
+
+/* ═══════════ CARREGANDO ═══════════ */
+const carregando = `
+<div class="chips">${[150,210,180,160].map(w =>
+  `<span class="sk sk-line" style="width:${w}px;height:28px;border-radius:20px"></span>`).join('')}</div>
+<div class="fit painel">
+  <div class="hero">
+    <span class="sk sk-line" style="width:150px"></span>
+    <span class="sk sk-line" style="width:250px;height:38px;margin:8px 0"></span>
+    <span class="sk sk-line" style="width:75%"></span>
+    <span class="sk sk-line" style="width:100%;height:12px;border-radius:20px;margin:16px 0 12px"></span>
+    ${[0,1,2,3].map(()=>'<span class="sk sk-line" style="width:100%"></span>').join('')}
+  </div>
+  <div class="card painel-card"><span class="sk sk-line" style="width:45%"></span>
+    <span class="sk sk-ring" style="width:120px;height:120px"></span></div>
+  <div class="linha2">
+    ${[0,1,2].map(()=>`<div class="card painel-card">
+      <span class="sk sk-line" style="width:55%"></span>
+      <span class="sk" style="flex:1 1 auto;min-height:90px;margin-top:10px"></span></div>`).join('')}
+  </div>
+</div>`;
+
+/* ═══════════ gráficos ═══════════ */
+let cs = [];
+function onRender(estado, root) {
+  cs.forEach(c => c.destroy()); cs = [];
+  if (estado !== 'dados') return;
+
+  const cores = CATS.map(c => tok(c[2])).concat(tok('--text-3'));
+  const labels = CATS.map(c => c[0]).concat('Sem categoria');
+  const vals = CATS.map(c => c[1]).concat(SEM_CAT);
+  const tot = vals.reduce((a,b)=>a+b,0);
+
+  root.querySelector('#pizza-legend').innerHTML = labels.map((n,i) =>
+    `<li><span class="k" style="background:${cores[i]}"></span><span class="nm">${n}</span>
+     <span class="pc">${Math.round(vals[i]/tot*100)}%</span><span class="vl">${fmt0(vals[i])}</span></li>`).join('');
+
+  cs.push(new Chart(root.querySelector('#pizza'), {
+    type:'doughnut',
+    data:{ labels, datasets:[{ data: vals, backgroundColor: cores, borderColor: tok('--surface'),
+      borderWidth: 3, borderRadius: 6, spacing: 2, hoverOffset: 8 }]},
+    options: { ...chartBase({ scales: null }), cutout: '72%' }
+  }));
+
+  cs.push(new Chart(root.querySelector('#evolucao'), {
+    type:'line',
+    data:{ labels:['mar','abr','mai','jun','jul','ago'],
+      datasets:[
+        linha('Entrou',  [6100,6180,6478,6478,6478,6478], tok('--receita'), { area:false }),
+        linha('Saiu',    [3410,2980,3520,3105,2918,2884], tok('--gasto')),
+        linha('Guardou', [800,800,1000,1000,1200,1200],   tok('--c5'), { area:false, tracejada:true }),
+      ]},
+    options: chartBase()
+  }));
+}
+
+mount({
+  tab:'dashboard', title:'Visão do mês',
+  intro:'A fotografia do mês escolhido acima. <b>Comece pelo número grande</b> — ele diz quanto ainda dá para gastar.',
+  states:{dados, vazio, carregando},
+  onRender,
+});
+
+checklist('js/dashboard.js', [
+  ['renderDashboard', 'Monta os números do mês', 'Card grande + bloco "Para onde o dinheiro foi"'],
+  ['KPI hero', 'Comprometido (ou Resultado, se mês encerrado), com a decomposição', 'Card grande, com a barra empilhada'],
+  ['hero-cta-receita', 'Botão "Cadastrar receita" quando não há receita no mês', 'Estado vazio → botão'],
+  ['data-filtro-proj', 'Legenda "Parcela prevista" leva a Gastos filtrado', 'Segunda linha da legenda, sublinhada'],
+  ['_delta()', 'Variação vs. mês anterior; < 0,5% vira "= mês anterior"', 'Chip "Gastou 4,2% a menos que em julho"'],
+  ['_sparkline()', 'Minigráfico de 6 meses por KPI', 'Substituído pelo card "Últimos 6 meses", que mostra as três séries juntas'],
+  ['getSeries6m()', 'Série de 6 meses de receita, despesa e investido', 'Card "Últimos 6 meses"'],
+  ['renderInsights()', 'Chips automáticos (variação, anomalia, projeção, orçamento)', 'Faixa de chips no topo'],
+  ['renderChartCategorias()', 'Rosca de despesas por categoria + legenda ordenada', 'Bloco "Para onde o dinheiro foi"'],
+  ['pizza-total-value', 'Total no centro da rosca', 'Centro da rosca'],
+  ['_legendaSemCategoria()', 'Contagem sem categoria com link para Gastos ou Extratos', 'Rodapé do bloco, em âmbar'],
+  ['renderChartEvolucao()', 'Linha de 6 meses com investido em série própria', 'Card "Últimos 6 meses"'],
+  ['renderParcelasPrevisao()', 'Próximas parcelas dos 3 meses seguintes, máx. 10', 'Card "O que ainda vai cair"'],
+  ['renderOrcamentoDashboard()', 'Consumo por categoria com faixas 80% / 100%', 'Card "Contra o limite"'],
+  ['_guard()', 'Erro de leitura troca o corpo do card, mantendo o título', false],
+  ['chart-cat-month', 'Rótulo do mês', 'Navegação de mês no topo'],
+  ['NOVO · KPI → aba', 'Atalhos aprovados na etapa 2', 'Botões do card grande e links "ver todas" / "editar"'],
+]);
+</script>
+</body>
+</html>

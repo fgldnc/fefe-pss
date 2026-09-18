@@ -73,7 +73,7 @@ function _renderTable() {
       ? `<span class="tag-projetada">${tx.installmentCurrent}/${tx.installmentTotal}</span>`
       : '';
     const projTag = tx.isProjected
-      ? `<span class="tag-projetada" style="color:var(--gold)">projetada</span>`
+      ? `<span class="tag-projetada" style="color:var(--warning)">projetada</span>`
       : '';
 
     const dataFmt = tx.date

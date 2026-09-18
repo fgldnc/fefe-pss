@@ -37,7 +37,7 @@ const EVENT_META = {
   income:   { icon: '💰', color: 'var(--success)',  label: 'Receita' },
   import:   { icon: '📥', color: 'var(--info)',     label: 'Importação' },
   goal:     { icon: '🎯', color: 'var(--accent-primary)', label: 'Meta' },
-  asset:    { icon: '🏦', color: 'var(--gold)',     label: 'Patrimônio' },
+  asset:    { icon: '🏦', color: 'var(--warning)',     label: 'Patrimônio' },
   backup:   { icon: '💾', color: 'var(--text-muted)', label: 'Backup' },
   budget:   { icon: '📋', color: 'var(--warning)',  label: 'Orçamento' },
 };

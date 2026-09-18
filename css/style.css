@@ -1,51 +1,69 @@
 /* ═══════════════════════════════════════════════════════════════
-   RADAR — Design System v3
-   Paleta: #161616 / #1f1f1f / #3982f7 / #3ec2fc + acento magenta
-   Fonte: Outfit + JetBrains Mono
+   RADAR — Design System v4 · paleta A "Galo"
+   Preto, branco e grafites. O chrome NÃO tem cor: a ação primária é
+   o próprio contraste (botão preto no claro, branco no escuro).
+   Cor na tela significa sempre alguma coisa — receita, gasto,
+   inferido, ou série categórica de gráfico. Nada de azul.
+   Fonte: Nunito. Número NÃO usa monoespaçada (a JetBrains Mono
+   fazia o app parecer terminal); a coluna alinha por
+   font-variant-numeric: tabular-nums, não por largura fixa.
+   DM Mono sobra só para referência de código.
+   Os nomes de token antigos foram mantidos e reapontados: trocar
+   os nomes em 1.400 linhas de CSS/JS seria mudança de estrutura,
+   e esta rodada é só de pele.
 ════════════════════════════════════════════════════════════════ */
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,300..900;1,400&family=DM+Mono:wght@400;500&display=swap');
 
 :root {
-  /* Fundo: preto/cinza muito escuro */
-  --bg-main:          #161616;
-  /* Cards, sidebar, headers */
-  --bg-card:          #1f1f1f;
-  --bg-card-raised:   #262626;
-  --bg-hover:         #2c2c2c;
-  --bg-active:        #333333;
-  /* Acentos azul/ciano — botões, destaques, elementos ativos */
-  --accent-secondary: #345cea;
-  --accent-primary:   #3982f7;
-  --accent-bright:    #3ec2fc;
-  --accent-dim:       rgba(57, 130, 247, 0.14);
-  --accent-glow:      rgba(57, 130, 247, 0.25);
-  /* Acento secundário: magenta (mantido) */
-  --accent-magenta:     #c01888;
-  --accent-magenta-dim: rgba(192, 24, 136, 0.14);
+  /* Fundos */
+  --bg-main:          #0B0B0C;
+  --bg-card:          #141416;
+  --bg-card-raised:   #1D1D20;
+  --bg-hover:         #24242A;
+  --bg-active:        #2B2B31;
 
-  --text-primary:   #f5f5f5;
-  --text-secondary: #a3a3a3;
-  --text-muted:     #6b6b6b;
-  --text-inverse:   #161616;
+  /* "Acento" agora é contraste, não cor. Os quatro nomes antigos
+     apontam para o mesmo neutro para que nenhum azul sobreviva num
+     seletor esquecido. --accent-fg é o texto que vai em cima dele. */
+  --accent-secondary: #F2F2F3;
+  --accent-primary:   #F2F2F3;
+  --accent-bright:    #F2F2F3;
+  --accent-fg:        #0B0B0C;
+  --accent-dim:       #24242A;
+  --accent-glow:      rgba(0, 0, 0, 0.55);
+  /* Magenta sobrevive só como série categórica de gráfico (--c6). */
+  --accent-magenta:     #A34E9E;
+  --accent-magenta-dim: rgba(163, 78, 158, 0.14);
 
-  /* Bordas neutras com alpha */
-  --border-soft:   rgba(255, 255, 255, 0.07);
-  --border-md:     rgba(255, 255, 255, 0.12);
-  --border-strong: rgba(57, 130, 247, 0.45);
+  --text-primary:   #F2F2F3;
+  --text-secondary: #A9A9B1;
+  --text-muted:     #87878F;
+  --text-inverse:   #0B0B0C;
 
-  --success:      #1eb11b;
-  --success-dim:  rgba(30, 177, 27, 0.14);
-  --danger:       #f87171;
-  --danger-dim:   rgba(248, 113, 113, 0.14);
-  --warning:      #fbbf24;
+  --border-soft:   #2B2B31;
+  --border-md:     #3A3A42;
+  /* Alto contraste: é o que marca campo editado e linha de hoje. */
+  --border-strong: #F2F2F3;
+
+  --success:      #4ADE80;
+  --success-dim:  rgba(74, 222, 128, 0.14);
+  --danger:       #FF7A7A;
+  --danger-dim:   rgba(255, 122, 122, 0.14);
+  --warning:      #FBBF24;
   --warning-dim:  rgba(251, 191, 36, 0.14);
-  --info:         #a78bfa;
-  --info-dim:     rgba(167, 139, 250, 0.14);
-  --gold:         #fbbf24;
-  --gold-dim:     rgba(251, 191, 36, 0.14);
+  /* --info não carrega juízo nenhum (tags de meio de pagamento):
+     vira neutro em vez do roxo antigo. */
+  --info:         #A9A9B1;
+  --info-dim:     #24242A;
+  /* --gold foi removido: era idêntico a --warning, e dois nomes para
+     a mesma cor é como se perde a disciplina do âmbar. */
 
-  --font-sans: 'Outfit', system-ui, sans-serif;
-  --font-mono: 'JetBrains Mono', monospace;
+  /* Séries categóricas de gráfico — o único lugar com cor arbitrária. */
+  --c1:#C7414F; --c2:#C4661A; --c3:#A88414; --c4:#5E8A2C; --c5:#2E8B6E; --c6:#A34E9E;
+
+  --font-sans: 'Nunito', system-ui, -apple-system, sans-serif;
+  --font-mono: 'Nunito', system-ui, sans-serif;
+  --font-code: 'DM Mono', ui-monospace, monospace;
 
   --radius-sm:  6px;
   --radius-md:  10px;
@@ -63,6 +81,48 @@
   --transition-slow:  0.35s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* Tema claro: mesmos nomes, valores espelhados. Ainda sem botão de
+   troca na interface — quem quiser conferir põe data-theme="light"
+   no <html>. O botão entra junto com a sidebar nova (rodada 2). */
+[data-theme="light"] {
+  --bg-main:          #F2F2F3;
+  --bg-card:          #FFFFFF;
+  --bg-card-raised:   #E9E9EB;
+  --bg-hover:         #EDEDEF;
+  --bg-active:        #E4E4E7;
+
+  --accent-secondary: #17171A;
+  --accent-primary:   #17171A;
+  --accent-bright:    #17171A;
+  --accent-fg:        #FFFFFF;
+  --accent-dim:       #E9E9EB;
+  --accent-glow:      rgba(0, 0, 0, 0.18);
+
+  --text-primary:   #101013;
+  --text-secondary: #55555C;
+  --text-muted:     #6D6D76;
+  --text-inverse:   #FFFFFF;
+
+  --border-soft:   #D8D8DC;
+  --border-md:     #C6C6CC;
+  --border-strong: #17171A;
+
+  --success:      #0F6B33;
+  --success-dim:  rgba(15, 107, 51, 0.12);
+  --danger:       #A81F16;
+  --danger-dim:   rgba(168, 31, 22, 0.10);
+  --warning:      #7A5000;
+  --warning-dim:  rgba(122, 80, 0, 0.12);
+  --info:         #55555C;
+  --info-dim:     #E9E9EB;
+
+  --shadow:      0 4px 24px rgba(0, 0, 0, 0.14);
+  --shadow-card: 0 2px 16px rgba(0, 0, 0, 0.08), 0 0 0 1px var(--border-soft);
+}
+
+/* Todo algarismo da interface alinha em coluna sem virar terminal. */
+*, *::before, *::after { font-variant-numeric: tabular-nums lining-nums; }
+
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 html {
@@ -74,7 +134,7 @@ html {
 
 body {
   font-family: var(--font-sans);
-  background: #161616;
+  background: var(--bg-main);
   color: var(--text-primary);
   min-height: 100vh;
   line-height: 1.6;
@@ -92,9 +152,9 @@ body {
   align-items: center;
   justify-content: center;
   background:
-    radial-gradient(ellipse 70% 60% at 20% 80%, rgba(192, 24, 136, 0.10) 0%, transparent 55%),
-    radial-gradient(ellipse 50% 40% at 80% 20%, rgba(57, 130, 247, 0.18) 0%, transparent 55%),
-    #161616;
+    radial-gradient(ellipse 70% 60% at 20% 80%, rgba(255,255,255,0.05) 0%, transparent 55%),
+    radial-gradient(ellipse 50% 40% at 80% 20%, rgba(255,255,255,0.07) 0%, transparent 55%),
+    var(--bg-main);
   padding: 1.5rem;
 }
 
@@ -115,10 +175,8 @@ body {
   font-size: 2.2rem;
   font-weight: 700;
   letter-spacing: -1px;
-  background: linear-gradient(135deg, #f0e6f8, var(--accent-bright));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  /* Sem gradiente: o logo é texto, e texto no chrome não tem cor. */
+  color: var(--text-primary);
 }
 .brand-symbol { font-size: 1.8rem; }
 .login-sub { color: var(--text-secondary); font-size: 0.88rem; margin-bottom: 2rem; line-height: 1.5; }
@@ -130,7 +188,7 @@ body {
   background: var(--accent-primary);
   border: none;
   border-radius: var(--radius-md);
-  color: #fff;
+  color: var(--accent-fg);
   font-family: var(--font-sans);
   font-size: 0.9rem;
   font-weight: 600;
@@ -178,10 +236,8 @@ body {
   font-size: 1.4rem;
   font-weight: 700;
   letter-spacing: -0.5px;
-  background: linear-gradient(135deg, #f0e6f8, var(--accent-bright));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  /* Sem gradiente: o logo é texto, e texto no chrome não tem cor. */
+  color: var(--text-primary);
 }
 .sidebar-logo-icon { font-size: 1.2rem; }
 
@@ -215,12 +271,12 @@ body {
   white-space: nowrap;
 }
 .nav-icon { font-size: 16px; flex-shrink: 0; opacity: 0.65; transition: opacity var(--transition); }
-.nav-link:hover { color: var(--text-primary); background: rgba(192,24,136,0.12); border-left-color: var(--accent-secondary); }
+.nav-link:hover { color: var(--text-primary); background: var(--bg-hover); border-left-color: var(--accent-secondary); }
 .nav-link:hover .nav-icon { opacity: 1; }
-.nav-link.active { color: var(--text-primary); background: rgba(192,24,136,0.22); border-left-color: var(--accent-primary); font-weight: 600; }
+.nav-link.active { color: var(--text-primary); background: var(--bg-active); border-left-color: var(--accent-primary); font-weight: 600; }
 .nav-link.active .nav-icon { opacity: 1; }
 
-.nav-badge { margin-left: auto; font-size: 0.65rem; font-weight: 700; background: var(--accent-primary); color: #fff; border-radius: 20px; padding: 1px 7px; }
+.nav-badge { margin-left: auto; font-size: 0.65rem; font-weight: 700; background: var(--accent-primary); color: var(--accent-fg); border-radius: 20px; padding: 1px 7px; }
 
 .sidebar-footer { border-top: 1px solid var(--border-soft); flex-shrink: 0; padding: 0.4rem 0; }
 
@@ -255,7 +311,7 @@ body {
 
 .topbar {
   height: var(--topbar-h);
-  background: rgba(31, 31, 31, 0.88);
+  background: var(--bg-card);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border-bottom: 1px solid var(--border-soft);
@@ -345,7 +401,7 @@ body {
   content: '';
   position: absolute;
   top: 0; left: 0; right: 0; height: 2px;
-  background: linear-gradient(90deg, var(--accent-secondary), var(--accent-primary));
+  background: var(--border-strong);
   opacity: 0;
   transition: opacity var(--transition);
 }
@@ -359,7 +415,7 @@ body {
 .kpi-value { font-family: var(--font-mono); font-size: 1.45rem; font-weight: 500; letter-spacing: -0.5px; color: var(--text-primary); line-height: 1.1; }
 .kpi-value.positive { color: var(--success); }
 .kpi-value.negative { color: var(--danger); }
-.kpi-value.gold     { color: var(--gold); }
+.kpi-value.gold     { color: var(--warning); }
 .kpi-value.accent   { color: var(--accent-bright); }
 
 .kpi-delta { display: flex; align-items: center; gap: 0.3rem; font-size: 0.74rem; color: var(--text-muted); margin-top: 0.35rem; }
@@ -382,11 +438,11 @@ body {
 .hero-bar { height: 8px; border-radius: var(--radius-sm); background: var(--bg-hover); overflow: hidden; display: flex; }
 .hero-bar i { display: block; height: 100%; }
 .hero-bar .seg-real { background: var(--accent-primary); }
-.hero-bar .seg-proj { background: var(--accent-primary); opacity: 0.38; }
-/* Investido em ciano, não em --gold: âmbar na faixa significa "falta um dado"
-   (.mark-inferido). Ciano é da mesma família neutra do azul — quantidade, não
-   juízo. Verde/vermelho seguem proibidos na barra. */
-.hero-bar .seg-invest { background: var(--accent-bright); }
+.hero-bar .seg-proj { background: var(--accent-primary); opacity: 0.34; }
+/* Os três segmentos se distinguem por opacidade, não por cor: a faixa
+   inteira é a mesma grandeza (dinheiro do mês). Âmbar ali significaria
+   "falta um dado" (.mark-inferido), e verde/vermelho, juízo. */
+.hero-bar .seg-invest { background: var(--accent-primary); opacity: 0.66; }
 
 .hero-legend { display: flex; gap: 1.1rem; flex-wrap: wrap; font-size: 0.72rem; color: var(--text-secondary); }
 /* `button` junto de `span`: a legenda de "não conferido" vira botão no mês
@@ -396,8 +452,8 @@ body {
 .hero-legend .num { font-family: var(--font-mono); color: var(--text-primary); font-weight: 500; }
 .hero-legend .dot { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; }
 .hero-legend .dot.real   { background: var(--accent-primary); }
-.hero-legend .dot.proj   { background: var(--accent-primary); opacity: 0.38; }
-.hero-legend .dot.invest { background: var(--accent-bright); }
+.hero-legend .dot.proj   { background: var(--accent-primary); opacity: 0.34; }
+.hero-legend .dot.invest { background: var(--accent-primary); opacity: 0.66; }
 .hero-legend .dot.livre  { background: var(--bg-hover); border: 1px solid var(--border-soft); }
 
 .kpi-foot { font-size: 0.75rem; color: var(--text-muted); margin-top: auto; }
@@ -482,9 +538,9 @@ body {
   flex-shrink: 0; cursor: default; transition: all var(--transition);
 }
 .insight-chip:hover { border-color: var(--border-md); color: var(--text-primary); }
-.insight-chip.warn  { border-color: rgba(251,191,36,0.35); color: var(--warning); }
-.insight-chip.good  { border-color: rgba(52,211,153,0.35); color: var(--success); }
-.insight-chip.info  { border-color: rgba(192,24,136,0.45); color: var(--accent-bright); }
+.insight-chip.warn  { border-color: var(--warning); color: var(--warning); }
+.insight-chip.good  { border-color: var(--success); color: var(--success); }
+.insight-chip.info  { border-color: var(--border-md); color: var(--accent-bright); }
 
 /* ═══════════════════════════════════════════════════════════════
    EMPTY STATES
@@ -543,13 +599,13 @@ body {
 .toast-msg   { font-size: 0.79rem; color: var(--text-secondary); }
 .toast-close { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1rem; flex-shrink: 0; padding: 0; transition: color var(--transition); }
 .toast-close:hover { color: var(--text-primary); }
-.toast.success { border-color: rgba(52,211,153,0.4); }
+.toast.success { border-color: var(--success); }
 .toast.success .toast-icon { color: var(--success); }
-.toast.error   { border-color: rgba(248,113,113,0.4); }
+.toast.error   { border-color: var(--danger); }
 .toast.error   .toast-icon { color: var(--danger); }
-.toast.warning { border-color: rgba(251,191,36,0.4); }
+.toast.warning { border-color: var(--warning); }
 .toast.warning .toast-icon { color: var(--warning); }
-.toast.info    { border-color: rgba(192,24,136,0.5); }
+.toast.info    { border-color: var(--border-md); }
 .toast.info    .toast-icon { color: var(--accent-bright); }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -799,10 +855,10 @@ body {
 .fx-table th.num, .fx-table td.num { text-align: right; }
 .fx-table tbody td { padding: 0.55rem 0.7rem; border-bottom: 1px solid var(--border-soft); }
 .fx-table td.num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
-/* Ciano de estado de linha. Magenta é acento de série categórica — usá-lo aqui
-   faria "hoje" parecer uma categoria. */
-.fx-table tbody tr.fx-hoje { background: rgba(62, 194, 252, 0.07); }
-.fx-table tbody tr.fx-hoje td:first-child { color: var(--accent-bright); font-weight: 700; }
+/* Hoje deixou de ser ciano (ciano é azul): vira ênfase neutra —
+   fundo elevado e uma barra forte na borda esquerda da linha. */
+.fx-table tbody tr.fx-hoje { background: var(--bg-card-raised); box-shadow: inset 3px 0 0 var(--border-strong); }
+.fx-table tbody tr.fx-hoje td:first-child { color: var(--text-primary); font-weight: 700; }
 .fx-table tbody tr.fx-minimo td { background: var(--danger-dim); }
 .fx-td-dia { color: var(--text-secondary); font-weight: 500; width: 52px; font-family: var(--font-mono); }
 .fx-td-desc { color: var(--text-secondary); }

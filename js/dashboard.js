@@ -286,7 +286,7 @@ function renderChartCategorias(txs) {
   // cor de série sugeriria que são categorias como as outras.
   const colors = sorted.map(([k]) =>
     (k === 'Outras' || k === 'Sem categoria')
-      ? '#6b6b6b'
+      ? '#87878F'
       : (state.categories.find(c => c.name === k)?.color || '#94a3b8')
   );
   const total  = values.reduce((s, v) => s + v, 0); // = total real de despesas do mês
@@ -304,7 +304,7 @@ function renderChartCategorias(txs) {
     // Empty state: small gray ring placeholder
     chartCategorias = new Chart(canvas, {
       type: 'doughnut',
-      data: { labels: ['Sem dados'], datasets: [{ data: [1], backgroundColor: ['#2c2c2c'], borderWidth: 0 }] },
+      data: { labels: ['Sem dados'], datasets: [{ data: [1], backgroundColor: ['#24242A'], borderWidth: 0 }] },
       options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { enabled: false } }, cutout: '68%' },
     });
     const legend = document.getElementById('pizza-legend');
@@ -319,7 +319,7 @@ function renderChartCategorias(txs) {
       datasets: [{
         data: values,
         backgroundColor: colors,
-        borderColor: '#1f1f1f', // hex direto: canvas do Chart.js não resolve var(--bg-card)
+        borderColor: '#141416', // hex direto: canvas do Chart.js não resolve var(--bg-card)
         borderWidth: 2,
         hoverOffset: 6,
       }],
@@ -461,8 +461,8 @@ function renderChartEvolucao() {
     data: {
       labels,
       datasets: [
-        { label: 'Receitas',  data: receitas,  backgroundColor: 'rgba(30,177,27,0.30)',   borderColor: '#1eb11b', borderWidth: 1.5, borderRadius: 3 },
-        { label: 'Despesas',  data: despesas,  backgroundColor: 'rgba(248,113,113,0.25)', borderColor: '#f87171', borderWidth: 1.5, borderRadius: 3 },
+        { label: 'Receitas',  data: receitas,  backgroundColor: 'rgba(74,222,128,0.30)',   borderColor: '#4ADE80', borderWidth: 1.5, borderRadius: 3 },
+        { label: 'Despesas',  data: despesas,  backgroundColor: 'rgba(255,122,122,0.25)', borderColor: '#FF7A7A', borderWidth: 1.5, borderRadius: 3 },
         { label: 'Investido', data: investido, backgroundColor: 'rgba(251,191,36,0.22)',  borderColor: '#fbbf24', borderWidth: 1.5, borderRadius: 3 },
       ],
     },
@@ -470,16 +470,16 @@ function renderChartEvolucao() {
       responsive: true,
       maintainAspectRatio: false,
       plugins: {
-        legend: { position: 'top', align: 'end', labels: { color: '#a3a3a3', font: { family: 'Outfit', size: 10 }, boxWidth: 8, boxHeight: 8, padding: 10 } },
+        legend: { position: 'top', align: 'end', labels: { color: '#A9A9B1', font: { family: 'Nunito', size: 10 }, boxWidth: 8, boxHeight: 8, padding: 10 } },
         tooltip: { callbacks: { label: ctx => `${ctx.dataset.label}: ${fmt(ctx.raw)}` } },
       },
       scales: {
         // size 9: em meia largura os 6 rótulos de mês encostavam um no outro.
         // Reduzir o tick antes de mexer no layout — o layout é a decisão cara.
-        x: { ticks: { color: '#a3a3a3', font: { family: 'Outfit', size: 9 }, maxRotation: 0, autoSkip: false }, grid: { display: false } },
+        x: { ticks: { color: '#A9A9B1', font: { family: 'Nunito', size: 9 }, maxRotation: 0, autoSkip: false }, grid: { display: false } },
         y: {
           ticks: {
-            color: '#a3a3a3', font: { family: 'JetBrains Mono', size: 9 },
+            color: '#A9A9B1', font: { family: 'Nunito', size: 9 },
             callback: v => maxVal >= 1000 ? `R$${(v/1000).toFixed(1)}k` : `R$${v}`,
           },
           grid: { color: 'rgba(255,255,255,0.05)' },

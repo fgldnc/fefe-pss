@@ -49,7 +49,7 @@ function _renderAtivos() {
   }
 
   const tipoLabel = { investimento: 'Investimento', caixa: 'Caixa', bem_pessoal: 'Bem pessoal' };
-  const tipoColor = { investimento: 'var(--gold)', caixa: 'var(--positive)', bem_pessoal: 'var(--info)' };
+  const tipoColor = { investimento: 'var(--warning)', caixa: 'var(--success)', bem_pessoal: 'var(--info)' };
 
   tbody.innerHTML = ativos.map(a => {
     const valorAtual = a.type === 'bem_pessoal' ? _valorDepreciado(a) : (a.currentValue || 0);
@@ -89,7 +89,7 @@ function _renderAtivos() {
                 ${ap.obs ? `<span style="color:var(--text-muted)"> · ${esc(ap.obs)}</span>` : ''}
                 <span style="color:var(--text-muted);font-size:0.68rem"> (${sourceLabel[ap.source] || ap.source || 'manual'})</span>
               </span>
-              <span style="font-family:var(--font-mono);color:var(--gold);flex-shrink:0;margin-left:0.5rem">+${fmt(ap.amount)}</span>
+              <span style="font-family:var(--font-mono);color:var(--warning);flex-shrink:0;margin-left:0.5rem">+${fmt(ap.amount)}</span>
             </div>`).join('')}
         </td>
       </tr>` : '';

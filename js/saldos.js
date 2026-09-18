@@ -28,10 +28,10 @@ import { incomesOfMonth, saveFluxoConfig } from './db.js';
 // Chart.js desenha em canvas e não resolve var(--…): as cores vão em HEX
 // literal, iguais aos tokens do :root de css/style.css. Já houve regressão por
 // passar `var(--accent-primary)` para cá e a linha sumir.
-const HEX_AZUL  = '#3982f7';  // --accent-primary
-const HEX_VERM  = '#f87171';  // --danger
-const HEX_CINZA = '#6b6b6b';  // --text-muted
-const HEX_FUNDO = '#161616';  // --bg-main
+const HEX_LINHA = '#F2F2F3';  // --accent-primary (neutro: o chrome não tem cor)
+const HEX_VERM  = '#FF7A7A';  // --danger
+const HEX_CINZA = '#87878F';  // --text-muted
+const HEX_FUNDO = '#0B0B0C';  // --bg-main
 const HEX_GRID  = 'rgba(255,255,255,.07)'; // --border-soft
 
 let chartSaldo   = null;
@@ -542,9 +542,9 @@ function _renderChart({ serie, daysInMonth, diaHoje, min, month }) {
     data: {
       labels: serie.map(p => p.dia),
       datasets: [
-        { label: 'Efetivado', data: efetivado, borderColor: HEX_AZUL, borderWidth: 2,
+        { label: 'Efetivado', data: efetivado, borderColor: HEX_LINHA, borderWidth: 2,
           pointRadius: 0, tension: 0, fill: false },
-        { label: 'Projetado', data: projetado, borderColor: HEX_AZUL, borderWidth: 2,
+        { label: 'Projetado', data: projetado, borderColor: HEX_LINHA, borderWidth: 2,
           borderDash: [5, 4], pointRadius: 0, tension: 0, fill: false },
         { label: 'Menor saldo',
           data: dados.map((v, i) => (min && i + 1 === min.dia ? v : null)),
@@ -569,7 +569,7 @@ function _renderChart({ serie, daysInMonth, diaHoje, min, month }) {
         x: {
           grid: { display: false }, border: { color: HEX_GRID },
           ticks: {
-            color: HEX_CINZA, font: { size: 10, family: 'JetBrains Mono' },
+            color: HEX_CINZA, font: { size: 10, family: 'Nunito' },
             maxRotation: 0, autoSkip: false,
             // 31 rótulos não cabem nem no desktop.
             callback: (v, i) => ([0, 4, 9, 14, 19, 24, daysInMonth - 1].includes(i) ? i + 1 : ''),
@@ -584,7 +584,7 @@ function _renderChart({ serie, daysInMonth, diaHoje, min, month }) {
           },
           border: { display: false },
           ticks: {
-            color: HEX_CINZA, font: { size: 10, family: 'JetBrains Mono' },
+            color: HEX_CINZA, font: { size: 10, family: 'Nunito' },
             // "k" só no eixo; dentro da tabela, nunca.
             callback: v => (v === 0 ? '0' : `${(v / 1000).toLocaleString('pt-BR')}k`),
           },

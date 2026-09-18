@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="pt-BR" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Radar · Configurações</title>
+<link rel="stylesheet" href="_radar.css">
+<style>
+  .cfg-tabs{display:flex;gap:4px;border-bottom:1px solid var(--border);margin-bottom:16px;flex-wrap:wrap}
+  .cfg-tab{font:inherit;font-size:.85rem;background:none;border:0;border-bottom:2px solid transparent;
+    padding:8px 12px;color:var(--text-2);cursor:pointer;margin-bottom:-1px}
+  .cfg-tab.active{color:var(--text-1);font-weight:600;border-bottom-color:var(--border-strong)}
+  .cats{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:9px}
+  .cat{display:flex;align-items:center;gap:9px;background:var(--surface);border:1px solid var(--border);
+    border-radius:10px;padding:9px 11px}
+  .cat .sw{width:14px;height:14px;border-radius:4px;flex:0 0 auto}
+  .cat .nm{flex:1 1 auto;font-size:.85rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .stat{display:flex;justify-content:space-between;padding:7px 0;border-top:1px solid var(--border);font-size:.83rem}
+  .stat:first-child{border-top:0}
+  .stat b{font-family:var(--font-num);font-weight:500}
+  .perigo{border-color:var(--gasto)}
+</style>
+</head>
+<body>
+<script src="_shell.js"></script>
+<script>
+const { mount, checklist, fmt, skTable } = Radar;
+
+const CATS = [
+  ['Moradia','--c1'],['Alimentação','--c2'],['Transporte','--c3'],['Saúde','--c4'],
+  ['Educação','--c5'],['Compras','--c6'],['Assinaturas','--c1'],['Lazer','--c2'],
+  ['Serviços','--c3'],['Investimentos','--c5'],['Receita','--c4'],['Outros','--c6'],
+];
+const REGRAS = [
+  ['UBER|99POP|CABIFY','Transporte'],
+  ['IFOOD|RAPPI|ZE DELIVERY','Alimentação'],
+  ['NETFLIX|SPOTIFY|PRIME VIDEO','Assinaturas'],
+  ['DROGARIA|DROGASIL|FARMACIA','Saúde'],
+  ['TESOURO|CDB|LCI|LCA','Investimentos'],
+];
+
+const SEC = {
+
+categorias: `
+<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+  <span class="form-hint">12 categorias · as 12 padrão são semeadas no primeiro login</span>
+  <span style="flex:1 1 auto"></span>
+  <button class="btn btn-primary btn-sm" data-open="modal-categoria">+ Nova categoria</button>
+</div>
+<div class="cats">${CATS.map(c => `
+  <div class="cat"><span class="sw" style="background:var(${c[1]})"></span>
+    <span class="nm">${c[0]}</span>
+    <button class="icon-btn" title="Editar" data-open="modal-categoria">✎</button>
+    <button class="icon-btn" title="Excluir">✕</button></div>`).join('')}</div>
+<p class="form-hint" style="margin-top:12px">A cor da categoria é o que aparece na rosca do resumo do mês
+  e na aba Orçamento. Categoria cujo nome ou id contenha "investiment" sai do total de despesas em toda tela.</p>`,
+
+regras: `
+<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+  <span class="form-hint">Aplicadas na importação, de cima para baixo — a primeira que casar vence</span>
+  <span style="flex:1 1 auto"></span>
+  <button class="btn btn-primary btn-sm" data-open="modal-regra">+ Nova regra</button>
+</div>
+<div class="card">
+  <div class="table-wrapper">
+    <table class="data">
+      <thead><tr><th>Padrão na descrição</th><th>Vira a categoria</th><th></th></tr></thead>
+      <tbody>${REGRAS.map(r => `
+        <tr><td class="mono">${r[0]}</td><td>${r[1]}</td>
+          <td><div class="row-act">
+            <button class="icon-btn" title="Editar" data-open="modal-regra">✎</button>
+            <button class="icon-btn" title="Excluir">✕</button></div></td></tr>`).join('')}
+      </tbody>
+    </table>
+  </div>
+  <p class="form-hint" style="margin-top:10px">Linha classificada por regra <b>não recebe marca nenhuma</b>
+    na revisão de importação — silêncio é o sinal de que está tudo bem. Âmbar só onde o app chutou.</p>
+</div>`,
+
+backup: `
+<div class="grid2">
+  <div class="card">
+    <div class="card-head"><span class="card-ttl">Exportar</span></div>
+  <p class="card-sub">Baixe antes de qualquer mudança grande. É o seu desfazer.</p>
+    <p class="form-hint" style="margin-bottom:11px">Baixa um JSON com transações, receitas, orçamentos,
+      ativos, metas, categorias e regras. Limite de 50 MB.</p>
+    <button class="btn btn-primary btn-sm">Baixar backup</button>
+  </div>
+  <div class="card">
+    <div class="card-head"><span class="card-ttl">Restaurar</span></div>
+  <p class="card-sub">Use o arquivo baixado ao lado. Restaurar soma ao que já existe, não substitui.</p>
+    <p class="form-hint" style="margin-bottom:11px">Grava em lotes de 490. Recusa transação acima de
+      R$ 10.000.000, descrição acima de 500 caracteres e coleção com mais de 50.000 itens.</p>
+    <input type="file" class="form-input" style="margin-bottom:9px">
+    <button class="btn btn-ghost btn-sm">Restaurar</button>
+  </div>
+  <div class="card">
+    <div class="card-head"><span class="card-ttl">Estatísticas</span></div>
+  <p class="card-sub">Quantos registros você tem em cada coleção.</p>
+    <div class="stat"><span>Transações</span><b>412</b></div>
+    <div class="stat"><span>Lançamentos de extrato</span><b>1.038</b></div>
+    <div class="stat"><span>Receitas</span><b>36</b></div>
+    <div class="stat"><span>Orçamentos</span><b>96</b></div>
+    <div class="stat"><span>Ativos e metas</span><b>9</b></div>
+    <div class="stat"><span>Categorias e regras</span><b>17</b></div>
+  </div>
+  <div class="card perigo">
+    <div class="card-head"><span class="card-ttl" style="color:var(--gasto)">Apagar uma coleção</span></div>
+  <p class="card-sub">Não tem desfazer. Baixe o backup antes.</p>
+    <p class="form-hint" style="margin-bottom:11px">Apaga em lotes de 450 e não tem desfazer.</p>
+    <select class="form-input" style="margin-bottom:9px">
+      <option>Escolha a coleção…</option><option>transactions</option><option>incomes</option>
+      <option>budgets</option><option>assets</option><option>goals</option>
+      <option>categories</option><option>rules</option></select>
+    <button class="btn btn-danger btn-sm">Apagar coleção</button>
+    <p class="form-hint" style="margin-top:10px"><span class="mark-inferido">settings/fluxo fica de fora
+      do backup e do apagar</span> — pendência conhecida, registrada no roteiro.</p>
+  </div>
+</div>`,
+
+preferencias: `
+<div class="card" style="max-width:640px">
+  <div class="card-head"><span class="card-ttl">Fatura do cartão</span></div>
+  <p class="card-sub">Estes dois campos mudam em que dia e em que mês a fatura aparece nas outras telas.</p>
+  <div class="form-row">
+    <div class="form-col"><label class="form-label">Dia de vencimento</label>
+      <input type="number" class="form-input" value="3" min="1" max="28">
+      <span class="form-hint">De 1 a 28: 29, 30 e 31 não existem em todo mês.
+        Com o dia definido, todo o cartão do mês vira uma linha só no Fluxo de Caixa.
+        Sem ele, cada compra cai no dia em que foi feita e a linha vem marcada em âmbar.</span></div>
+  </div>
+  <div class="form-row">
+    <div class="form-col"><label class="form-label">Deslocamento de competência</label>
+      <select class="form-input"><option>−1 mês (padrão)</option><option>0</option><option>−2 meses</option></select>
+      <span class="form-hint">Fatura que vence em agosto é a fatura de julho. Guardado em
+        <code>localStorage.fluxo_billing_offset</code>.</span></div>
+  </div>
+</div>
+<div class="card" style="max-width:640px">
+  <div class="card-head"><span class="card-ttl">Saldo de abertura</span></div>
+  <p class="card-sub">Onde se edita, e por que ficar em branco não é a mesma coisa que zero.</p>
+  <p class="form-hint">O saldo que abre cada mês no Fluxo de Caixa é editado na própria aba.
+    <b>Ausente não é zero</b>: zero é uma abertura legítima, ausente esconde os KPIs de menor saldo
+    e de projeção e troca o cabeçalho da coluna para "Acumulado".</p>
+</div>`,
+
+conta: `
+<div class="card" style="max-width:520px">
+  <div class="card-head"><span class="card-ttl">Conta</span></div>
+  <p class="card-sub">Quem está logado neste navegador.</p>
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
+    <div class="sb-av" style="width:40px;height:40px;font-size:.95rem">F</div>
+    <div><div style="font-weight:500">Fernanda</div>
+      <div class="form-hint">Entrou com Google · conta pessoal</div></div>
+  </div>
+  <button class="btn btn-ghost btn-sm">Sair</button>
+  <p class="form-hint" style="margin-top:14px">Os dados ficam sob <code>users/{uid}/</code> no Firestore.
+    Sair não apaga nada.</p>
+</div>`,
+};
+
+const ABAS = [['categorias','Categorias'],['regras','Regras'],['backup','Backup'],
+              ['preferencias','Preferências'],['conta','Conta']];
+
+const tabsHTML = at => `<div class="cfg-tabs">${ABAS.map(([id,n]) =>
+  `<button class="cfg-tab ${id===at?'active':''}" data-sec="${id}">${n}</button>`).join('')}</div>`;
+
+const dados = tabsHTML('categorias') + `<div id="sec" class="gridscroll">${SEC.categorias}</div>`;
+
+const vazio = tabsHTML('categorias') + `
+<div class="card">
+  <div class="empty">
+    <div class="glyph">⚙</div>
+    <h3>Nenhuma categoria personalizada</h3>
+    <p>As 12 categorias padrão são criadas no primeiro login. Se você apagou todas,
+       nenhuma importação consegue classificar nada — toda linha chega em âmbar.</p>
+    <button class="btn btn-primary">Restaurar as 12 padrão</button>
+  </div>
+</div>`;
+
+const carregando = tabsHTML('categorias') + `
+<div class="cats">${Array.from({length:12}, () =>
+  '<div class="cat"><span class="sk" style="width:14px;height:14px;border-radius:4px"></span>' +
+  '<span class="sk sk-line" style="flex:1 1 auto"></span></div>').join('')}</div>`;
+
+const modals = `
+<div class="modal" id="modal-categoria" hidden>
+  <div class="modal-box" style="width:min(420px,94vw)">
+    <div class="modal-head"><h2>Editar categoria</h2><span class="sp"></span>
+      <button class="icon-btn" data-close>✕</button></div>
+    <div class="modal-body">
+      <div class="form-row"><div class="form-col" style="flex:1 1 100%">
+        <label class="form-label">Nome</label><input class="form-input" value="Alimentação"></div></div>
+      <div class="form-row"><div class="form-col" style="flex:1 1 100%">
+        <label class="form-label">Cor</label>
+        <div style="display:flex;gap:7px;flex-wrap:wrap">
+          ${['--c1','--c2','--c3','--c4','--c5','--c6'].map((c,i) =>
+            `<span style="width:28px;height:28px;border-radius:8px;background:var(${c});
+              border:2px solid ${i===1?'var(--border-strong)':'transparent'};cursor:pointer"></span>`).join('')}
+        </div></div></div>
+    </div>
+    <div class="modal-foot"><button class="btn btn-danger">Excluir</button><span class="sp"></span>
+      <button class="btn btn-ghost" data-close>Cancelar</button>
+      <button class="btn btn-primary">Salvar</button></div>
+  </div>
+</div>
+
+<div class="modal" id="modal-regra" hidden>
+  <div class="modal-box" style="width:min(460px,94vw)">
+    <div class="modal-head"><h2>Editar regra</h2><span class="sp"></span>
+      <button class="icon-btn" data-close>✕</button></div>
+    <div class="modal-body">
+      <div class="form-row"><div class="form-col" style="flex:1 1 100%">
+        <label class="form-label">Padrão na descrição</label>
+        <input class="form-input mono" value="UBER|99POP|CABIFY">
+        <span class="form-hint">Separe alternativas com <code>|</code>. Não diferencia maiúscula de minúscula.</span></div></div>
+      <div class="form-row"><div class="form-col" style="flex:1 1 100%">
+        <label class="form-label">Vira a categoria</label>
+        <select class="form-input"><option>Transporte</option><option>Alimentação</option></select></div></div>
+    </div>
+    <div class="modal-foot"><button class="btn btn-danger">Excluir</button><span class="sp"></span>
+      <button class="btn btn-ghost" data-close>Cancelar</button>
+      <button class="btn btn-primary">Salvar</button></div>
+  </div>
+</div>`;
+
+function onRender(estado, root) {
+  root.querySelectorAll('.cfg-tab').forEach(b => b.onclick = () => {
+    root.querySelectorAll('.cfg-tab').forEach(x => x.classList.toggle('active', x === b));
+    const sec = root.querySelector('#sec');
+    if (sec) sec.innerHTML = SEC[b.dataset.sec];
+  });
+}
+
+mount({ tab:'configuracoes', title:'Configurações',
+  intro:"Onde se ajusta o que as outras telas usam. <b>As duas que mais mudam resultado:</b> as regras, que classificam a importação sozinhas, e o dia de vencimento da fatura, em Preferências.", states:{dados, vazio, carregando}, modals, onRender });
+
+document.getElementById('screen').insertAdjacentHTML('beforeend', checklist('js/configuracoes.js', [
+  ['renderConfiguracoes', 'Ponto de entrada da aba', 'Tela inteira'],
+  ['config-tabs', 'Cinco seções: Categorias, Regras, Backup, Preferências, Conta', 'Abas no topo (clicáveis)'],
+  ['_renderCategorias', 'Lista as categorias com a cor', 'Seção Categorias'],
+  ['btn-nova-categoria', 'Abre o modal em branco', 'Botão "+ Nova categoria"'],
+  ['cat-nome / cat-cor', 'Campos da categoria', 'Modal "Editar categoria"'],
+  ['btn-salvar-categoria', 'Grava a categoria', 'Botão "Salvar"'],
+  ['DEFAULT_CATEGORIES', '12 categorias semeadas no primeiro login', 'Nota da seção + estado "Vazio"'],
+  ['_renderRegras', 'Lista as regras de classificação', 'Seção Regras'],
+  ['btn-nova-regra / _openRuleModal', 'Cria ou edita regra', 'Botão "+ Nova regra" e ✎'],
+  ['DEFAULT_RULES', 'Classificação automática por regex', 'Tabela de regras'],
+  ['classificationOrigin', 'Linha classificada por regra não recebe marca', 'Nota da seção Regras'],
+  ['btn-export-backup', 'Baixa o JSON completo, limite de 50 MB', 'Card "Exportar"'],
+  ['input-import-backup / backup-version', 'Restaura em lotes de 490, com os limites de validação', 'Card "Restaurar"'],
+  ['backup-import-status', 'Resultado da restauração', 'Card "Restaurar"'],
+  ['_renderStorageStats / storage-stats', 'Contagem por coleção', 'Card "Estatísticas"'],
+  ['wipe-collection-select / btn-wipe-collection', 'Apaga uma coleção em lotes de 450', 'Card "Apagar uma coleção"'],
+  ['wipe-status', 'Resultado do apagar', 'Mesmo card'],
+  ['settings fora do backup', 'Pendência conhecida do roteiro', 'Nota em âmbar no card de apagar'],
+  ['fatura-vencimento-dia', 'Dia de vencimento, de 1 a 28', 'Seção Preferências'],
+  ['billing-offset', 'Deslocamento de competência da fatura', 'Seção Preferências'],
+  ['btn-cfg-logout', 'Sair da conta', 'Seção Conta'],
+]));
+</script>
+</body>
+</html>

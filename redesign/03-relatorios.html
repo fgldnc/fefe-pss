@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="pt-BR" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Radar · Relatórios</title>
+<link rel="stylesheet" href="_radar.css">
+<style>
+  .rels{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:13px}
+  .rel{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 15px;
+    display:flex;flex-direction:column}
+  .rel h3{font-size:.92rem;font-weight:600;margin-bottom:3px}
+  .rel p{font-size:.79rem;color:var(--text-2);flex:1 1 auto;margin-bottom:11px}
+  .rel .cols{font-size:.7rem;color:var(--text-3);font-family:var(--font-num);
+    margin-bottom:11px;line-height:1.45}
+  .rel .acts{display:flex;gap:7px}
+  .mobile .rels{grid-template-columns:1fr}
+</style>
+</head>
+<body>
+<script src="_shell.js"></script>
+<script>
+const { mount, checklist, skTable } = Radar;
+
+const REL = [
+  ['Gastos por categoria', 'Quanto foi para cada categoria no mês selecionado.',
+   'categoria · total · % do mês · nº de lançamentos', 'agosto de 2026'],
+  ['Evolução mensal', 'Receita, despesa e investido mês a mês. Investido tem coluna própria — não entra dentro de despesa.',
+   'mês · receita · despesa · investido · resultado', 'últimos 12 meses'],
+  ['Orçamento × realizado', 'Limite definido contra o que foi gasto, por categoria.',
+   'categoria · limite · realizado · diferença · %', 'agosto de 2026'],
+  ['Parcelas futuras', 'Tudo que já está contratado e ainda vai cair.',
+   'descrição · parcela · valor · mês de competência', 'a partir de agosto de 2026'],
+  ['Todas as transações', 'A tabela crua do mês, para abrir em planilha.',
+   'data · descrição · categoria · tipo · valor · parcela', 'agosto de 2026'],
+  ['Status das metas', 'Onde cada meta está contra o alvo e o prazo.',
+   'meta · alvo · atual · % · prazo · situação', 'todas'],
+];
+
+const dados = `
+<p class="form-hint" style="margin-bottom:14px">
+  Cada relatório exporta em CSV (para planilha) ou JSON (para outro programa). O recorte de mês
+  segue a navegação no topo da tela; o que cobre vários meses está dito em cada card.</p>
+
+<div class="gridscroll"><div class="rels">
+  ${REL.map(r => `
+    <div class="rel">
+      <h3>${r[0]}</h3>
+      <p>${r[1]}</p>
+      <div class="cols">colunas: ${r[2]}<br>recorte: ${r[3]}</div>
+      <div class="acts">
+        <button class="btn btn-ghost btn-sm">Baixar CSV</button>
+        <button class="btn btn-ghost btn-sm">Baixar JSON</button>
+      </div>
+    </div>`).join('')}
+</div></div>
+
+<div class="card" style="margin-top:16px">
+  <div class="card-head"><span class="card-ttl">O que esta tela não cobre</span></div>
+  <p class="form-hint">
+    <b>Lançamento de extrato não entra em "Todas as transações"</b> — o relatório lê só
+    <code>state.transactions</code> (<code>js/relatorios.js:246</code>). Quem precisa ver extrato junto
+    de gasto manual usa a <a class="kpi-link" href="03-timeline.html">Timeline</a>. Está registrado como
+    o motivo de não fundir as duas telas.</p>
+</div>`;
+
+const vazio = `
+<p class="form-hint" style="margin-bottom:14px">
+  Cada relatório exporta em CSV ou JSON. Sem dado no mês, o arquivo sairia só com o cabeçalho.</p>
+<div class="rels">
+  ${REL.map(r => `
+    <div class="rel" style="opacity:.6">
+      <h3>${r[0]}</h3>
+      <p>${r[1]}</p>
+      <div class="cols">sem dado em agosto de 2026</div>
+      <div class="acts">
+        <button class="btn btn-ghost btn-sm" disabled>Baixar CSV</button>
+        <button class="btn btn-ghost btn-sm" disabled>Baixar JSON</button>
+      </div>
+    </div>`).join('')}
+</div>
+<div class="card" style="margin-top:16px">
+  <div class="empty" style="padding:26px 12px">
+    <p>Importe um extrato ou lance um gasto e os seis relatórios ficam disponíveis.</p>
+    <a class="btn btn-primary" href="03-extratos.html">Importar extrato</a>
+  </div>
+</div>`;
+
+const carregando = `
+<span class="sk sk-line" style="width:70%;margin-bottom:16px"></span>
+<div class="rels">${REL.map(() => `
+  <div class="rel">
+    <span class="sk sk-line" style="width:55%;height:15px"></span>
+    <span class="sk sk-line" style="width:100%"></span>
+    <span class="sk sk-line" style="width:80%"></span>
+    <span class="sk sk-line" style="width:100%;height:28px;margin-top:12px"></span>
+  </div>`).join('')}</div>`;
+
+mount({ tab:'relatorios', title:'Relatórios',
+  intro:"Para levar os números para fora do Radar. <b>Escolha o relatório e clique em CSV</b> para abrir em planilha, ou JSON para usar em outro programa.", states:{dados, vazio, carregando} });
+
+document.getElementById('screen').insertAdjacentHTML('beforeend', checklist('js/relatorios.js', [
+  ['renderRelatorios', 'Ponto de entrada da aba', 'Tela inteira'],
+  ['_reportCard', 'Um card por relatório, com título, descrição e os dois botões', 'Grade de cards'],
+  ['_gastosPorCategoria', 'Total por categoria do mês', 'Card "Gastos por categoria"'],
+  ['_evolucaoMensal', 'Receita, despesa e investido mês a mês, investido em coluna própria', 'Card "Evolução mensal"'],
+  ['_orcamentoRealizado', 'Limite contra realizado, por categoria', 'Card "Orçamento × realizado"'],
+  ['_parcelasFuturas', 'Tudo contratado que ainda vai cair', 'Card "Parcelas futuras"'],
+  ['_todasTransacoes', 'Tabela crua do mês — só state.transactions', 'Card "Todas as transações" + nota final'],
+  ['_statusMetas', 'Situação de cada meta contra alvo e prazo', 'Card "Status das metas"'],
+  ['_runExport', 'Dispara a exportação do card', 'Botões de cada card'],
+  ['_downloadCSV / _celulaCSV', 'Gera e escapa o CSV', 'Botão "Baixar CSV"'],
+  ['_downloadJSON', 'Gera o JSON', 'Botão "Baixar JSON"'],
+  ['_download', 'Entrega o arquivo ao navegador', 'Os dois botões'],
+  ['recorte de mês', 'Segue a navegação de mês do topo', 'Linha "recorte:" de cada card'],
+]));
+</script>
+</body>
+</html>

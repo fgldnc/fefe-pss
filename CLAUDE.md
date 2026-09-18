@@ -97,12 +97,15 @@ outras duas telas junto.
 - **Vermelho só para saldo negativo**, que é fato aritmético sobre dado
   existente — não é a "aritmética de dado faltando" que a rodada 3 proibiu no
   Dashboard.
-- Sem `--gold` e sem emoji. Estado de linha usa ciano (`.fx-hoje`), nunca
-  magenta: magenta é acento de série categórica.
+- Sem `--gold` (o token não existe mais, virou `--warning`) e sem emoji. Estado
+  de linha (`.fx-hoje`) é ênfase neutra — fundo elevado mais barra na borda
+  esquerda. Já foi ciano; ciano é azul, e a paleta A não tem azul em papel
+  nenhum. Magenta segue proibido ali: é acento de série categórica.
 - `.tag-projetada` é reusada de `css/components.css:105` — não crie outra.
 
 **Chart.js é canvas e não resolve `var(--…)`:** as cores da curva estão em HEX
-literal no topo de `js/saldos.js` (`HEX_AZUL`, `HEX_VERM`…), espelhando os
+literal no topo de `js/saldos.js` (`HEX_LINHA`, `HEX_VERM`…; `HEX_AZUL` foi
+renomeada porque a linha deixou de ser azul), espelhando os
 tokens do `:root`. Já houve regressão por passar `var(--accent-primary)`.
 
 ## Convenções observadas no código

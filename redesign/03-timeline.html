@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="pt-BR" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Radar · Timeline</title>
+<link rel="stylesheet" href="_radar.css">
+<style>
+  .feed{position:relative;padding-left:22px}
+  .feed::before{content:"";position:absolute;left:5px;top:6px;bottom:6px;width:1px;background:var(--border)}
+  .ev{position:relative;padding:11px 0;border-bottom:1px solid var(--border)}
+  .ev:last-child{border-bottom:0}
+  .ev::before{content:"";position:absolute;left:-21px;top:18px;width:9px;height:9px;border-radius:50%;
+    background:var(--surface);border:2px solid var(--text-3)}
+  .ev.entrada::before{border-color:var(--receita)}
+  .ev.saida::before{border-color:var(--gasto)}
+  .ev.meta::before{border-color:var(--c4)}
+  .ev.ativo::before{border-color:var(--c5)}
+  .ev .top{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap}
+  .ev .dt{font-family:var(--font-num);font-size:.73rem;color:var(--text-3);width:52px;flex:0 0 auto}
+  .ev .ttl{font-weight:500;flex:1 1 auto;min-width:0}
+  .ev .vl{font-family:var(--font-num)}
+  .ev .sub{margin-left:61px;font-size:.75rem;color:var(--text-3)}
+  .mobile .ev .sub{margin-left:0}
+  .daysep{font-size:.68rem;text-transform:uppercase;letter-spacing:.09em;color:var(--text-3);
+    padding:14px 0 4px;font-weight:600}
+</style>
+</head>
+<body>
+<script src="_shell.js"></script>
+<script>
+const { mount, checklist, fmt, skTable } = Radar;
+
+/* data, tipo, título, subtítulo, valor */
+const EV = [
+  ['25/08','entrada','Freela · landing page','Receita extra', 498.00],
+  ['20/08','saida','Conta de luz','Moradia · débito', 214.80],
+  ['19/08','ativo','Fiat Argo 2021 depreciou','Patrimônio · 12% a.a. sobre 4 anos e 9 meses', -412.00],
+  ['18/08','saida','Netflix','Assinaturas · crédito', 59.90],
+  ['15/08','saida','SENAC · curso','Educação · crédito · parcela 3 de 6', 267.30],
+  ['12/08','meta','Aporte em Reserva de emergência','via Tesouro Selic 2029', 1200.00],
+  ['12/08','saida','Tesouro Selic 2029','Investimentos · débito', 1200.00],
+  ['09/08','saida','Uber · centro','Transporte · crédito · importado do extrato Itaú', 37.40],
+  ['05/08','entrada','Salário · GBA Advogados','Receita · salário', 5200.00],
+  ['05/08','saida','Aluguel agosto','Moradia · débito', 1487.00],
+  ['03/08','saida','Fatura do cartão · Itaú','Fluxo de caixa · vencimento', 2318.55],
+];
+
+const dados = `
+<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px">
+  <span class="chip-filter on">Tudo</span>
+  <span class="chip-filter">Entradas</span>
+  <span class="chip-filter">Saídas</span>
+  <span class="chip-filter">Metas</span>
+  <span class="chip-filter">Ativos</span>
+  <span style="flex:1 1 auto"></span>
+  <span class="form-hint">11 eventos em agosto de 2026</span>
+</div>
+
+<div class="card grow">
+  <div class="feed">
+    ${EV.map((e,i) => `
+      ${i === 0 || EV[i-1][0] !== e[0] ? '' : ''}
+      <div class="ev ${e[1]}">
+        <div class="top">
+          <span class="dt">${e[0]}</span>
+          <span class="ttl">${e[2]}</span>
+          <span class="vl ${e[1]==='entrada'?'up':e[4]<0?'down':''}">${e[4] < 0 ? '−' : ''}${fmt(e[4])}</span>
+        </div>
+        <div class="sub">${e[3]}</div>
+      </div>`).join('')}
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-head"><span class="card-ttl">Contratos em aberto</span></div>
+  <p class="card-sub">As compras parceladas que ainda não terminaram, agrupadas por contrato em vez de repetidas mês a mês.</p>
+  <div class="table-wrapper">
+    <table class="data">
+      <thead><tr><th>Compra</th><th>Parcelas</th><th class="num">Restante</th><th>Termina em</th></tr></thead>
+      <tbody>
+        <tr><td>SENAC · curso</td><td>3 de 6 pagas</td><td class="num down">${fmt(801.90)}</td><td>nov/2026</td></tr>
+        <tr><td>Notebook Dell</td><td>7 de 12 pagas</td><td class="num down">${fmt(2064.50)}</td><td>jan/2027</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="form-hint" style="margin-top:10px">
+    Hoje a Timeline repete a mesma parcela em quatro meses sem dizer que são do mesmo contrato — é o
+    problema registrado no <code>ROTEIRO-REDESIGN.md</code>. Este bloco agrupa por contrato;
+    o feed acima continua mostrando a parcela do mês, agora com "parcela 3 de 6" no subtítulo.</p>
+</div>`;
+
+const vazio = `
+<div class="card">
+  <div class="empty">
+    <div class="glyph">│</div>
+    <h3>Nada aconteceu em agosto de 2026</h3>
+    <p>A Timeline junta gasto, receita, lançamento de extrato, aporte de meta e movimento de ativo
+       numa linha só, em ordem de data. Assim que houver o primeiro, ele aparece aqui.</p>
+    <a class="btn btn-ghost" href="03-extratos.html">Importar extrato</a>
+  </div>
+</div>`;
+
+const carregando = `
+<div style="display:flex;gap:8px;margin-bottom:14px">${[70,90,80,80,80].map(w =>
+  `<span class="sk sk-line" style="width:${w}px;height:26px;border-radius:20px"></span>`).join('')}</div>
+${skTable(9, 3)}`;
+
+mount({ tab:'timeline', title:'Timeline',
+  intro:"Tudo que aconteceu no mês em ordem de data. <b>Use os filtros do topo</b> para isolar um tipo de evento. Esta é a única tela que mostra extrato e gasto manual lado a lado.", states:{dados, vazio, carregando} });
+
+document.getElementById('screen').insertAdjacentHTML('beforeend', checklist('js/timeline.js', [
+  ['renderTimeline', 'Ponto de entrada da aba', 'Tela inteira'],
+  ['_buildEvents', 'Junta gasto, receita, extrato, meta e ativo numa lista por data', 'Feed cronológico'],
+  ['state.transactions', 'Gastos do mês', 'Eventos marcados como saída'],
+  ['state.incomes', 'Receitas do mês', 'Eventos em verde'],
+  ['state.extratoTransactions', 'Lançamentos vindos de extrato — só esta tela os mostra junto', 'Evento "Uber · centro", com a origem no subtítulo'],
+  ['state.goals', 'Aportes de meta', 'Evento "Aporte em Reserva de emergência"'],
+  ['state.assets', 'Movimento de ativo, inclusive depreciação', 'Evento "Fiat Argo 2021 depreciou"'],
+  ['_renderFeed(filter)', 'Filtro por tipo de evento', 'Faixa de chips no topo'],
+  ['ordenação por data', 'Mais recente primeiro', 'Ordem do feed'],
+  ['NOVO · Contratos em aberto', 'Agrupa as parcelas do mesmo contrato — ataca o problema registrado no ROTEIRO de repetir o mesmo evento em quatro meses', 'Card no rodapé'],
+]));
+</script>
+</body>
+</html>
