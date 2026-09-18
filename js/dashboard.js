@@ -247,7 +247,19 @@ function _guard(elId, fn) {
   } catch (err) {
     console.error(`Erro ao montar #${elId}:`, err);
     const el = document.getElementById(elId);
-    if (el) el.innerHTML = `<p class="card-error">Não foi possível carregar estes dados.</p>`;
+    if (!el) return;
+    // A mensagem segue o precedente do Fluxo de Caixa (`fx-empty.erro`): diz o
+    // que falhou, diz que o RESTO da tela continua válido — senão a pessoa
+    // desconfia dos números que estão certos — e oferece o caminho de volta.
+    // Só o corpo do card troca; o título fica, para não parecer que o bloco
+    // sumiu. Listener no elemento recém-criado: não há risco de duplicar.
+    el.innerHTML = `
+      <div class="card-error">
+        <div class="card-error-t">Não foi possível montar este bloco</div>
+        <p class="card-error-x">Os outros números desta tela continuam válidos — a falha é só aqui.</p>
+        <button type="button" class="btn btn-ghost btn-sm" data-retry="${esc(elId)}">Tentar de novo</button>
+      </div>`;
+    el.querySelector('[data-retry]')?.addEventListener('click', () => renderDashboard());
   }
 }
 

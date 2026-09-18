@@ -1010,3 +1010,59 @@ fora**, tudo por depender de decisão da Fefe e não de implementação:
 4. **Estado de erro de `_guard()`** no Dashboard — a única função sem desenho,
    marcada em vermelho no mockup. A mensagem precisa ser decidida antes.
 5. **`settings/fluxo` fora do backup/restore** — pendência antiga, não de design.
+
+### Rodada A8 — Os cinco pendentes · FEITA
+
+A Fefe liberou os itens que estavam esperando decisão. Todos entraram, com um
+desvio declarado (item 1).
+
+1. **Patrimônio ganhou dois gráficos.** *Composição* é a rosca exata dos três
+   tipos (investimento, caixa, bem, este último já depreciado). **O segundo
+   NÃO é "o patrimônio mês a mês", como o mockup propunha**: o app guarda o
+   valor ATUAL de cada ativo e nenhum histórico de quanto ele valia em cada mês.
+   Uma curva de patrimônio passado seria número inventado — exatamente a
+   "aritmética de dado faltando" que a rodada 3 proibiu. O que existe de
+   verdade é o histórico de aportes (`contributions`), e o card virou **"Aportes
+   por mês"**, com a linha de apoio dizendo que não é o valor do patrimônio no
+   passado. Para o gráfico prometido existir, o app precisaria gravar um
+   snapshot mensal — mudança de modelo de dado, não de tela.
+2. **Timeline ganhou "Contratos em aberto".** Agrupa parcelas do mesmo contrato
+   por descrição normalizada + total de parcelas + valor em centavos. **Não
+   existe id de contrato no dado** — cada parcela é uma transação independente —,
+   então duas compras iguais, no mesmo lugar, com o mesmo número de parcelas e o
+   mesmo valor seriam fundidas. É o mesmo risco que `_acharParcela` já corre em
+   `pdf-import.js`. "Restante" soma só o que ainda não caiu (competência futura
+   ou `isProjected`). Contrato terminado sai da lista, e o card some inteiro
+   quando não há nenhum aberto.
+3. **Contador de pendência em Extratos na sidebar.** A fonte é a **mesma regra**
+   que a tela de revisão usa para pintar o campo de âmbar (`semCat`): despesa
+   importada, do mês selecionado, sem categoria resolvida. Receita não conta —
+   a revisão não exige categoria dela, e um contador que discorda da tela seria
+   pior que contador nenhum. Zero pendência esconde o selo: silêncio é o sinal
+   de que está tudo bem, e um "0" âmbar seria alarme de nada.
+4. **Estado de erro de `_guard()` desenhado.** Era uma frase cinza sem saída
+   ("Não foi possível carregar estes dados"), que deixava a pessoa sem saber se
+   o resto da tela também estava errado. Agora segue o precedente do Fluxo de
+   Caixa: diz o que falhou, **diz que os outros números continuam válidos** e
+   oferece "Tentar de novo". O título do card fica; só o corpo troca.
+5. **`settings/fluxo` entrou no backup e no restore.** Saldo inicial e dia de
+   vencimento são digitados à mão e não se reconstroem a partir de nada:
+   restaurar um backup e perdê-los era perda de dado de verdade. Detalhes que
+   importam: vai **fora de `data`** no JSON (é documento, não coleção), passa
+   pelo mesmo `_normalizeFluxoConfig` que filtra o que vem do Firestore (backup
+   é arquivo que o usuário pode ter editado), **o que já existe vence o que vem
+   do arquivo** (restaurar um backup de agosto não apaga a abertura de setembro
+   declarada depois) e **continua fora do wipe** — apagar transações não é
+   apagar ajuste.
+
+**Bug encontrado e corrigido:** dois `RegExp` nasceram sem a barra invertida
+(`/s+/` no lugar de `/\s+/`, `/^d{4}-d{2}$/` no lugar de `/^\d{4}-\d{2}$/`),
+efeito colateral do script que gerou o código. O primeiro trocava a letra "s"
+por espaço na chave de agrupamento; o segundo fazia "Termina em" mostrar "—"
+sempre. Varri o resto de `js/` atrás do mesmo padrão: nenhuma outra ocorrência.
+
+Conferido no navegador: contador em 2 com dois lançamentos sem categoria e
+escondido quando zero; contrato "SENAC · curso · 3 de 6 pagas · R$ 400,95 ·
+dez/2026"; os dois gráficos de Patrimônio na dobra junto com a tabela; e o
+estado de erro forçado (com o Chart.js sabotado), incluindo o "Tentar de novo",
+que limpa o erro. As 11 abas sem erro de console. Testes: 68 passando.

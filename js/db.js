@@ -555,6 +555,12 @@ export async function exportBackup(version) {
       app: 'Radar Financeiro',
     },
     data: { transactions, incomes, budgets, assets, goals, categories, rules },
+    // settings/fluxo é DOCUMENTO único, não coleção: vai fora de `data`, que é
+    // o mapa de coleções que o restore percorre. Entrou no backup porque saldo
+    // inicial e dia de vencimento são digitados à mão e não se reconstroem a
+    // partir de nada — restaurar um backup e perdê-los é perda de dado de
+    // verdade. Continua FORA do wipe: apagar transações não é apagar ajuste.
+    settings: { fluxo: _normalizeFluxoConfig(state.fluxoConfig) },
   };
 
   const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
@@ -610,6 +616,20 @@ function _validateBackupPayload(payload) {
 }
 
 /** Importa backup JSON e restaura dados no Firestore */
+/**
+ * settings/fluxo do arquivo. Passa pelo MESMO `_normalizeFluxoConfig` que
+ * filtra o que vem do Firestore — mês fora do formato ou valor não numérico é
+ * descartado em silêncio, e o dia de vencimento fora de 1–28 vira null. Backup
+ * é arquivo que o usuário pode ter editado à mão: nada aqui é confiável.
+ */
+function _settingsDoBackup(payload) {
+  const bruto = payload?.settings?.fluxo;
+  if (!bruto || typeof bruto !== 'object' || Array.isArray(bruto)) return null;
+  const limpo = _normalizeFluxoConfig(bruto);
+  const temAlgo = Object.keys(limpo.saldoInicial).length > 0 || limpo.faturaVencimentoDia !== null;
+  return temAlgo ? limpo : null;
+}
+
 export async function importBackup(file) {
   // Valida tamanho do arquivo
   if (file.size > BACKUP_MAX_BYTES)
@@ -654,6 +674,23 @@ export async function importBackup(file) {
       }
     }
     if (count > 0) await batch.commit();
+  }
+
+  // settings/fluxo por último, e só se o arquivo trouxer algo válido: backup
+  // antigo (anterior a esta versão) não tem a chave, e não pode apagar a
+  // configuração atual por omissão.
+  const settings = _settingsDoBackup(payload);
+  if (settings) {
+    const { setDoc } = fb();
+    // saldoInicial é mesclado mês a mês sobre o que já existe, não substituído:
+    // restaurar um backup de agosto não pode apagar a abertura de setembro que
+    // a usuária declarou depois. Mesma regra de `saveFluxoConfig`.
+    const atual = state.fluxoConfig || { saldoInicial: {}, faturaVencimentoDia: null };
+    const dados = {
+      saldoInicial: { ...settings.saldoInicial, ...atual.saldoInicial },
+      faturaVencimentoDia: atual.faturaVencimentoDia ?? settings.faturaVencimentoDia,
+    };
+    await setDoc(docRef('settings', 'fluxo'), dados);
   }
 
   // Recarrega state

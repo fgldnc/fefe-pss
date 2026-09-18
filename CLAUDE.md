@@ -244,6 +244,26 @@ registradas em `ROTEIRO-REDESIGN.md`. O que passou a ser contrato:
   `index.html` é um `<section>` vazio de propósito. Editar markup de
   Configurações no HTML não tem efeito nenhum.
 
+### Decisões da rodada A8 que viram regra
+
+- **O app não guarda histórico de valor de ativo.** `currentValue` é o valor de
+  hoje; `contributions` é o histórico de aportes. Por isso o segundo gráfico de
+  Patrimônio é **"Aportes por mês"**, não "patrimônio mês a mês": a curva do
+  passado não existe no dado e desenhá-la seria inventar número. Para ela
+  existir é preciso gravar snapshot mensal — mudança de modelo, não de tela.
+- **Contrato de parcelamento não tem id.** Cada parcela é uma transação
+  independente. O card "Contratos em aberto" (`js/timeline.js`) agrupa por
+  descrição normalizada + total de parcelas + valor em centavos, e assume o
+  mesmo risco de colisão que `_acharParcela` em `pdf-import.js`.
+- **O contador da sidebar usa a mesma regra da tela de revisão** (`semCat` em
+  `extratos.js`): despesa do mês sem categoria resolvida; receita não conta.
+  Contador que discorda da tela é pior que contador nenhum. Zero esconde o selo.
+- **`settings/fluxo` entra no backup/restore, mas NÃO no wipe.** No JSON vai
+  fora de `data` (é documento, não coleção), passa pelo mesmo
+  `_normalizeFluxoConfig` e **o que já existe vence o que vem do arquivo** —
+  restaurar backup antigo não pode apagar abertura declarada depois.
+  `WIPABLE_COLLECTIONS` segue sem ele: apagar transação não é apagar ajuste.
+
 ## Redesign em andamento
 
 `ROTEIRO-REDESIGN.md` é o estado do redesign entre sessões: diagnóstico por aba,

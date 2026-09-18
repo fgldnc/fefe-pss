@@ -276,7 +276,12 @@ body {
 .nav-link.active { color: var(--text-primary); background: var(--bg-active); border-left-color: var(--accent-primary); font-weight: 600; }
 .nav-link.active .nav-icon { opacity: 1; }
 
-.nav-badge { margin-left: auto; font-size: 0.65rem; font-weight: 700; background: var(--accent-primary); color: var(--accent-fg); border-radius: 20px; padding: 1px 7px; }
+/* Âmbar, não o acento: o contador de Extratos é pendência ("o app não
+   conseguiu classificar"), e pendência é âmbar em toda a interface. É a única
+   cor do chrome inteiro, e some quando o número é zero. */
+.nav-badge { margin-left: auto; font-size: 0.65rem; font-weight: 700; border-radius: 20px; padding: 1px 7px;
+  background: var(--warning-dim); color: var(--warning); }
+.nav-link.active .nav-badge { background: color-mix(in srgb, var(--accent-fg) 18%, transparent); color: var(--accent-fg); }
 
 .sidebar-footer { border-top: 1px solid var(--border-soft); flex-shrink: 0; padding: 0.4rem 0; }
 
@@ -522,7 +527,6 @@ body {
 .lg-split { display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem; padding: 0.1rem 0 0.45rem 1.1rem; }
 
 .card-subtitle { font-size: 0.72rem; color: var(--text-muted); margin-left: 0.5rem; }
-.card-error { padding: 1.25rem; font-size: 0.82rem; color: var(--text-muted); }
 
 /* Insights */
 .insights-strip {
@@ -1238,4 +1242,31 @@ body { overflow: hidden; }
 }
 @media (max-width: 768px) {
   #tab-configuracoes.fit > .config-section:not(.hidden) { overflow: visible; }
+}
+
+/* Estado de erro de bloco (`_guard`). Era uma frase cinza sem saída: a pessoa
+   via "não foi possível carregar" e não sabia se o resto da tela também estava
+   errado nem o que fazer. Mesmo formato do erro do Fluxo de Caixa. */
+.card-error { padding: 1.25rem; text-align: center; }
+.card-error-t { font-weight: 600; font-size: 0.88rem; color: var(--danger); margin-bottom: 0.3rem; }
+.card-error-x { font-size: 0.78rem; color: var(--text-muted); line-height: 1.5; max-width: 42ch; margin: 0 auto 0.85rem; }
+
+/* Timeline: o feed leva a sobra da tela, o card de contratos fica embaixo com
+   a altura do conteúdo (e some quando não há contrato aberto). */
+#tab-timeline.fit > #contratos-card { flex: 0 0 auto; margin-top: 1rem; margin-bottom: 0; max-height: 45%; overflow: auto; }
+#tab-timeline.fit > #contratos-card[hidden] { display: none; }
+@media (max-width: 768px) {
+  #tab-timeline.fit > #contratos-card { max-height: none; overflow: visible; }
+}
+
+/* ─── Patrimônio: os dois gráficos ─────────────────────────────
+   A linha dos gráficos tem altura própria e a tabela leva a sobra — quem se
+   consulta linha a linha aqui é a tabela, não o gráfico. */
+#tab-patrimonio.fit > #pat-graficos { flex: 0 0 auto; margin-top: 1rem; align-items: start; }
+#tab-patrimonio.fit > .card.grow[style] { margin-top: 1rem !important; }
+.card-pat-chart .pat-chart-box { position: relative; height: 170px; padding: 0.4rem 1.25rem 1rem; overflow: hidden; }
+.card-pat-chart .pat-chart-box canvas { position: absolute; inset: 0.4rem 1.25rem 1rem; }
+@media (max-width: 768px) {
+  #tab-patrimonio.fit > #pat-graficos { display: block; }
+  .card-pat-chart { margin-bottom: 1rem; }
 }

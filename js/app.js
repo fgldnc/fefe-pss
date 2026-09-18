@@ -8,7 +8,7 @@ import { initAuth }    from './auth.js';
 import { loadAllData } from './db.js';
 import {
   state, thisMonth, monthLabel, offsetMonth,
-  showKpiSkeleton, toast, esc,
+  showKpiSkeleton, toast, esc, resolveCategoryId,
 } from './utils.js';
 
 // Re-exporta utils para quem ainda importa de app.js (compatibilidade)
@@ -99,9 +99,40 @@ function updateMonthLabel() {
 // Trocar de mês não muda dado no servidor: todas as telas filtram `state`
 // por competência em memória. Re-renderizar basta — recarregar as 7 coleções
 // a cada clique de mês era ida ao Firestore sem ganho nenhum.
+/**
+ * Contador de pendência na aba Extratos.
+ *
+ * A fonte é a MESMA regra que a tela de revisão usa para pintar o campo de
+ * âmbar (`extratos.js`, `semCat`): despesa importada sem categoria resolvida.
+ * Receita não conta — a revisão não exige categoria dela, e um contador que
+ * discorda da tela seria pior que contador nenhum.
+ *
+ * Só o mês corrente: a sidebar fala do mês que está selecionado no topo, como
+ * todas as telas.
+ */
+function _pendenciasExtrato() {
+  return (state.extratoTransactions || []).filter(tx =>
+    tx.type === 'expense' &&
+    String(tx.date || '').slice(0, 7) === state.currentMonth &&
+    !(tx.categoryId || resolveCategoryId(tx.category))
+  ).length;
+}
+
+function atualizarBadgeExtratos() {
+  const el = document.getElementById('nav-badge-extratos');
+  if (!el) return;
+  const n = _pendenciasExtrato();
+  el.textContent = n;
+  // `hidden` em vez de classe: zero pendência é silêncio, e silêncio é o sinal
+  // de que está tudo bem — um "0" âmbar na sidebar seria alarme de nada.
+  el.hidden = n === 0;
+  el.title = n === 1 ? '1 lançamento sem categoria' : `${n} lançamentos sem categoria`;
+}
+
 async function rerenderCurrentTab() {
   const active = document.querySelector('.nav-link.active');
   if (!active) return;
+  atualizarBadgeExtratos();
   await switchTab(active.dataset.tab);
 }
 
@@ -280,6 +311,7 @@ async function finishOnboarding() {
   document.getElementById('onboarding-overlay').classList.add('hidden');
   localStorage.setItem('fluxo_onboarding_done', '1');
   await loadAllData();
+  atualizarBadgeExtratos();
   switchTab('dashboard');
   toast('Tudo pronto! Bem-vindo ao Radar.', 'success');
 }
@@ -459,6 +491,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         showKpiSkeleton();
         await loadAllData();
+        atualizarBadgeExtratos();
         await switchTab('dashboard');
 
         if (!localStorage.getItem('fluxo_onboarding_done') && state.transactions.length === 0) {

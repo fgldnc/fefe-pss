@@ -2,7 +2,7 @@
  * patrimonio.js — Aba de patrimônio (investimentos, caixa, bens pessoais)
  */
 
-import { state, fmt, toast, esc } from './utils.js';
+import { state, fmt, toast, esc, monthLabel, offsetMonth } from './utils.js';
 import { saveAsset, deleteAsset, addAporteToAsset } from './db.js';
 
 let _patrimonioInit = false;
@@ -13,6 +13,7 @@ export function renderPatrimonio() {
     _patrimonioInit = true;
   }
   _renderAtivos();
+  _renderGraficos();
 }
 
 function _renderAtivos() {
@@ -246,4 +247,120 @@ async function _salvarAtivo() {
   document.getElementById('modal-ativo').classList.add('hidden');
   toast('Ativo salvo!', 'success');
   _renderAtivos();
+}
+
+
+// ═══════════════════════════════════════════════════════════════════════
+// GRÁFICOS
+// Canvas não resolve var(--…): as cores vêm do token já resolvido, e os
+// gráficos são refeitos a cada render — inclusive quando o tema muda, porque
+// o botão de tema re-renderiza a aba corrente.
+// ═══════════════════════════════════════════════════════════════════════
+
+let chartComposicao = null;
+let chartAportes    = null;
+
+function _token(nome, fallback) {
+  const v = getComputedStyle(document.documentElement).getPropertyValue(nome).trim();
+  return v || fallback;
+}
+
+function _renderGraficos() {
+  if (typeof Chart === 'undefined') return;
+  _renderComposicao();
+  _renderAportes();
+}
+
+function _renderComposicao() {
+  const cv = document.getElementById('chart-pat-composicao');
+  if (!cv) return;
+  if (chartComposicao) { chartComposicao.destroy(); chartComposicao = null; }
+
+  const invest = state.assets.filter(a => a.type === 'investimento').reduce((s, a) => s + (a.currentValue || 0), 0);
+  const caixa  = state.assets.filter(a => a.type === 'caixa').reduce((s, a) => s + (a.currentValue || 0), 0);
+  const bens   = state.assets.filter(a => a.type === 'bem_pessoal').reduce((s, a) => s + _valorDepreciado(a), 0);
+
+  const dados = [
+    { rotulo: 'Investimento', valor: invest, cor: _token('--c5', '#2E8B6E') },
+    { rotulo: 'Caixa / conta', valor: caixa, cor: _token('--c4', '#5E8A2C') },
+    { rotulo: 'Bens pessoais', valor: bens,  cor: _token('--c2', '#C4661A') },
+  ].filter(d => d.valor > 0);
+
+  if (!dados.length) {
+    // Rosca cinza em vez de card vazio: mantém a altura da linha e não finge
+    // que existe composição de nada.
+    chartComposicao = new Chart(cv, {
+      type: 'doughnut',
+      data: { labels: ['Sem ativos'], datasets: [{ data: [1], backgroundColor: [_token('--bg-hover', '#24242A')], borderWidth: 0 }] },
+      options: { responsive: true, maintainAspectRatio: false, cutout: '64%',
+        plugins: { legend: { display: false }, tooltip: { enabled: false } } },
+    });
+    return;
+  }
+
+  chartComposicao = new Chart(cv, {
+    type: 'doughnut',
+    data: {
+      labels: dados.map(d => d.rotulo),
+      datasets: [{
+        data: dados.map(d => d.valor),
+        backgroundColor: dados.map(d => d.cor),
+        borderColor: _token('--bg-card', '#141416'),
+        borderWidth: 2,
+      }],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false, cutout: '64%',
+      plugins: {
+        legend: { position: 'right', labels: { color: _token('--text-secondary', '#A9A9B1'),
+          font: { family: 'Nunito', size: 11 }, boxWidth: 9, boxHeight: 9, padding: 9 } },
+        tooltip: { callbacks: { label: c => `${c.label}: ${fmt(c.parsed)}` } },
+      },
+    },
+  });
+}
+
+function _renderAportes() {
+  const cv = document.getElementById('chart-pat-aportes');
+  if (!cv) return;
+  if (chartAportes) { chartAportes.destroy(); chartAportes = null; }
+
+  // Seis meses terminando no mês selecionado no topo — a aba obedece à
+  // navegação de mês como todas as outras.
+  const meses = [];
+  for (let i = 5; i >= 0; i--) meses.push(offsetMonth(state.currentMonth, -i));
+
+  const soma = Object.fromEntries(meses.map(m => [m, 0]));
+  for (const ativo of state.assets) {
+    for (const ap of (ativo.contributions || [])) {
+      const m = String(ap.date || '').slice(0, 7);
+      if (m in soma) soma[m] += ap.amount || 0;
+    }
+  }
+
+  chartAportes = new Chart(cv, {
+    type: 'bar',
+    data: {
+      labels: meses.map(m => monthLabel(m).split(' ')[0].slice(0, 3)),
+      datasets: [{
+        label: 'Aportes',
+        data: meses.map(m => soma[m]),
+        backgroundColor: _token('--c5', '#2E8B6E'),
+        borderRadius: 3,
+      }],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false },
+        tooltip: { callbacks: { label: c => fmt(c.parsed.y) } } },
+      scales: {
+        x: { ticks: { color: _token('--text-muted', '#87878F'), font: { family: 'Nunito', size: 10 } },
+             grid: { display: false } },
+        y: { beginAtZero: true,
+             ticks: { color: _token('--text-muted', '#87878F'), font: { family: 'Nunito', size: 10 },
+                      callback: v => (v >= 1000 ? (v / 1000) + 'k' : v) },
+             grid: { color: _token('--border-soft', 'rgba(255,255,255,.07)') } },
+      },
+    },
+  });
 }

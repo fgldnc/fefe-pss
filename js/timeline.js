@@ -27,9 +27,11 @@ export function renderTimeline() {
     </div>
     <div class="card grow">
       <div id="timeline-feed" style="padding:0.5rem 0"></div>
-    </div>`;
+    </div>
+    <div class="card" id="contratos-card"></div>`;
 
   _renderFeed('all');
+  _renderContratos();
 
   document.getElementById('timeline-filter')?.addEventListener('change', e => {
     _renderFeed(e.target.value);
@@ -171,4 +173,88 @@ function _buildEvents(filter) {
   }
 
   return events.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+}
+
+
+/**
+ * Contratos em aberto — as compras parceladas que ainda não terminaram,
+ * agrupadas por CONTRATO em vez de repetidas mês a mês.
+ *
+ * É a resposta ao problema registrado no roteiro: a mesma compra em 6x aparece
+ * seis vezes na timeline, uma por mês, e nada diz que são a mesma coisa. Quem
+ * olha conta seis compras.
+ *
+ * O agrupamento é por descrição normalizada + total de parcelas + valor da
+ * parcela em centavos. Não existe id de contrato no dado — o app cria cada
+ * parcela como transação independente —, e esses três campos juntos são o que
+ * mais perto chega: duas compras diferentes no mesmo estabelecimento, com o
+ * mesmo número de parcelas E o mesmo valor, seriam fundidas. É o mesmo risco
+ * que `_acharParcela` em pdf-import.js já corre, e a alternativa (id de
+ * contrato) é mudança de modelo de dado, não de tela.
+ *
+ * "Restante" soma só as parcelas ainda NÃO pagas — as de competência futura e
+ * as projetadas. Parcela já paga não é dívida.
+ */
+function _renderContratos() {
+  const card = document.getElementById('contratos-card');
+  if (!card) return;
+
+  const mesAtual = state.currentMonth;
+  const grupos = new Map();
+
+  for (const tx of state.transactions) {
+    if (!(tx.installmentTotal > 1)) continue;
+    const desc = String(tx.description || '').trim().toLowerCase().replace(/\s+/g, ' ');
+    const chave = `${desc}|${tx.installmentTotal}|${Math.round((tx.amount || 0) * 100)}`;
+    const g = grupos.get(chave) || {
+      desc: tx.description || 'Compra parcelada',
+      total: tx.installmentTotal, valor: tx.amount || 0,
+      pagas: 0, restante: 0, ultimaCompetencia: '',
+    };
+    const competencia = tx.competenceMonth || String(tx.date || '').slice(0, 7);
+    if (competencia > g.ultimaCompetencia) g.ultimaCompetencia = competencia;
+    // Futuro ou projetado = ainda não caiu.
+    if (competencia > mesAtual || tx.isProjected) g.restante += tx.amount || 0;
+    else g.pagas++;
+    grupos.set(chave, g);
+  }
+
+  // Contrato encerrado não é "em aberto": sai da lista.
+  const abertos = [...grupos.values()]
+    .filter(g => g.pagas < g.total)
+    .sort((a, b) => a.ultimaCompetencia.localeCompare(b.ultimaCompetencia));
+
+  if (!abertos.length) {
+    card.hidden = true;
+    return;
+  }
+  card.hidden = false;
+
+  card.innerHTML = `
+    <div class="card-header"><span class="card-title">Contratos em aberto</span></div>
+    <p class="card-sub">As compras parceladas que ainda não terminaram, agrupadas por contrato em vez de repetidas mês a mês.</p>
+    <div class="table-wrapper">
+      <table class="data-table">
+        <thead>
+          <tr><th scope="col">Compra</th><th scope="col">Parcelas</th><th scope="col" class="col-value">Restante</th><th scope="col">Termina em</th></tr>
+        </thead>
+        <tbody>
+          ${abertos.map(g => `
+            <tr>
+              <td>${esc(g.desc)}</td>
+              <td>${g.pagas} de ${g.total} pagas</td>
+              <td class="col-value"><span class="val-mono">${fmt(g.restante)}</span></td>
+              <td>${esc(_mesCurto(g.ultimaCompetencia))}</td>
+            </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>`;
+}
+
+/** "2026-11" → "nov/2026". Usa monthLabel para não ter uma segunda tabela de
+ *  nomes de mês no projeto. */
+function _mesCurto(ym) {
+  if (!/^\d{4}-\d{2}$/.test(ym)) return '—';
+  const [ano] = ym.split('-');
+  return `${monthLabel(ym).split(' ')[0].slice(0, 3).toLowerCase()}/${ano}`;
 }
