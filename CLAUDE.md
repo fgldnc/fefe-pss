@@ -24,7 +24,7 @@ App de **controle financeiro pessoal** (nome exibido: "Radar", `index.html:6` = 
 
 | Arquivo | Uma linha |
 |---|---|
-| `app.js` | Bootstrap: `DOMContentLoaded`, auth, roteamento `switchTab()` com `import()` dinâmico, navegação de mês, command palette (Ctrl/Cmd+K), onboarding. |
+| `app.js` | Bootstrap: `DOMContentLoaded`, auth, roteamento por **destino** (`DESTINOS` + `APELIDOS`, `switchTab()` com `import()` dinâmico), navegação de mês, `_goto`. |
 | `auth.js` | Login Google, `getUid()`, espera `window._FB` aparecer (timeout 5 s). |
 | `firebase-init.js` | Inicializa o SDK do Firebase (app, auth, firestore) e publica `window._FB`. Carregado direto pelo `index.html`, não importado por nenhum módulo. |
 | `extratos.js` | Aba Extratos: importação de extrato bancário (CSV/OFX/PDF), histórico de lotes, modal de revisão/preview editável com marcação de duplicata e de campo inferido, `_recomputeAtencaoExtrato()`. |
@@ -198,7 +198,7 @@ Cada item abaixo é uma regra de negócio real codificada como literal, sem cons
 - `js/db.js:154` — gasto de extrato: `date.slice(0,7) === month`.
 - `js/db.js:197-200` — receita: `month`, senão `competenceMonth`, senão `date.slice(0,7)`.
 
-## Regras de interface que valem em toda tela (redesign v2 — rodada 1 aplicada)
+## Regras de interface que valem em toda tela (redesign v2 — rodadas 1 e 2)
 
 O redesign v1 (`/redesign`, paleta A "Galo", 7 rodadas A1–A7) foi **substituído**
 pelo redesign v2. A fonte da verdade visual é
@@ -206,9 +206,10 @@ pelo redesign v2. A fonte da verdade visual é
 antes de escrever qualquer linha de CSS.** O plano das 8 rodadas está em
 `PROMPT-implementar-v2.md`; a arquitetura de 5 destinos, em `ARQUITETURA-v2.md`.
 
-Aplicado até aqui: **rodada 1 (fundação)** — `css/style.css` e
-`css/components.css`. O `js/` não foi tocado, e o markup de `index.html` segue
-sendo o das 11 abas antigas, agora vestidas com a pele nova.
+Aplicado até aqui: **rodada 1 (fundação)** — a pele — e **rodada 2
+(navegação)** — o roteamento. As `<section class="tab-content">` das 11 abas
+continuam no `index.html` e os `render*` continuam escrevendo nelas por id: o
+que mudou foi quem as mostra e quando.
 
 - **Material de papel, um tema só.** Fundo cinza-claro (`--fundo`), folha branca
   (`--folha`) com raio 16 e sombra quase invisível. **O tema escuro acabou** — a
@@ -259,9 +260,42 @@ sendo o das 11 abas antigas, agora vestidas com a pele nova.
   do `hibrido.html`, **não reinventado** — reusar, não criar símbolo novo. Os
   seletores de elemento (`table`, `th`, `td`) estão escopados em `.folha` para
   não pegarem as `.data-table` das abas antigas.
-- **Navegação em quatro grupos por horizonte de tempo** vira **5 destinos**
-  (Importar · Conferir · Mês · Adiante · Guardado + ⚙ Ajustes) na rodada 2.
-  Enquanto isso, a sidebar antiga de 11 abas continua no ar.
+### Roteamento por destino (rodada 2)
+
+- **`DESTINOS` em `js/app.js` é o mapa da navegação.** Um destino é uma LISTA de
+  seções do `index.html`, mostradas juntas e renderizadas na ordem do array:
+  `importar` = extratos · `mes` = dashboard, gastos, receitas, orcamento ·
+  `adiante` = calendario, timeline · `guardado` = metas, patrimonio ·
+  `ajustes` = configuracoes, relatorios. **Empilhar é o estado intermediário**:
+  as rodadas 3 a 8 fundem cada destino numa tela só, e a lista encolhe junto.
+  Os `render*` são chamados **em série** — a ordem é a de leitura da tela, e
+  cada parte falha sozinha, com toast, sem derrubar as outras.
+- **`APELIDOS` mantém os ids de aba antigos válidos como endereço.**
+  `switchTab('gastos')` e `data-goto="gastos"` continuam funcionando: resolvem
+  para o destino que hoje contém a seção, e `_goto` **rola até a seção** dentro
+  dele (`scroll-margin-top` cobre a topbar sticky). Não vale a pena caçar as
+  chamadas agora — a rodada da tela reescreve o card que as contém.
+- **CONFERIR ainda não está na navegação.** O destino existe no plano
+  (ARQUITETURA-v2.md) mas quem o preenche é `js/conferir.js`, da rodada 7.
+  Item de navegação que leva a tela vazia é pior que navegação que cresce.
+- **Saíram**: a command palette (Ctrl+K), o onboarding de 4 passos (um dos
+  passos era morto — `obData.bank` era escrito e nunca lido), o botão de tema,
+  a gaveta lateral do celular e o hamburguer. O salário e a primeira meta que o
+  onboarding coletava entram pelos botões normais.
+- **Celular (< 900px): a barra lateral vira barra fixa no rodapé.** Somem a
+  marca, os rótulos de grupo e o rodapé de conta; "Sair da conta" continua em
+  Ajustes, onde já estava. Ajustes fica na barra enquanto forem 4 destinos;
+  com Conferir serão 5 e ele sobe para o topo.
+- **`.main-content` não pode ter `overflow-x`.** Qualquer `overflow` diferente
+  de `visible` ali faz dele um contêiner de rolagem que nunca rola, e tudo que
+  é `position: sticky` dentro — a topbar, o `<thead>` — gruda NELE e some com a
+  página. Foi medido: a topbar descia junto. Quem corta o estouro horizontal é
+  o `overflow-x: hidden` do `body`.
+- **O `<thead>` ainda NÃO gruda.** As tabelas antigas moram em
+  `.table-wrapper { overflow-x: auto }` dentro de `.card { overflow: hidden }`,
+  e `position: sticky` num `<th>` resolve contra esse scrollport. A regra foi
+  **removida** em vez de ficar sem efeito; volta na rodada 3, com a tabela de
+  Mês remontada numa `.folha` sem os dois embrulhos.
 - **Atalho entre abas é `data-goto`**, delegado uma única vez em `document` por
   `app.js` (`_goto`), com `data-filtro-cat` e `data-filtro-proj` para chegar já
   filtrado. Nunca ligar listener no elemento: os cards são reinjetados por
@@ -303,7 +337,7 @@ mudança de interface:
 | `INVENTARIO-FUNCOES.md` | as 64 capacidades com arquivo:linha, e o que pode sumir. |
 | `PESQUISA-UX.md` | a evidência. O que está `[NÃO CONFIRMADO]` lá segue não confirmado. |
 
-Rodadas: **1 fundação (feita)** · 2 navegação · 3 Mês · 4 Adiante ·
+Rodadas: **1 fundação (feita)** · **2 navegação (feita)** · 3 Mês · 4 Adiante ·
 5 Guardado · 6 Importar · 7 Conferir · 8 Ajustes. Uma por vez, cada uma
 terminando com o app funcionando.
 

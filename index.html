@@ -49,79 +49,54 @@
       <span class="sidebar-logo">Radar</span>
     </div>
 
-    <!-- Quatro grupos por HORIZONTE DE TEMPO, não por tipo de tela. Ninguém
-         pensa "vou usar um cadastro"; pensa "o que já aconteceu este mês" e
-         "o que ainda vem". Nenhuma aba sumiu ou fundiu — só mudaram de vizinho.
-         Os `data-tab` continuam sendo os ids internos de sempre: só o rótulo
-         visível de `dashboard` mudou, para "Visão do mês". -->
+    <!-- ARQUITETURA v2 (ARQUITETURA-v2.md, opção B "o ciclo do mês"): as 11
+         abas viraram DESTINOS. O `data-tab` agora é o nome do destino, não o
+         id de uma aba; `switchTab` resolve o destino em uma ou mais das
+         `<section class="tab-content">` que continuam no HTML, e chama o
+         `render*` de cada uma. Empilhar as telas antigas dentro do destino é
+         o passo intermediário honesto: nenhuma capacidade some antes da
+         rodada que a funde de verdade (3 a 8).
+
+         CONFERIR ainda não está aqui. O destino existe no plano, mas quem o
+         preenche é `js/conferir.js`, da rodada 7 — e item de navegação que
+         leva a uma tela vazia é pior que navegação que cresce. Entra lá. -->
+
     <nav class="sidebar-nav">
-      <!-- Este mês — o que se abre em toda sessão de início de mês: importa,
-           confere, corrige. As quatro respondem sobre o mês que está correndo. -->
+      <!-- O ciclo do mês: a sequência que se faz de verdade toda virada de
+           mês — trazer o dado para dentro, olhar o mês, olhar o que vem. -->
       <div class="nav-group">
-        <div class="nav-group-label">Este mês</div>
-        <a class="nav-link active" data-tab="dashboard">
-          <svg class="nav-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-          Visão do mês
-        </a>
-        <a class="nav-link" data-tab="gastos">
-          <svg class="nav-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
-          Gastos
-        </a>
-        <a class="nav-link" data-tab="receitas">
-          <svg class="nav-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2v20M17 7H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-          Receitas
-        </a>
-        <a class="nav-link" data-tab="extratos">
-          <svg class="nav-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-          Extratos
+        <div class="nav-group-label">O ciclo do mês</div>
+        <a class="nav-link" data-tab="importar">
+          <svg class="nav-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 3v12"/><polyline points="7 10 12 15 17 10"/><path d="M4 21h16"/></svg>
+          Importar
           <span class="nav-badge" id="nav-badge-extratos" hidden>0</span>
         </a>
-      </div>
-
-      <!-- O que vem — as duas telas que falam de dinheiro que ainda não
-           aconteceu, e as duas que consomem parcela projetada. -->
-      <div class="nav-group">
-        <div class="nav-group-label">O que vem</div>
-        <a class="nav-link" data-tab="calendario">
-          <svg class="nav-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 17l5-6 4 4 5-8"/><path d="M3 21h18"/></svg>
-          Fluxo de Caixa
+        <a class="nav-link active" data-tab="mes">
+          <svg class="nav-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+          Mês
         </a>
-        <a class="nav-link" data-tab="orcamento">
-          <svg class="nav-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-          Orçamento
+        <a class="nav-link" data-tab="adiante">
+          <svg class="nav-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 17l5-6 4 4 5-8"/><polyline points="17 7 21 7 21 11"/><path d="M3 21h18"/></svg>
+          Adiante
         </a>
       </div>
 
-      <!-- Longo prazo — Metas e Patrimônio juntos porque o código já os junta:
-           aporte em ativo vinculado (`linkedGoalId`) credita a meta. -->
+      <!-- Longo prazo: meta e ativo na mesma casa porque o código já os junta
+           — aporte em ativo vinculado (`linkedGoalId`) credita a meta. -->
       <div class="nav-group">
         <div class="nav-group-label">Longo prazo</div>
-        <a class="nav-link" data-tab="metas">
+        <a class="nav-link" data-tab="guardado">
           <svg class="nav-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
-          Metas
-        </a>
-        <a class="nav-link" data-tab="patrimonio">
-          <svg class="nav-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 21h18M5 21V7l7-4 7 4v14"/><path d="M9 21v-6h6v6"/></svg>
-          Patrimônio
+          Guardado
         </a>
       </div>
 
-      <!-- Registro — o que só lê e o que só configura. Timeline e Relatórios
-           não escrevem nada; Configurações escreve o cadastro que alimenta as
-           outras dez. -->
-      <div class="nav-group">
-        <div class="nav-group-label">Registro</div>
-        <a class="nav-link" data-tab="timeline">
-          <svg class="nav-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="3" x2="12" y2="21"/><circle cx="12" cy="8" r="2"/><circle cx="12" cy="16" r="2"/></svg>
-          Timeline
-        </a>
-        <a class="nav-link" data-tab="relatorios">
-          <svg class="nav-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-          Relatórios
-        </a>
-        <a class="nav-link" data-tab="configuracoes">
+      <!-- Ajustes desce para o pé: é o que se abre uma vez e não se olha mais.
+           No celular ele sai da barra de baixo e vira item do topo. -->
+      <div class="nav-group nav-group-fim">
+        <a class="nav-link" data-tab="ajustes">
           <svg class="nav-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2m-3.05-7.95-1.41 1.41M6.46 17.54l-1.41 1.41m14.9 0-1.41-1.41M6.46 6.46 5.05 5.05"/></svg>
-          Configurações
+          Ajustes
         </a>
       </div>
     </nav>
@@ -146,10 +121,8 @@
 
     <!-- Topbar -->
     <header class="topbar">
-      <button class="btn-menu-toggle" id="btn-menu-toggle">
-        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
-      </button>
-
+      <!-- O hamburguer saiu com a gaveta: abaixo de 900px a barra lateral vira
+           barra fixa no rodapé, e o destino fica a um toque em vez de dois. -->
       <div class="month-nav">
         <button class="btn-icon" id="btn-prev-month">‹</button>
         <span id="month-label" class="month-label" title="Clique para escolher o mês">—</span>
@@ -157,13 +130,10 @@
         <button class="btn-icon" id="btn-next-month">›</button>
       </div>
 
-      <div class="topbar-search">
-        <button class="search-trigger" id="btn-search">
-          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          Buscar transações, metas…
-          <kbd>Ctrl K</kbd>
-        </button>
-      </div>
+      <!-- A command palette (Ctrl+K) saiu na rodada 2: ela fazia sentido com
+           11 destinos, cada um a um clique de distância errado. Com 4 + Ajustes
+           na barra lateral não há o que atalhar, e a busca que sobra é a da
+           tabela — que pertence à tabela. -->
 
       <div class="topbar-actions">
         <!-- O botão de tema saiu na rodada 1 da v2: a direção escolhida
@@ -255,6 +225,24 @@
     </section>
     <!-- ════ CALENDÁRIO ══════════════════════════════════════ -->
     <section id="tab-calendario" class="tab-content hidden"></section>
+    <!-- ════ METAS ════════════════════════════════════════════ -->
+    <section id="tab-metas" class="tab-content fit hidden">
+      <p class="page-intro">Alvos com prazo. <b>Use “+ Aporte” para registrar quanto guardou</b>; se a meta estiver ligada a um ativo do Patrimônio, o aporte lá credita aqui sozinho.</p>
+      <div class="page-header" style="justify-content:flex-end">
+        <button class="btn btn-primary btn-sm" id="btn-nova-meta">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Nova Meta
+        </button>
+      </div>
+      <div id="metas-grid" class="metas-grid">
+        <div class="empty-state" style="grid-column:1/-1">
+          <div class="empty-state-icon">🎯</div>
+          <div class="empty-state-title">Nenhuma meta criada</div>
+          <div class="empty-state-text">Defina objetivos financeiros e acompanhe seu progresso.</div>
+          <button class="btn btn-primary btn-sm" data-proxy-click="btn-nova-meta">Criar primeira meta</button>
+        </div>
+      </div>
+    </section>
     <!-- ════ PATRIMÔNIO ═══════════════════════════════════════ -->
     <section id="tab-patrimonio" class="tab-content fit hidden">
       <p class="page-intro">Tudo que você tem: investimento, dinheiro em conta e bens. <b>Atualize o valor atual de vez em quando</b> — é o que mantém o total certo.</p>
@@ -469,24 +457,6 @@
         <div class="card-header"><span class="card-title">Orçamento mensal por categoria</span></div>
         <p class="card-sub">Digite quanto pretende gastar em cada categoria e clique em Salvar. Deixar em branco é válido — só significa que aquela categoria não tem teto.</p>
         <div id="orcamento-editor" class="orcamento-editor"><p style="color:var(--text-muted);font-size:0.83rem;padding:1rem">Carregando categorias…</p></div>
-      </div>
-    </section>
-    <!-- ════ METAS ════════════════════════════════════════════ -->
-    <section id="tab-metas" class="tab-content fit hidden">
-      <p class="page-intro">Alvos com prazo. <b>Use “+ Aporte” para registrar quanto guardou</b>; se a meta estiver ligada a um ativo do Patrimônio, o aporte lá credita aqui sozinho.</p>
-      <div class="page-header" style="justify-content:flex-end">
-        <button class="btn btn-primary btn-sm" id="btn-nova-meta">
-          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          Nova Meta
-        </button>
-      </div>
-      <div id="metas-grid" class="metas-grid">
-        <div class="empty-state" style="grid-column:1/-1">
-          <div class="empty-state-icon">🎯</div>
-          <div class="empty-state-title">Nenhuma meta criada</div>
-          <div class="empty-state-text">Defina objetivos financeiros e acompanhe seu progresso.</div>
-          <button class="btn btn-primary btn-sm" data-proxy-click="btn-nova-meta">Criar primeira meta</button>
-        </div>
       </div>
     </section>
     <!-- ════ CONFIGURAÇÕES ════════════════════════════════════ -->
@@ -741,35 +711,6 @@
   </div>
 </div>
 
-<!-- Command Palette -->
-<div id="cmd-overlay" class="cmd-overlay hidden">
-  <div class="cmd-palette">
-    <div class="cmd-input-wrap">
-      <svg class="cmd-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-      <input id="cmd-input" class="cmd-input" placeholder="Buscar transações, metas, categorias…" autocomplete="off" />
-    </div>
-    <div class="cmd-results" id="cmd-results">
-      <div class="cmd-empty">Digite para buscar…</div>
-    </div>
-    <div class="cmd-footer">
-      <span><kbd>↑↓</kbd> navegar</span>
-      <span><kbd>Enter</kbd> selecionar</span>
-      <span><kbd>Esc</kbd> fechar</span>
-    </div>
-  </div>
-</div>
-
-<!-- Onboarding -->
-<div id="onboarding-overlay" class="onboarding-overlay hidden">
-  <div class="onboarding-card">
-    <div class="onboarding-step-dots" id="onboarding-dots"></div>
-    <div id="onboarding-content"></div>
-    <div class="onboarding-footer">
-      <button class="btn btn-ghost btn-sm" id="btn-onboarding-skip">Pular</button>
-      <button class="btn btn-primary btn-sm" id="btn-onboarding-next">Próximo →</button>
-    </div>
-  </div>
-</div>
 
 <!-- Toast Container -->
 <div id="toast-container"></div>

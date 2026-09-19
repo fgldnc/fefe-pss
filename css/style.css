@@ -220,9 +220,12 @@ body {
 /* ═══════════════════════════════════════════════════════════════
    SIDEBAR
 ════════════════════════════════════════════════════════════════ */
+/* A barra de navegação NÃO é um painel: não tem fundo próprio nem fio de
+   separação. Ela fica sobre o mesmo papel cinza da página, como no
+   hibrido.html — o que separa navegação de conteúdo é a folha branca do
+   conteúdo, não uma parede. */
 .sidebar {
-  background: var(--bg-card);
-  border-right: 1px solid var(--border-soft);
+  background: transparent;
   display: flex;
   flex-direction: column;
   position: sticky;
@@ -230,75 +233,78 @@ body {
   height: 100vh;
   z-index: 100;
   overflow: hidden;
+  padding: 22px 16px;
 }
 
 .sidebar-header {
-  padding: 1.4rem 1.25rem 1rem;
-  border-bottom: 1px solid var(--border-soft);
+  padding: 0 8px 26px;
   display: flex;
   align-items: center;
-  gap: 0.55rem;
+  gap: 9px;
   flex-shrink: 0;
 }
 
 .sidebar-logo {
-  font-size: 1.4rem;
-  font-weight: 700;
-  letter-spacing: -0.5px;
-  /* Sem gradiente: o logo é texto, e texto no chrome não tem cor. */
-  color: var(--text-primary);
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--ink);
 }
-.sidebar-logo-icon { font-size: 1.2rem; }
+/* O losango é o único lugar do chrome em que a marca aparece cheia. */
+.sidebar-logo-icon {
+  width: 28px; height: 28px; border-radius: 9px;
+  background: var(--marca); color: #fff;
+  display: grid; place-items: center;
+  font-size: 14px; font-weight: 700; flex: none;
+}
 
-.sidebar-nav { flex: 1; overflow-y: auto; padding: 0.25rem 0; }
+.sidebar-nav { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 2px; }
 .sidebar-nav::-webkit-scrollbar { width: 3px; }
-.sidebar-nav::-webkit-scrollbar-thumb { background: var(--border-md); border-radius: 3px; }
+.sidebar-nav::-webkit-scrollbar-thumb { background: var(--borda-media); border-radius: 3px; }
 
-.nav-group { border-bottom: 1px solid var(--border-soft); padding: 0.4rem 0; }
-.nav-group:last-of-type { border-bottom: none; }
+.nav-group { display: contents; }
+/* O grupo fica colado no pé da barra: é o que se abre uma vez e não se olha
+   mais. `display:contents` acima é o que deixa o `margin-top:auto` funcionar
+   no filho, sem uma div de espaçamento. */
+.nav-group-fim > .nav-link:first-child { margin-top: auto; }
 .nav-group-label {
-  font-size: 0.63rem;
-  font-weight: 700;
+  font: 600 10.5px var(--fonte);
   text-transform: uppercase;
-  letter-spacing: 1.1px;
-  color: var(--text-muted);
-  padding: 0.6rem 1.25rem 0.2rem;
+  letter-spacing: 0.16em;
+  color: var(--ink-3);
+  padding: 20px 10px 8px;
 }
 
 .nav-link {
   display: flex;
   align-items: center;
-  gap: 0.65rem;
-  padding: 0.58rem 1.25rem;
-  color: var(--text-secondary);
+  gap: 10px;
+  padding: 9px 11px;
+  border-radius: var(--raio-sm);
+  color: var(--ink-2);
   text-decoration: none;
-  font-size: 0.875rem;
-  font-weight: 400;
-  border-left: 2px solid transparent;
-  transition: all var(--transition);
+  font-size: 13.5px;
+  font-weight: 500;
+  transition: background var(--transition), color var(--transition);
   cursor: pointer;
   white-space: nowrap;
 }
-.nav-icon { font-size: 16px; flex-shrink: 0; opacity: 0.65; transition: opacity var(--transition); }
-.nav-link:hover { color: var(--text-primary); background: var(--bg-hover); border-left-color: var(--accent-secondary); }
-.nav-link:hover .nav-icon { opacity: 1; }
-.nav-link.active { color: var(--text-primary); background: var(--bg-active); border-left-color: var(--accent-primary); font-weight: 600; }
-.nav-link.active .nav-icon { opacity: 1; }
+.nav-icon { flex-shrink: 0; }
+.nav-link:hover { background: var(--folha); color: var(--ink); }
+.nav-link.active { background: var(--marca-tinta); color: var(--marca); font-weight: 600; }
 
-/* Âmbar, não o acento: o contador de Extratos é pendência ("o app não
-   conseguiu classificar"), e pendência é âmbar em toda a interface. É a única
-   cor do chrome inteiro, e some quando o número é zero. */
-.nav-badge { margin-left: auto; font-size: 0.65rem; font-weight: 700; border-radius: 20px; padding: 1px 7px;
-  background: var(--warning-dim); color: var(--warning); }
-.nav-link.active .nav-badge { background: color-mix(in srgb, var(--accent-fg) 18%, transparent); color: var(--accent-fg); }
+/* Âmbar, não a marca: o contador é pendência ("o app não conseguiu
+   classificar"), e pendência é âmbar em toda a interface. Some quando é zero. */
+.nav-badge { margin-left: auto; font-size: 11px; font-weight: 700; border-radius: 20px; padding: 1px 7px;
+  background: var(--deduzido-tinta); color: var(--deduzido); }
 
-.sidebar-footer { border-top: 1px solid var(--border-soft); flex-shrink: 0; padding: 0.4rem 0; }
+.sidebar-footer { border-top: 1px solid var(--borda); flex-shrink: 0; padding: 0.4rem 0 0; margin-top: 12px; }
 
 .sidebar-user {
   display: flex;
   align-items: center;
   gap: 0.65rem;
-  padding: 0.7rem 1.25rem;
+  padding: 0.7rem 0.6rem;
 }
 .sidebar-user-avatar {
   width: 32px; height: 32px; border-radius: 50%;
@@ -311,7 +317,7 @@ body {
 
 .btn-logout {
   display: flex; align-items: center; gap: 0.65rem;
-  padding: 0.55rem 1.25rem; color: var(--text-muted);
+  padding: 0.55rem 0.6rem; color: var(--text-muted);
   background: none; border: none; font-family: var(--font-sans);
   font-size: 0.82rem; cursor: pointer; width: 100%;
   transition: color var(--transition); border-left: 2px solid transparent;
@@ -321,56 +327,48 @@ body {
 /* ═══════════════════════════════════════════════════════════════
    MAIN + TOPBAR
 ════════════════════════════════════════════════════════════════ */
-.main-content { display: flex; flex-direction: column; min-height: 100vh; overflow-x: hidden; }
+/* Sem `overflow-x: hidden` aqui: `overflow-x` diferente de `visible` força
+   `overflow-y: auto` e faz de .main-content um contêiner de rolagem. Como ele
+   nunca rola de fato, tudo que é `position: sticky` lá dentro — a topbar e o
+   <thead> das tabelas — passa a grudar NELE, e some da tela junto com a
+   página. Quem corta o estouro horizontal é o `overflow-x: hidden` do body. */
+.main-content { display: flex; flex-direction: column; min-height: 100vh; }
 
+/* A topbar também não é painel: é a faixa de papel em que ficam o mês e a
+   conta. Opaca (não translúcida) porque a página rola por baixo dela e o
+   conteúdo não pode aparecer borrado atrás do seletor de mês. */
 .topbar {
   height: var(--topbar-h);
-  background: var(--bg-card);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border-bottom: 1px solid var(--border-soft);
+  background: var(--fundo);
   display: flex;
   align-items: center;
-  padding: 0 1.75rem;
+  padding: 0 var(--margem);
   gap: 1rem;
   position: sticky;
   top: 0;
   z-index: 50;
 }
 
-.btn-menu-toggle { display: none; background: none; border: none; color: var(--text-secondary); cursor: pointer; padding: 0.25rem; border-radius: var(--radius-sm); }
-.btn-menu-toggle:hover { color: var(--text-primary); }
-
-.month-nav { display: flex; align-items: center; gap: 0.5rem; }
+.month-nav {
+  display: flex; align-items: center; gap: 2px;
+  background: var(--folha); border: 1px solid var(--borda);
+  border-radius: var(--raio-sm); padding: 3px;
+}
 .month-label { font-size: 0.9rem; font-weight: 600; min-width: 130px; text-align: center; letter-spacing: 0.3px; cursor: pointer; border-radius: var(--radius-sm); padding: 0.2rem 0.4rem; transition: background 0.15s; }
 .month-label:hover { background: var(--bg-hover); }
 /* Input do month picker: invisível, mas ancorado ao label para o popup nativo abrir no lugar certo */
 .month-picker-input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; border: 0; padding: 0; }
 
 .btn-icon {
-  width: 30px; height: 30px;
-  background: var(--bg-card); border: 1px solid var(--border-md);
-  border-radius: var(--radius-sm); color: var(--text-secondary);
-  cursor: pointer; font-size: 1.1rem;
+  width: 26px; height: 26px;
+  background: transparent; border: 0;
+  border-radius: 7px; color: var(--ink-3);
+  cursor: pointer; font-size: 15px;
   display: flex; align-items: center; justify-content: center;
   transition: all var(--transition);
 }
-.btn-icon:hover { background: var(--accent-dim); border-color: var(--accent-primary); color: var(--text-primary); }
+.btn-icon:hover { background: var(--folha-2); color: var(--ink); }
 
-.topbar-search { flex: 1; max-width: 380px; }
-.search-trigger {
-  display: flex; align-items: center; gap: 0.6rem;
-  background: var(--bg-main); border: 1px solid var(--border-soft);
-  border-radius: var(--radius-md); padding: 0.42rem 0.85rem;
-  cursor: pointer; transition: all var(--transition);
-  color: var(--text-muted); font-size: 0.82rem; font-family: var(--font-sans); width: 100%;
-}
-.search-trigger:hover { border-color: var(--accent-primary); background: var(--accent-dim); color: var(--text-secondary); }
-.search-trigger kbd {
-  margin-left: auto; font-size: 0.68rem;
-  background: var(--bg-card); border: 1px solid var(--border-md);
-  border-radius: 4px; padding: 1px 5px; font-family: var(--font-sans); color: var(--text-muted);
-}
 
 .topbar-actions { margin-left: auto; display: flex; align-items: center; gap: 0.75rem; }
 .user-name { font-size: 0.82rem; color: var(--text-secondary); font-weight: 500; }
@@ -621,45 +619,6 @@ body {
 .toast.info    { border-color: var(--border-md); }
 .toast.info    .toast-icon { color: var(--accent-bright); }
 
-/* ═══════════════════════════════════════════════════════════════
-   COMMAND PALETTE
-════════════════════════════════════════════════════════════════ */
-.cmd-overlay {
-  position: fixed; inset: 0;
-  background: rgba(20, 24, 33, 0.38); backdrop-filter: blur(8px);
-  z-index: 800; display: flex; align-items: flex-start;
-  justify-content: center; padding-top: 10vh; animation: fadeIn 0.15s ease;
-}
-.cmd-palette {
-  background: var(--bg-card-raised); border: 1px solid var(--border-strong);
-  border-radius: var(--radius-xl); width: 100%; max-width: 560px;
-  box-shadow: var(--shadow), var(--shadow-glow); overflow: hidden; animation: scaleIn 0.18s ease;
-}
-.cmd-input-wrap {
-  display: flex; align-items: center; gap: 0.75rem;
-  padding: 1rem 1.25rem; border-bottom: 1px solid var(--border-soft);
-}
-.cmd-input {
-  flex: 1; background: none; border: none;
-  font-family: var(--font-sans); font-size: 1rem;
-  color: var(--text-primary); outline: none;
-}
-.cmd-input::placeholder { color: var(--text-muted); }
-.cmd-icon { color: var(--text-muted); font-size: 18px; }
-.cmd-results { max-height: 380px; overflow-y: auto; padding: 0.5rem; }
-.cmd-section-label { font-size: 0.67rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); padding: 0.5rem 0.75rem 0.2rem; }
-.cmd-item {
-  display: flex; align-items: center; gap: 0.75rem;
-  padding: 0.65rem 0.75rem; border-radius: var(--radius-md);
-  cursor: pointer; transition: background var(--transition); font-size: 0.875rem;
-}
-.cmd-item:hover, .cmd-item.selected { background: var(--accent-dim); }
-.cmd-item-icon { font-size: 16px; color: var(--text-muted); }
-.cmd-item-label { color: var(--text-primary); }
-.cmd-item-sub { font-size: 0.74rem; color: var(--text-muted); margin-left: auto; }
-.cmd-empty { padding: 2rem; text-align: center; color: var(--text-muted); font-size: 0.875rem; }
-.cmd-footer { padding: 0.6rem 1.25rem; border-top: 1px solid var(--border-soft); display: flex; gap: 1rem; font-size: 0.7rem; color: var(--text-muted); }
-.cmd-footer kbd { background: var(--bg-card); border: 1px solid var(--border-md); border-radius: 4px; padding: 1px 5px; font-family: var(--font-sans); }
 
 /* ═══════════════════════════════════════════════════════════════
    FILTROS
@@ -693,35 +652,10 @@ body {
 .config-grid   { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
 .extratos-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
 
-/* ═══════════════════════════════════════════════════════════════
-   ONBOARDING
-════════════════════════════════════════════════════════════════ */
-.onboarding-overlay {
-  position: fixed; inset: 0;
-  background: rgba(20, 24, 33, 0.42); backdrop-filter: blur(10px);
-  z-index: 700; display: flex; align-items: center; justify-content: center;
-  padding: 1rem; animation: fadeIn 0.3s ease;
-}
-.onboarding-card {
-  background: var(--bg-card); border: 1px solid var(--border-md);
-  border-radius: var(--radius-2xl); padding: 2.5rem; max-width: 520px; width: 100%;
-  box-shadow: var(--shadow), var(--shadow-glow);
-}
-.onboarding-step-dots { display: flex; gap: 0.4rem; justify-content: center; margin-bottom: 1.5rem; }
-.onboarding-dot {
-  width: 6px; height: 6px; border-radius: 50%;
-  background: var(--border-md); transition: all var(--transition);
-}
-.onboarding-dot.active { background: var(--accent-primary); width: 18px; border-radius: 3px; }
-.onboarding-title { font-size: 1.3rem; font-weight: 700; text-align: center; margin-bottom: 0.5rem; letter-spacing: -0.3px; }
-.onboarding-sub { font-size: 0.85rem; color: var(--text-secondary); text-align: center; margin-bottom: 1.75rem; line-height: 1.5; }
-.onboarding-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 1.75rem; }
 
 /* ═══════════════════════════════════════════════════════════════
    MOBILE
 ════════════════════════════════════════════════════════════════ */
-.sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(20, 24, 33, 0.38); backdrop-filter: blur(3px); z-index: 150; }
-.sidebar-overlay.active { display: block; }
 
 /* ═══════════════════════════════════════════════════════════════
    ANIMAÇÕES
@@ -758,13 +692,7 @@ body {
   .extratos-grid { grid-template-columns: 1fr; }
 }
 @media (max-width: 768px) {
-  :root { --sidebar-w: 0px; }
-  .app { grid-template-columns: 1fr; }
-  .sidebar { position: fixed; left: 0; top: 0; width: 245px; transform: translateX(-100%); transition: transform 0.25s ease; z-index: 200; }
-  .sidebar.open { transform: translateX(0); box-shadow: 8px 0 40px rgba(20, 24, 33, 0.22); }
-  .btn-menu-toggle { display: flex; }
   .tab-content { padding: 1rem; }
-  .topbar-search { display: none; }
   .user-name { display: none; }
 }
 @media (max-width: 480px) {
@@ -961,13 +889,32 @@ body { overflow-x: hidden; overflow-y: auto; }
 .main-content { min-height: 0; }
 .topbar { position: sticky; top: 0; z-index: 90; }
 
-/* Cabeçalho preso enquanto o corpo desce. `background` explícito: sem
-   ele a linha de dados aparece por baixo do <th>, que é transparente. */
-.data-table thead th {
-  position: sticky; top: 0; z-index: 1;
-  background: var(--folha);
-  box-shadow: inset 0 -1px 0 var(--borda-forte);
+/* ── A COLUNA E O DESTINO EMPILHADO ──────────────────────────────
+   O conteúdo tem largura máxima (--coluna): linha de tabela de 1600px
+   não se lê, o olho perde a linha na volta. A topbar respeita a mesma
+   coluna para o seletor de mês nascer alinhado com o conteúdo.
+
+   Um destino mostra VÁRIAS `.tab-content` empilhadas (ver DESTINOS em
+   js/app.js). Só a primeira visível leva o respiro de topo; as
+   seguintes encostam, e o `.page-header` de cada uma faz a divisão. */
+.tab-content {
+  max-width: var(--coluna); padding: var(--ar-secao) var(--margem);
+  /* A topbar é sticky e cobriria o começo da seção: `data-goto` entre telas
+     empilhadas tem que parar ABAIXO dela, não atrás. */
+  scroll-margin-top: calc(var(--topbar-h) + 24px);
 }
+.tab-content:not(.hidden) ~ .tab-content:not(.hidden) { padding-top: 0; }
+.main-content > .tab-content:last-of-type { padding-bottom: 80px; }
+.topbar { max-width: var(--coluna); width: 100%; }
+
+/* O CABEÇALHO DE TABELA AINDA NÃO GRUDA, e a regra foi tirada em vez de
+   ficar aqui sem efeito: `position: sticky` num <th> só funciona contra o
+   scrollport mais próximo, e as tabelas antigas moram dentro de
+   `.table-wrapper { overflow-x: auto }` — que vira scrollport e não rola na
+   vertical — dentro de `.card { overflow: hidden }`. Medido no navegador: o
+   <th> descia junto com a página. Volta na rodada 3, quando a tabela de Mês
+   for remontada numa `.folha` sem esse par de embrulhos. */
+.data-table thead th { background: var(--folha); }
 
 /* Altura da caixa do gráfico de evolução. O canvas é absoluto dentro
    dela para o Chart.js medir um retângulo já resolvido — canvas que
@@ -1128,6 +1075,38 @@ body { overflow-x: hidden; overflow-y: auto; }
 @media (max-width: 1120px) {
   .faixa { grid-template-columns: 1fr; }
 }
+/* ── CELULAR: a barra lateral vira barra de baixo ────────────────
+   Abaixo de 900px não há coluna lateral que caiba sem comer a largura
+   da linha. A mesma navegação vira barra fixa no rodapé, com o polegar
+   alcançando os quatro destinos num toque — era em dois, pelo
+   hamburguer, e a gaveta escondia onde se estava.
+
+   O que some da barra: a marca (o app já está aberto, ninguém precisa
+   do logotipo para saber onde está), os rótulos de grupo e o rodapé de
+   conta. "Sair da conta" continua em Ajustes, que é onde ele também já
+   estava. Ajustes fica na barra enquanto forem quatro destinos; quando
+   Conferir entrar (rodada 7) serão cinco, e aí ele sobe para o topo. */
+@media (max-width: 900px) {
+  .app { grid-template-columns: 1fr; }
+  .sidebar {
+    position: fixed; inset: auto 0 0 0; height: auto; overflow: visible;
+    flex-direction: row; padding: 6px 4px 10px; gap: 0;
+    background: var(--folha); border-top: 1px solid var(--borda); z-index: 40;
+  }
+  .sidebar-header, .nav-group-label, .sidebar-footer { display: none; }
+  .sidebar-nav { flex-direction: row; overflow: visible; flex: 1; }
+  .nav-link {
+    flex: 1; flex-direction: column; gap: 3px; position: relative;
+    font-size: 10.5px; padding: 7px 2px; text-align: center; justify-content: center;
+  }
+  .nav-link.active { background: transparent; color: var(--marca); }
+  .nav-group-fim > .nav-link:first-child { margin-top: 0; }
+  /* Fora do fluxo: com `margin-left:auto` o selo empurraria o rótulo. */
+  .nav-badge { position: absolute; margin: 0; top: 2px; left: 50%; transform: translateX(6px); }
+  /* A barra é fixa e cobriria o fim da última tabela. */
+  .main-content > .tab-content:last-of-type { padding-bottom: 96px; }
+}
+
 @media (max-width: 900px) {
   :root { --margem: 16px; --goteira: 14px; }
   .dist { grid-template-columns: 1fr; justify-items: center; }

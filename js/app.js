@@ -16,42 +16,90 @@ export { state, thisMonth, monthLabel, offsetMonth, toast } from './utils.js';
 export { esc, fmt, showKpiSkeleton, showTableSkeleton, renderInsights } from './utils.js';
 
 // ─── NAVEGAÇÃO COM DYNAMIC IMPORT ──────────────────────────────
-const TAB_MODULES = {
-  dashboard:     () => import('./dashboard.js').then(m => m.renderDashboard),
-  gastos:        () => import('./gastos.js').then(m => m.renderGastos),
-  extratos:      () => import('./extratos.js').then(m => m.renderExtratos),
-  receitas:      () => import('./receitas.js').then(m => m.renderReceitas),
-  orcamento:     () => import('./orcamento.js').then(m => m.renderOrcamento),
-  patrimonio:    () => import('./patrimonio.js').then(m => m.renderPatrimonio),
-  metas:         () => import('./metas.js').then(m => m.renderMetas),
-  configuracoes: () => import('./configuracoes.js').then(m => m.renderConfiguracoes),
-  relatorios:    () => import('./relatorios.js').then(m => m.renderRelatorios),
-  calendario:    () => import('./saldos.js').then(m => m.renderCalendario),
-  timeline:      () => import('./timeline.js').then(m => m.renderTimeline),
+/**
+ * DESTINOS — a arquitetura v2 (ARQUITETURA-v2.md, opção B).
+ *
+ * Um destino é uma ou mais das `<section class="tab-content">` do index.html,
+ * mostradas juntas e renderizadas na ordem em que aparecem aqui. Enquanto as
+ * rodadas 3 a 8 não fundem as telas de verdade, EMPILHAR é o passo
+ * intermediário honesto: a navegação já é a nova, e nenhuma capacidade fica
+ * inalcançável no caminho.
+ *
+ * Cada `render*` continua escrevendo na seção dele, por id — foi isso que
+ * permitiu trocar o roteamento sem tocar em nenhum módulo de aba.
+ */
+const DESTINOS = {
+  importar: [
+    { secao: 'extratos', mod: () => import('./extratos.js').then(m => m.renderExtratos) },
+  ],
+  mes: [
+    { secao: 'dashboard', mod: () => import('./dashboard.js').then(m => m.renderDashboard) },
+    { secao: 'gastos',    mod: () => import('./gastos.js').then(m => m.renderGastos) },
+    { secao: 'receitas',  mod: () => import('./receitas.js').then(m => m.renderReceitas) },
+    { secao: 'orcamento', mod: () => import('./orcamento.js').then(m => m.renderOrcamento) },
+  ],
+  adiante: [
+    { secao: 'calendario', mod: () => import('./saldos.js').then(m => m.renderCalendario) },
+    { secao: 'timeline',   mod: () => import('./timeline.js').then(m => m.renderTimeline) },
+  ],
+  guardado: [
+    { secao: 'metas',      mod: () => import('./metas.js').then(m => m.renderMetas) },
+    { secao: 'patrimonio', mod: () => import('./patrimonio.js').then(m => m.renderPatrimonio) },
+  ],
+  ajustes: [
+    { secao: 'configuracoes', mod: () => import('./configuracoes.js').then(m => m.renderConfiguracoes) },
+    { secao: 'relatorios',    mod: () => import('./relatorios.js').then(m => m.renderRelatorios) },
+  ],
 };
 
+/**
+ * Os ids de aba antigos continuam válidos como endereço: há `data-goto="gastos"`
+ * espalhado pelos cards e `switchTab('dashboard')` em meia dúzia de lugares.
+ * Em vez de caçar todas as chamadas agora — e voltar a mexer nelas quando a
+ * rodada da tela reescrever o card —, o id antigo vira um APELIDO do destino
+ * que hoje o contém, e a rolagem leva à seção certa dentro dele.
+ */
+const APELIDOS = {
+  dashboard: 'mes', gastos: 'mes', receitas: 'mes', orcamento: 'mes',
+  extratos: 'importar',
+  calendario: 'adiante', timeline: 'adiante',
+  metas: 'guardado', patrimonio: 'guardado',
+  configuracoes: 'ajustes', relatorios: 'ajustes',
+};
+
+/** Destino de `name`, seja ele um destino ou um id de aba antigo. */
+function destinoDe(name) {
+  return DESTINOS[name] ? name : APELIDOS[name] || null;
+}
+
 export async function switchTab(name) {
-  // Atualiza nav
+  const destino = destinoDe(name);
+  if (!destino) return;
+  const partes = DESTINOS[destino];
+
   document.querySelectorAll('.nav-link').forEach(el =>
-    el.classList.toggle('active', el.dataset.tab === name)
+    el.classList.toggle('active', el.dataset.tab === destino)
   );
-  // Mostra/oculta seções
+
+  const ids = partes.map(p => `tab-${p.secao}`);
   document.querySelectorAll('.tab-content').forEach(el => {
-    el.classList.toggle('hidden',  el.id !== `tab-${name}`);
-    el.classList.toggle('active',  el.id === `tab-${name}`);
+    const dentro = ids.includes(el.id);
+    el.classList.toggle('hidden', !dentro);
+    el.classList.toggle('active',  dentro);
   });
 
-  // Carrega e chama o renderer
-  const loader = TAB_MODULES[name];
-  if (!loader) return;
-  try {
-    const render = await loader();
-    if (typeof render === 'function') render();
-  } catch (err) {
-    console.error(`Erro ao carregar aba ${name}:`, err);
-    // Mostra mensagem de erro mais detalhada para facilitar debug
-    const msg = err?.message ? `${name}: ${err.message}` : `Erro ao carregar ${name}.`;
-    toast(msg, 'error');
+  // Em série, não em paralelo: a ordem do array é a ordem de leitura da tela,
+  // e um erro no meio não pode deixar metade do destino renderizada em branco
+  // sem avisar. Cada parte falha por conta própria.
+  for (const parte of partes) {
+    try {
+      const render = await parte.mod();
+      if (typeof render === 'function') render();
+    } catch (err) {
+      console.error(`Erro ao carregar ${parte.secao} (destino ${destino}):`, err);
+      const msg = err?.message ? `${parte.secao}: ${err.message}` : `Erro ao carregar ${parte.secao}.`;
+      toast(msg, 'error');
+    }
   }
 }
 
@@ -65,6 +113,14 @@ async function _goto(el) {
   const tab = el.dataset.goto;
   if (!tab) return;
   await switchTab(tab);
+
+  // O destino empilha várias telas antigas: chegar nele não é chegar na tela
+  // pedida. Sem isto, "ver em Gastos" deixa o usuário no topo da Visão do mês,
+  // com a tabela que ele pediu meia tela abaixo e sem nada dizendo isso.
+  const secao = document.getElementById(`tab-${tab}`);
+  if (secao && !secao.classList.contains('hidden')) {
+    secao.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
 
   const filtroCat = el.dataset.filtroCat;
   if (filtroCat) {
@@ -143,205 +199,24 @@ export async function reloadAndRerender() {
   await rerenderCurrentTab();
 }
 
-// ─── COMMAND PALETTE ───────────────────────────────────────────
-let cmdOpen = false;
-
-function openCmd() {
-  const overlay = document.getElementById('cmd-overlay');
-  if (!overlay) return;
-  overlay.classList.remove('hidden');
-  const input = document.getElementById('cmd-input');
-  if (input) { input.value = ''; input.focus(); }
-  renderCmdResults('');
-  cmdOpen = true;
-}
-
-function closeCmd() {
-  document.getElementById('cmd-overlay')?.classList.add('hidden');
-  cmdOpen = false;
-}
-
-function renderCmdResults(q) {
-  const results = document.getElementById('cmd-results');
-  if (!results) return;
-  q = (q || '').toLowerCase().trim();
-
-  const sections = [];
-
-  // Navegação
-  // Mesma ordem e mesmos rótulos da sidebar — a paleta é um atalho para ela,
-  // não uma segunda navegação com outros nomes. Fluxo de Caixa, Timeline e
-  // Relatórios faltavam aqui: três das onze abas não tinham como ser alcançadas
-  // pelo Ctrl+K.
-  const navItems = [
-    { icon: '📊', label: 'Visão do mês',   tab: 'dashboard' },
-    { icon: '💳', label: 'Gastos',         tab: 'gastos' },
-    { icon: '💰', label: 'Receitas',       tab: 'receitas' },
-    { icon: '🏦', label: 'Extratos',       tab: 'extratos' },
-    { icon: '📉', label: 'Fluxo de Caixa', tab: 'calendario' },
-    { icon: '📋', label: 'Orçamento',      tab: 'orcamento' },
-    { icon: '🎯', label: 'Metas',          tab: 'metas' },
-    { icon: '📈', label: 'Patrimônio',     tab: 'patrimonio' },
-    { icon: '🕒', label: 'Timeline',       tab: 'timeline' },
-    { icon: '📄', label: 'Relatórios',     tab: 'relatorios' },
-    { icon: '⚙️',  label: 'Configurações',  tab: 'configuracoes' },
-  ].filter(n => !q || n.label.toLowerCase().includes(q));
-
-  if (navItems.length) {
-    sections.push('<div class="cmd-section-label">Navegar</div>');
-    sections.push(navItems.map(n =>
-      `<div class="cmd-item" data-tab="${n.tab}">
-        <span class="cmd-item-icon">${n.icon}</span>
-        <span class="cmd-item-label">${n.label}</span>
-       </div>`
-    ).join(''));
-  }
-
-  // Transações
-  if (q.length >= 2) {
-    const txs = state.transactions
-      .filter(t => (t.description || '').toLowerCase().includes(q))
-      .slice(0, 5);
-    if (txs.length) {
-      const { fmt } = /** @type {any} */ (window);
-      sections.push('<div class="cmd-section-label">Transações</div>');
-      sections.push(txs.map(t => {
-        const val = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(t.amount || 0);
-        return `<div class="cmd-item" data-tab="gastos">
-          <span class="cmd-item-icon">💳</span>
-          <span class="cmd-item-label">${esc((t.description || '').slice(0,40))}</span>
-          <span class="cmd-item-sub">${val}</span>
-         </div>`;
-      }).join(''));
-    }
-
-    // Metas
-    const goals = state.goals.filter(g => (g.name || '').toLowerCase().includes(q)).slice(0, 3);
-    if (goals.length) {
-      sections.push('<div class="cmd-section-label">Metas</div>');
-      sections.push(goals.map(g =>
-        `<div class="cmd-item" data-tab="metas">
-          <span class="cmd-item-icon">🎯</span>
-          <span class="cmd-item-label">${esc(g.name || '')}</span>
-         </div>`
-      ).join(''));
-    }
-  }
-
-  if (!sections.length) {
-    results.innerHTML = `<div class="cmd-empty">Sem resultados para "${esc(q)}"</div>`;
-    return;
-  }
-  results.innerHTML = sections.join('');
-  results.querySelectorAll('.cmd-item[data-tab]').forEach(item => {
-    item.addEventListener('click', () => { switchTab(item.dataset.tab); closeCmd(); });
-  });
-}
-
-// ─── ONBOARDING ────────────────────────────────────────────────
-const OB_STEPS = [
-  { title: '👋 Bem-vindo ao Radar!', sub: 'Seu controle financeiro pessoal. Vamos configurar rapidinho.', content: '' },
-  {
-    title: '🏦 Qual é seu banco principal?', sub: 'Ajuda a reconhecer seus extratos automaticamente.',
-    content: `<div class="bank-selector" style="grid-template-columns:repeat(3,1fr)">
-      <div class="bank-card ob-bank" data-val="itau"><div class="bank-card-logo">🟠</div><div class="bank-card-name">Itaú</div></div>
-      <div class="bank-card ob-bank" data-val="nubank"><div class="bank-card-logo">🟣</div><div class="bank-card-name">Nubank</div></div>
-      <div class="bank-card ob-bank" data-val="inter"><div class="bank-card-logo">🟢</div><div class="bank-card-name">Inter</div></div>
-      <div class="bank-card ob-bank" data-val="santander"><div class="bank-card-logo">🔴</div><div class="bank-card-name">Santander</div></div>
-      <div class="bank-card ob-bank" data-val="bradesco"><div class="bank-card-logo">🔵</div><div class="bank-card-name">Bradesco</div></div>
-      <div class="bank-card ob-bank" data-val="outro"><div class="bank-card-logo">🏦</div><div class="bank-card-name">Outro</div></div>
-    </div>`,
-  },
-  {
-    title: '💰 Qual é seu salário mensal?', sub: 'Usado para calcular sua taxa de poupança.',
-    content: `<div class="form-row">
-      <label class="form-label">Salário líquido (R$)</label>
-      <input type="number" id="ob-salary" class="form-input" placeholder="Ex: 5000" step="100" min="0" />
-    </div>`,
-  },
-  {
-    title: '🎯 Crie sua primeira meta', sub: 'Um objetivo financeiro aumenta a motivação.',
-    content: `<div style="display:flex;flex-direction:column;gap:0.75rem">
-      <div class="form-row"><label class="form-label">Nome da meta</label><input type="text" id="ob-meta-nome" class="form-input" placeholder="Ex: Reserva de emergência" /></div>
-      <div class="form-row"><label class="form-label">Valor alvo (R$)</label><input type="number" id="ob-meta-valor" class="form-input" placeholder="Ex: 20000" /></div>
-    </div>`,
-  },
-];
-
-let obStep = 0;
-const obData = {};
-
-function renderObStep() {
-  const step = OB_STEPS[obStep];
-  if (!step) return;
-  document.getElementById('onboarding-content').innerHTML = `
-    <div class="onboarding-title">${step.title}</div>
-    <div class="onboarding-sub">${step.sub}</div>
-    ${step.content ? `<div style="margin-top:1.25rem">${step.content}</div>` : ''}`;
-  document.getElementById('onboarding-dots').innerHTML =
-    OB_STEPS.map((_, i) =>
-      `<div class="onboarding-dot ${i === obStep ? 'active' : ''}"></div>`
-    ).join('');
-  document.querySelectorAll('.ob-bank').forEach(card => {
-    card.addEventListener('click', () => {
-      document.querySelectorAll('.ob-bank').forEach(c => c.classList.remove('selected'));
-      card.classList.add('selected');
-      obData.bank = card.dataset.val;
-    });
-  });
-  document.getElementById('btn-onboarding-next').textContent =
-    obStep === OB_STEPS.length - 1 ? 'Começar →' : 'Próximo →';
-}
-
-async function finishOnboarding() {
-  const salary = parseFloat(document.getElementById('ob-salary')?.value || '0');
-  if (salary > 0) {
-    const { saveIncome } = await import('./db.js');
-    await saveIncome({
-      type: 'salario', description: 'Salário', amount: salary,
-      date: new Date().toISOString().slice(0, 10), month: state.currentMonth,
-    });
-  }
-  const metaNome  = document.getElementById('ob-meta-nome')?.value?.trim();
-  const metaValor = parseFloat(document.getElementById('ob-meta-valor')?.value || '0');
-  if (metaNome && metaValor > 0) {
-    const { saveGoal } = await import('./db.js');
-    await saveGoal({ name: metaNome, type: 'outro', targetAmount: metaValor, currentAmount: 0, deadline: '', contributions: [] });
-  }
-  document.getElementById('onboarding-overlay').classList.add('hidden');
-  localStorage.setItem('fluxo_onboarding_done', '1');
-  await loadAllData();
-  atualizarBadgeExtratos();
-  switchTab('dashboard');
-  toast('Tudo pronto! Bem-vindo ao Radar.', 'success');
-}
-
-// ─── TEMA ──────────────────────────────────────────────────────
-// A paleta A existe nos dois temas com os mesmos nomes de token: trocar é pôr
-// `data-theme` no <html>. Escuro segue sendo o padrão, que é como o app sempre
-// foi. Aplicado antes do DOMContentLoaded para não haver piscada de tema errado.
-function aplicarTema(tema) {
-  document.documentElement.setAttribute('data-theme', tema);
-  localStorage.setItem('fluxo_tema', tema);
-}
-
-function temaAtual() {
-  return localStorage.getItem('fluxo_tema') === 'light' ? 'light' : 'dark';
-}
-
-aplicarTema(temaAtual());
+// A COMMAND PALETTE (Ctrl+K), o ONBOARDING de 4 passos e a TROCA DE TEMA
+// saíram na rodada 2 da v2:
+//
+// - palette: era atalho para 11 destinos; com 4 + Ajustes na barra lateral
+//   não sobrou o que atalhar, e a busca que resta é a da tabela.
+// - onboarding: rodava uma vez, e um dos quatro passos era morto — `obData.bank`
+//   era escrito e nunca lido por ninguém. Estado vazio bom em cada tela
+//   resolve o mesmo problema sem bloquear o primeiro uso.
+// - tema: a direção escolhida (hibrido.html) tem um tema só, e `data-theme`
+//   deixou de ser lido por qualquer regra de CSS na rodada 1.
+//
+// O salário e a primeira meta que o onboarding coletava continuam entrando
+// pelos botões normais de Receitas e de Guardado.
 
 // ─── INIT ──────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
   state.currentMonth = thisMonth();
   updateMonthLabel();
-
-  document.getElementById('btn-tema')?.addEventListener('click', () => {
-    aplicarTema(temaAtual() === 'light' ? 'dark' : 'light');
-    // Chart.js pinta em canvas e não reage a troca de token: o gráfico precisa
-    // ser refeito, e re-renderizar a aba corrente é o caminho mais barato.
-    rerenderCurrentTab();
-  });
 
   // Month picker: clicar no nome do mês abre o seletor nativo (pula N meses de uma vez)
   const monthPicker = document.getElementById('month-picker');
@@ -370,29 +245,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     await rerenderCurrentTab();
   });
 
-  // Clique nas abas da sidebar
+  // Clique nos destinos. A gaveta lateral do celular saiu junto com o menu
+  // hamburguer: abaixo de 900px a mesma barra vira barra fixa no rodape, e o
+  // destino fica a um toque em vez de dois.
   document.querySelectorAll('.nav-link[data-tab]').forEach(link => {
     link.addEventListener('click', e => {
       e.preventDefault();
       switchTab(link.dataset.tab);
-      document.getElementById('sidebar')?.classList.remove('open');
-      document.querySelector('.sidebar-overlay')?.classList.remove('active');
     });
-  });
-
-  // Menu mobile
-  const sidebar = document.getElementById('sidebar');
-  const menuBtn = document.getElementById('btn-menu-toggle');
-  const overlay = document.createElement('div');
-  overlay.className = 'sidebar-overlay';
-  document.body.appendChild(overlay);
-  menuBtn?.addEventListener('click', () => {
-    sidebar?.classList.toggle('open');
-    overlay.classList.toggle('active');
-  });
-  overlay.addEventListener('click', () => {
-    sidebar?.classList.remove('open');
-    overlay.classList.remove('active');
   });
 
   // Fecha modais via [data-modal] ou clique no overlay
@@ -446,31 +306,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     initExtratoModal();
   });
 
-  // Command Palette
-  document.getElementById('btn-search')?.addEventListener('click', openCmd);
+  // Escape fecha modal. Era do bloco da command palette, que tinha prioridade
+  // sobre os modais; sem ela, o Escape vai direto ao modal aberto.
   document.addEventListener('keydown', e => {
-    if ((e.ctrlKey || e.metaKey) && e.key === 'k') { e.preventDefault(); cmdOpen ? closeCmd() : openCmd(); }
-    // Escape: o palette tem prioridade — só quando ele está fechado o Escape
-    // chega aos modais, senão fechar o palette fecharia o modal por baixo dele.
-    if (e.key === 'Escape') {
-      if (cmdOpen) { closeCmd(); return; }
-      document.querySelectorAll('.modal-overlay:not(.hidden)')
-        .forEach(m => m.classList.add('hidden'));
-    }
-  });
-  document.getElementById('cmd-overlay')?.addEventListener('click', e => {
-    if (e.target.id === 'cmd-overlay') closeCmd();
-  });
-  document.getElementById('cmd-input')?.addEventListener('input', e => renderCmdResults(e.target.value));
-
-  // Onboarding
-  document.getElementById('btn-onboarding-skip')?.addEventListener('click', () => {
-    document.getElementById('onboarding-overlay').classList.add('hidden');
-    localStorage.setItem('fluxo_onboarding_done', '1');
-  });
-  document.getElementById('btn-onboarding-next')?.addEventListener('click', async () => {
-    if (obStep < OB_STEPS.length - 1) { obStep++; renderObStep(); }
-    else await finishOnboarding();
+    if (e.key !== 'Escape') return;
+    document.querySelectorAll('.modal-overlay:not(.hidden)')
+      .forEach(m => m.classList.add('hidden'));
   });
 
   // ── Auth ──────────────────────────────────────────────────────
@@ -492,15 +333,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         showKpiSkeleton();
         await loadAllData();
         atualizarBadgeExtratos();
-        await switchTab('dashboard');
-
-        if (!localStorage.getItem('fluxo_onboarding_done') && state.transactions.length === 0) {
-          setTimeout(() => {
-            obStep = 0;
-            document.getElementById('onboarding-overlay')?.classList.remove('hidden');
-            renderObStep();
-          }, 700);
-        }
+        await switchTab('mes');
       } else {
         state.user = null;
         document.getElementById('login-screen')?.classList.remove('hidden');
