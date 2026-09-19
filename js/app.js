@@ -32,21 +32,28 @@ const DESTINOS = {
   importar: [
     { secao: 'extratos', mod: () => import('./extratos.js').then(m => m.renderExtratos) },
   ],
+  // Rodada 3: as quatro telas empilhadas viraram UMA. `js/mes.js` monta a
+  // seção inteira; `gastos.js` e `receitas.js` continuam vivos como camada de
+  // formulário e gravação, chamados de lá.
   mes: [
-    { secao: 'dashboard', mod: () => import('./dashboard.js').then(m => m.renderDashboard) },
-    { secao: 'gastos',    mod: () => import('./gastos.js').then(m => m.renderGastos) },
-    { secao: 'receitas',  mod: () => import('./receitas.js').then(m => m.renderReceitas) },
-    { secao: 'orcamento', mod: () => import('./orcamento.js').then(m => m.renderOrcamento) },
+    { secao: 'mes', mod: () => import('./mes.js').then(m => m.renderMes) },
   ],
   adiante: [
     { secao: 'calendario', mod: () => import('./saldos.js').then(m => m.renderCalendario) },
     { secao: 'timeline',   mod: () => import('./timeline.js').then(m => m.renderTimeline) },
+    // Os dois cards do dashboard antigo que não falam do mês corrente
+    // (parcelas dos próximos 3 meses, evolução de 6). A rodada 4 decide onde
+    // eles ficam dentro de Adiante; até lá, ficam no fim, inteiros.
+    { secao: 'previsoes',  mod: () => import('./previsoes.js').then(m => m.renderPrevisoes) },
   ],
   guardado: [
     { secao: 'metas',      mod: () => import('./metas.js').then(m => m.renderMetas) },
     { secao: 'patrimonio', mod: () => import('./patrimonio.js').then(m => m.renderPatrimonio) },
   ],
   ajustes: [
+    // Orçamento é ajuste, não leitura do mês: definir teto de categoria se faz
+    // uma vez e não se olha de novo. Decisão da usuária na rodada 3.
+    { secao: 'orcamento',     mod: () => import('./orcamento.js').then(m => m.renderOrcamento) },
     { secao: 'configuracoes', mod: () => import('./configuracoes.js').then(m => m.renderConfiguracoes) },
     { secao: 'relatorios',    mod: () => import('./relatorios.js').then(m => m.renderRelatorios) },
   ],
@@ -60,11 +67,21 @@ const DESTINOS = {
  * que hoje o contém, e a rolagem leva à seção certa dentro dele.
  */
 const APELIDOS = {
-  dashboard: 'mes', gastos: 'mes', receitas: 'mes', orcamento: 'mes',
+  dashboard: 'mes', gastos: 'mes', receitas: 'mes',
   extratos: 'importar',
-  calendario: 'adiante', timeline: 'adiante',
+  calendario: 'adiante', timeline: 'adiante', previsoes: 'adiante',
   metas: 'guardado', patrimonio: 'guardado',
-  configuracoes: 'ajustes', relatorios: 'ajustes',
+  orcamento: 'ajustes', configuracoes: 'ajustes', relatorios: 'ajustes',
+};
+
+/**
+ * Onde parar dentro do destino. Depois da rodada 3 o id antigo já não é o id
+ * de uma seção — `gastos` virou um bloco dentro de `#tab-mes` —, então o
+ * apelido também precisa dizer a QUE elemento rolar.
+ */
+const ANCORAS = {
+  dashboard: 'mes-heroi', gastos: 'mes-tabela', receitas: 'mes-tabela',
+  orcamento: 'orcamento-bloco',
 };
 
 /** Destino de `name`, seja ele um destino ou um id de aba antigo. */
@@ -117,9 +134,9 @@ async function _goto(el) {
   // O destino empilha várias telas antigas: chegar nele não é chegar na tela
   // pedida. Sem isto, "ver em Gastos" deixa o usuário no topo da Visão do mês,
   // com a tabela que ele pediu meia tela abaixo e sem nada dizendo isso.
-  const secao = document.getElementById(`tab-${tab}`);
-  if (secao && !secao.classList.contains('hidden')) {
-    secao.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  const alvo = document.getElementById(ANCORAS[tab] || `tab-${tab}`);
+  if (alvo && !alvo.closest('.tab-content')?.classList.contains('hidden')) {
+    alvo.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
   const filtroCat = el.dataset.filtroCat;

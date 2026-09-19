@@ -1,133 +1,94 @@
 /**
- * receitas.js — Aba de receitas e orçamento mensal
+ * receitas.js — formulário e gravação de receita
+ *
+ * Deixou de ser uma aba na rodada 3 do redesign v2: a lista de receitas foi
+ * absorvida pela tabela única de `js/mes.js`, onde entrada e saída aparecem
+ * lado a lado com o sinal e a origem. Aqui ficou o modal, a gravação e o
+ * "copiar do mês anterior".
+ *
+ * Quem desenha chama `initReceitas(aoMudar)` uma vez e depois
+ * `openReceitaModal(inc)`; o callback roda depois de cada gravação.
  */
 
-import { state, fmt, toast, esc, isOfMonth } from './utils.js';
-import { incomesOfMonth, saveIncome, deleteIncome } from './db.js';
+import { state, toast, isOfMonth } from './utils.js';
+import { saveIncome } from './db.js';
 
-let _receitasInit = false;
+let _aoMudar = () => {};
+let _initialized = false;
 
-export function renderReceitas() {
-  if (!_receitasInit) {
-    _initReceitasEvents();
-    _receitasInit = true;
-  }
-  _renderReceitasTable();
+export function initReceitas(aoMudar) {
+  if (typeof aoMudar === 'function') _aoMudar = aoMudar;
+  if (_initialized) return;
+  _initialized = true;
+
+  // O modal mora no index.html e não é remontado por innerHTML: listener no
+  // elemento é seguro aqui, ao contrário do que vale na tela.
+  document.getElementById('btn-salvar-receita')?.addEventListener('click', _salvarReceita);
 }
 
-function _renderReceitasTable() {
-  const month  = state.currentMonth;
-  const items  = incomesOfMonth(month);
-  const tbody  = document.getElementById('receitas-tbody');
-  const total  = items.reduce((s, i) => s + (i.amount || 0), 0);
-
-  document.getElementById('receitas-total').textContent = fmt(total);
-
-  const tipoLabel = {
-    salario: 'Salário', vale_alimentacao: 'V. Alimentação', vale_transporte: 'V. Transporte',
-    reembolso: 'Reembolso', presente: 'Presente', outro: 'Outra',
-  };
-
-  if (!items.length) {
-    tbody.innerHTML = `<tr><td colspan="4" class="empty-row">Nenhuma receita registrada neste mês.</td></tr>`;
-    return;
-  }
-
-  tbody.innerHTML = items.map(i => `
-    <tr>
-      <td>${esc(tipoLabel[i.type] || i.type)}</td>
-      <td>${esc(i.description) || '—'}</td>
-      <td class="col-value"><span class="val-mono val-positive">${fmt(i.amount)}</span></td>
-      <td class="col-actions">
-        <button class="btn-icon-only" title="Editar" aria-label="Editar receita ${esc(i.description || '')}" data-action="edit-income" data-id="${i.id}">✎</button>
-        <button class="btn-icon-only danger" title="Excluir" aria-label="Excluir receita ${esc(i.description || '')}" data-action="delete-income" data-id="${i.id}">✕</button>
-      </td>
-    </tr>`).join('');
+/** `inc` nulo abre em branco; com registro, abre para editar. */
+export function openReceitaModal(inc) {
+  document.getElementById('receita-id').value    = inc?.id || '';
+  document.getElementById('receita-tipo').value  = inc?.type || 'salario';
+  document.getElementById('receita-desc').value  = inc?.description || '';
+  document.getElementById('receita-valor').value = inc?.amount ?? '';
+  document.getElementById('receita-data').value  = inc?.date || _today();
+  document.getElementById('modal-receita-title').textContent = inc ? 'Editar Receita' : 'Nova Receita';
+  document.getElementById('modal-receita').classList.remove('hidden');
 }
 
-function _initReceitasEvents() {
-  document.getElementById('btn-nova-receita').addEventListener('click', () => {
-    document.getElementById('receita-id').value    = '';
-    document.getElementById('receita-tipo').value  = 'salario';
-    document.getElementById('receita-desc').value  = '';
-    document.getElementById('receita-valor').value = '';
-    document.getElementById('receita-data').value  = _today();
-    document.getElementById('modal-receita-title').textContent = 'Nova Receita';
-    document.getElementById('modal-receita').classList.remove('hidden');
-  });
+async function _salvarReceita() {
+  const id     = document.getElementById('receita-id').value || null;
+  const tipo   = document.getElementById('receita-tipo').value;
+  const desc   = document.getElementById('receita-desc').value.trim();
+  const amount = parseFloat(document.getElementById('receita-valor').value);
+  const date   = document.getElementById('receita-data').value;
 
-  document.getElementById('btn-salvar-receita').addEventListener('click', async () => {
-    const id     = document.getElementById('receita-id').value || null;
-    const tipo   = document.getElementById('receita-tipo').value;
-    const desc   = document.getElementById('receita-desc').value.trim();
-    const amount = parseFloat(document.getElementById('receita-valor').value);
-    const date   = document.getElementById('receita-data').value;
+  if (!amount || amount <= 0) return toast('Informe um valor válido.', 'error');
 
-    if (!amount || amount <= 0) return toast('Informe um valor válido.', 'error');
+  // Editar preserva a procedência. saveIncome grava o objeto inteiro; montar
+  // um objeto só com os campos do formulário apagava `source`, `bankName` e
+  // `importBatchId` de uma receita vinda de extrato — e sem importBatchId
+  // "Excluir importação" deixava a receita órfã no Firestore para sempre.
+  const anterior = id ? state.incomes.find(i => i.id === id) : null;
+  const { id: _ignorado, ...preservado } = anterior || {};
 
-    // Editar preserva a procedência. saveIncome grava o objeto inteiro; montar
-    // um objeto só com os campos do formulário apagava `source`, `bankName` e
-    // `importBatchId` de uma receita vinda de extrato — e sem importBatchId
-    // "Excluir importação" deixava a receita órfã no Firestore para sempre.
-    const anterior = id ? state.incomes.find(i => i.id === id) : null;
-    const { id: _ignorado, ...preservado } = anterior || {};
+  await saveIncome({
+    ...preservado,
+    type: tipo, description: desc, amount, date, month: state.currentMonth,
+  }, id);
+  document.getElementById('modal-receita').classList.add('hidden');
+  toast('Receita salva!', 'success');
+  _aoMudar();
+}
 
+/**
+ * Copia as receitas MANUAIS do mês anterior. As de extrato ficam de fora: elas
+ * voltam sozinhas na próxima importação, e copiá-las criaria uma segunda
+ * linha do mesmo salário quando o extrato chegasse.
+ */
+export async function copiarReceitasDoMesAnterior() {
+  const prev = _offsetMonth(state.currentMonth, -1);
+  const fromPrev = state.incomes.filter(i =>
+    isOfMonth(i, prev) && i.source !== 'statement_import'
+  );
+  if (!fromPrev.length) return toast('Nenhuma receita manual no mês anterior.', 'warning');
+  if (!confirm(`Copiar ${fromPrev.length} receita(s) de ${prev} para ${state.currentMonth}?`)) return;
+
+  for (const inc of fromPrev) {
+    // Mantém o dia original, ajustando para o mês atual
+    const day = (inc.date || '').slice(8, 10) || '01';
+    const [y, m] = state.currentMonth.split('-').map(Number);
+    const lastDay = new Date(y, m, 0).getDate();
+    const safeDay = Math.min(parseInt(day, 10) || 1, lastDay);
     await saveIncome({
-      ...preservado,
-      type: tipo, description: desc, amount, date, month: state.currentMonth,
-    }, id);
-    document.getElementById('modal-receita').classList.add('hidden');
-    toast('Receita salva!', 'success');
-    _renderReceitasTable();
-  });
-
-  document.getElementById('receitas-tbody').addEventListener('click', async (e) => {
-    const btn = e.target.closest('[data-action]');
-    if (!btn) return;
-    const id = btn.dataset.id;
-    if (btn.dataset.action === 'edit-income') {
-      const i = state.incomes.find(x => x.id === id);
-      if (!i) return;
-      document.getElementById('receita-id').value    = i.id;
-      document.getElementById('receita-tipo').value  = i.type;
-      document.getElementById('receita-desc').value  = i.description || '';
-      document.getElementById('receita-valor').value = i.amount;
-      document.getElementById('receita-data').value  = i.date || '';
-      document.getElementById('modal-receita-title').textContent = 'Editar Receita';
-      document.getElementById('modal-receita').classList.remove('hidden');
-    }
-    if (btn.dataset.action === 'delete-income') {
-      if (!confirm('Excluir esta receita?')) return;
-      await deleteIncome(id);
-      toast('Receita excluída.', 'success');
-      _renderReceitasTable();
-    }
-  });
-
-  // Copiar receitas do mês anterior (receitas manuais; extratos ficam de fora)
-  document.getElementById('btn-copiar-receitas')?.addEventListener('click', async () => {
-    const prev = _offsetMonth(state.currentMonth, -1);
-    const fromPrev = state.incomes.filter(i =>
-      isOfMonth(i, prev) && i.source !== 'statement_import'
-    );
-    if (!fromPrev.length) return toast('Nenhuma receita manual no mês anterior.', 'warning');
-    if (!confirm(`Copiar ${fromPrev.length} receita(s) de ${prev} para ${state.currentMonth}?`)) return;
-
-    for (const inc of fromPrev) {
-      // Mantém o dia original, ajustando para o mês atual
-      const day = (inc.date || '').slice(8, 10) || '01';
-      const [y, m] = state.currentMonth.split('-').map(Number);
-      const lastDay = new Date(y, m, 0).getDate();
-      const safeDay = Math.min(parseInt(day, 10) || 1, lastDay);
-      await saveIncome({
-        type: inc.type, description: inc.description, amount: inc.amount,
-        date: `${state.currentMonth}-${String(safeDay).padStart(2, '0')}`,
-        month: state.currentMonth,
-      });
-    }
-    toast(`${fromPrev.length} receita(s) copiada(s)!`, 'success');
-    _renderReceitasTable();
-  });
+      type: inc.type, description: inc.description, amount: inc.amount,
+      date: `${state.currentMonth}-${String(safeDay).padStart(2, '0')}`,
+      month: state.currentMonth,
+    });
+  }
+  toast(`${fromPrev.length} receita(s) copiada(s)!`, 'success');
+  _aoMudar();
 }
 
 function _offsetMonth(ym, delta) {

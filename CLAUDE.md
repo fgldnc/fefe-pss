@@ -30,10 +30,11 @@ App de **controle financeiro pessoal** (nome exibido: "Radar", `index.html:6` = 
 | `extratos.js` | Aba Extratos: importação de extrato bancário (CSV/OFX/PDF), histórico de lotes, modal de revisão/preview editável com marcação de duplicata e de campo inferido, `_recomputeAtencaoExtrato()`. |
 | `db.js` | Toda leitura/escrita do Firestore, `loadAllData()`, derivados de mês, backup/restore JSON, `wipeCollection`. |
 | `utils.js` | `state` global, `esc`, `fmt`, helpers de mês, `toast`, skeletons, `resolveCategoryId` e o motor de insights do dashboard. |
-| `dashboard.js` | KPIs, gráfico de categorias e de evolução (Chart.js), próximas parcelas, maiores gastos. |
-| `gastos.js` | Tabela de gastos do mês, filtros simples e avançados, lançamento manual, projeção de parcelas, gatilho do import de fatura PDF. |
-| `receitas.js` | CRUD das receitas do mês. |
-| `orcamento.js` | Editor de limites de orçamento por categoria do mês. |
+| `mes.js` | **A tela "Mês"** (rodada 3): herói, distribuição (rosca + lista), resultado do mês, miniatura do fluxo e a tabela única (gasto + fatura + extrato + receita, com coluna origem) e o CSV dela. |
+| `previsoes.js` | O que sobrou de `dashboard.js`: parcelas dos próximos 3 meses e evolução de 6 meses. Vive dentro de Adiante. |
+| `gastos.js` | **Formulário e gravação** de lançamento: modal, validação, projeção de parcelas, aporte no ativo vinculado, confirmar parcela prevista. Não desenha tela. |
+| `receitas.js` | **Formulário e gravação** de receita: modal, gravação preservando procedência, copiar do mês anterior. Não desenha tela. |
+| `orcamento.js` | Editor de limites por categoria. **Mora em Ajustes** desde a rodada 3. |
 | `metas.js` | CRUD de metas financeiras e seus aportes. |
 | `patrimonio.js` | CRUD de ativos, aportes e vínculo ativo→meta (`linkedGoalId`). |
 | `saldos.js` | Aba "Fluxo de Caixa": 3 KPIs (abertura, menor saldo, projeção), curva do saldo diário (Chart.js) e tabela só dos dias com movimento. Exporta `renderCalendario` (ponto de entrada de `TAB_MODULES`) e as funções puras `buildMovimentos`/`buildSerie`/`acharMinimo`/`contextoDoMinimo`, testadas em `test/saldos.test.mjs`. |
@@ -206,8 +207,9 @@ pelo redesign v2. A fonte da verdade visual é
 antes de escrever qualquer linha de CSS.** O plano das 8 rodadas está em
 `PROMPT-implementar-v2.md`; a arquitetura de 5 destinos, em `ARQUITETURA-v2.md`.
 
-Aplicado até aqui: **rodada 1 (fundação)** — a pele — e **rodada 2
-(navegação)** — o roteamento. As `<section class="tab-content">` das 11 abas
+Aplicado até aqui: **rodada 1 (fundação)** — a pele —, **rodada 2
+(navegação)** — o roteamento — e **rodada 3 (Mês)** — a primeira tela reescrita.
+As `<section class="tab-content">` das abas que ainda não foram refeitas
 continuam no `index.html` e os `render*` continuam escrevendo nelas por id: o
 que mudou foi quem as mostra e quando.
 
@@ -304,6 +306,70 @@ que mudou foi quem as mostra e quando.
   `index.html` é um `<section>` vazio de propósito. Editar markup de
   Configurações no HTML não tem efeito nenhum.
 
+### A tela "Mês" (rodada 3)
+
+Cinco blocos em `js/mes.js`, na ordem de leitura do `hibrido.html`: **herói ·
+distribuição · resultado do mês · miniatura do fluxo · tabela única**. Cada um
+tem id próprio (`mes-heroi`, `mes-dist`, `mes-resultado`, `mes-fluxo`,
+`mes-tabela`) — são as âncoras de `data-goto`.
+
+- **Uma conta só por número.** `_dados()` faz uma passada e os cinco blocos
+  consomem o resultado: `allExpensesOfMonth` + `incomesOfMonth` +
+  `getInvestCatIds()`, a mesma base do dashboard antigo. `projetado` é um
+  RECORTE de dentro de `totalExpense`, nunca uma soma por cima.
+- **A rosca usa a série do sistema (`--s1…--s6`) por posto, não a cor gravada
+  na categoria.** A cor do cadastro é dado antigo e tem azul no meio
+  (`DEFAULT_CATEGORIES` em `db.js:12`: Transporte `#60a5fa`, Assinaturas
+  `#22d3ee`). A lista ao lado é que identifica; a rosca só reparte. As 5
+  maiores + `+N categorias menores`; "Sem categoria" é linha à parte, em âmbar
+  com `◇`, e leva à tabela já filtrada — é a única linha dali com ação.
+- **Tabela única com coluna `origem`** (`manual` · `fatura` · `extrato`),
+  derivada em `_origem()`: `_origem === 'extrato'` ou
+  `source === 'statement_import'` → extrato; `importedFrom === 'pdf'` → fatura;
+  resto manual. Sem essa coluna, o mesmo "Carrefour" lançado à mão e vindo do
+  extrato viram duas linhas sem explicação.
+- **Investimento aparece sem cor de gasto** (só o sinal `−`), e não entra no
+  "saiu" do rodapé. Receita é `+` em `--entrou`, despesa `−` em `--saiu`.
+- **Excluir linha de extrato pela tabela é recusado com aviso**: ela não vive
+  em `transactions`, e apagá-la deixaria o lote em Importar com contador
+  mentindo. O caminho é "excluir importação".
+- **Os filtros moram no módulo (`_filtros`), não no DOM.** Gravar remonta a
+  tela por innerHTML, e filtro que se apaga sozinho depois de cada edição faz
+  perder o lugar na lista. `_restaurarFiltros()` devolve os valores.
+- **O CSV exporta o que está na tela** — o que os filtros escondem não entra,
+  senão o arquivo não corresponde ao que se está vendo.
+
+**`gastos.js` e `receitas.js` deixaram de desenhar tela.** Viraram camada de
+formulário + gravação: `initGastos(aoMudar)` / `initReceitas(aoMudar)` uma vez,
+depois `openGastoModal(tx)` / `openReceitaModal(inc)`. Toda a validação, a
+preservação de procedência, a projeção de parcelas, o aporte no ativo vinculado
+e `confirmarProjecao` continuam lá, intactos. Os modais seguem no `index.html`
+e não são remontados — por isso ali listener no elemento é seguro, ao contrário
+do que vale na tela.
+
+**`dashboard.js` não existe mais.** Quatro dos seis blocos foram absorvidos por
+`mes.js`; os dois que falam do futuro (parcelas dos próximos 3 meses, evolução
+de 6) viraram `js/previsoes.js`, dentro de Adiante. As cores do Chart.js ali
+passaram a vir de `getComputedStyle` (eram `rgba(255,255,255,…)` e hex do tema
+escuro), a fonte virou Outfit e a grade, `--borda`.
+
+**O `<thead>` gruda agora — e só porque a tabela não está embrulhada.**
+`position: sticky` num `<th>` resolve contra o scrollport mais próximo:
+`.table-wrapper { overflow-x: auto }` e `.card { overflow: hidden }` o
+quebravam, e um `overflow-x: auto` no contêiner novo quebrou de novo (medido:
+`top` −1080 a 2200px de rolagem). A tabela de Mês não tem contêiner de
+rolagem: `table-layout: fixed` + larguras de coluna no CSS (não em `style=`,
+para a media query poder encolher) + `overflow-wrap: break-word`. O `top` do
+sticky é `var(--topbar-h)`, não 0 — com 0 ele grudaria ATRÁS da topbar.
+
+### Onde o orçamento mora (decisão da usuária, rodada 3)
+
+**Orçamento é ajuste, não leitura do mês.** Definir teto de categoria se faz uma
+vez e não se olha de novo; sai de Mês e vive em Ajustes (`#tab-orcamento`,
+desenhado por `orcamento.js` nos ids que ele já esperava). `data-goto="orcamento"`
+leva a Ajustes. O plano original listava "orçamento × real" como sexto bloco de
+Mês — foi revogado.
+
 ### Decisões da rodada A8 que viram regra
 
 - **O app não guarda histórico de valor de ativo.** `currentValue` é o valor de
@@ -337,9 +403,20 @@ mudança de interface:
 | `INVENTARIO-FUNCOES.md` | as 64 capacidades com arquivo:linha, e o que pode sumir. |
 | `PESQUISA-UX.md` | a evidência. O que está `[NÃO CONFIRMADO]` lá segue não confirmado. |
 
-Rodadas: **1 fundação (feita)** · **2 navegação (feita)** · 3 Mês · 4 Adiante ·
+Rodadas: **1 fundação (feita)** · **2 navegação (feita)** · **3 Mês (feita)** · 4 Adiante ·
 5 Guardado · 6 Importar · 7 Conferir · 8 Ajustes. Uma por vez, cada uma
 terminando com o app funcionando.
+
+### Decisões da usuária que mudam o plano original
+
+- **Importar leva fatura E extrato, com uma aba para trocar entre os dois**
+  (dito na rodada 3, vale para a rodada 6). Os dois fluxos ficam no mesmo
+  destino, não em telas separadas: hoje a fatura em PDF entra por um botão de
+  Mês (`initPdfImport`) e o extrato por `extratos.js`. `PROMPT-implementar-v2.md`
+  já previa a porta única; o que está fechado agora é que ela tem **duas abas
+  explícitas**, e não uma drop zone que adivinha sozinha o que é o arquivo.
+- **Orçamento mora em Ajustes**, não em Mês (aplicado na rodada 3). O plano
+  original listava "orçamento × real" como sexto bloco de Mês; foi revogado.
 
 `ROTEIRO-REDESIGN.md` e os `PROMPT-rodada-N.md` são o registro do redesign **v1**
 (rodadas A1–A8), já substituído. Valem como histórico do *porquê* de cada

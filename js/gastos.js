@@ -1,244 +1,43 @@
 /**
- * gastos.js — Aba de gastos: tabela, lançamento manual, importação PDF
+ * gastos.js — formulário e gravação de lançamento
+ *
+ * Deixou de ser uma aba na rodada 3 do redesign v2: a tabela de gastos foi
+ * absorvida pela tabela única de `js/mes.js`. O que ficou aqui é o que a
+ * tabela não sabe fazer — abrir o modal, validar, gravar preservando
+ * procedência, projetar as parcelas futuras, creditar o aporte no ativo
+ * vinculado e confirmar uma parcela prevista.
+ *
+ * Quem desenha chama `initGastos(aoMudar)` uma vez e depois
+ * `openGastoModal(tx)`; o callback é chamado depois de cada gravação.
  */
 
-import { state, fmt, toast, esc, SEM_CATEGORIA_FILTRO, getInvestCatIds } from './utils.js';
-import { txOfMonth, saveTx, deleteTx, addAporteToAsset } from './db.js';
-import { initPdfImport } from './pdf-import.js';
+import { state, fmt, toast, esc, getInvestCatIds } from './utils.js';
+import { saveTx, addAporteToAsset } from './db.js';
 
+/** Quem redesenha a tela depois de uma gravação. Trocado por `initGastos`. */
+let _aoMudar = () => {};
 let _initialized = false;
 
-export function renderGastos() {
-  if (!_initialized) {
-    _initGastosEvents();
-    _initAdvancedFilterEvents();
-    _initialized = true;
-  }
-  _populateCategorySelects();
-  _renderTable();
+export function initGastos(aoMudar) {
+  if (typeof aoMudar === 'function') _aoMudar = aoMudar;
+  if (_initialized) return;
+  _initialized = true;
+
+  // Os dois listeners do modal — e só eles. O modal mora no index.html e não é
+  // remontado por innerHTML, então aqui listener no elemento é seguro.
+  document.getElementById('btn-salvar-gasto')?.addEventListener('click', _salvarGasto);
+  document.getElementById('gasto-categoria')?.addEventListener('change', _toggleAtivoRow);
 }
 
-// ─── TABELA ────────────────────────────────────────────────────────────────
-function _renderTable() {
-  const month  = state.currentMonth;
-  let txs      = txOfMonth(month);
-
-  // Filtros básicos
-  const filterCat   = document.getElementById('filter-categoria')?.value || '';
-  const filterTipo  = document.getElementById('filter-tipo-gasto')?.value || '';
-  const filterBusca = (document.getElementById('filter-busca')?.value || '').toLowerCase().trim();
-
-  // Sentinela: é o destino do clique em "Sem categoria" no Dashboard. Sem ela,
-  // a linha da legenda prometia N lançamentos e não tinha para onde levar.
-  if (filterCat === SEM_CATEGORIA_FILTRO) txs = txs.filter(t => !t.categoryId);
-  else if (filterCat)                     txs = txs.filter(t => t.categoryId === filterCat);
-  if (filterTipo)  txs = txs.filter(t => t.paymentType === filterTipo);
-  if (filterBusca) txs = txs.filter(t => t.description?.toLowerCase().includes(filterBusca));
-
-  // Filtros avançados
-  const valMin   = parseFloat(document.getElementById('filter-valor-min')?.value || '');
-  const valMax   = parseFloat(document.getElementById('filter-valor-max')?.value || '');
-  const dtInicio = document.getElementById('filter-data-inicio')?.value || '';
-  const dtFim    = document.getElementById('filter-data-fim')?.value || '';
-  const apenasProj = document.getElementById('filter-apenas-projetadas')?.checked;
-  const apenasParcelas = document.getElementById('filter-apenas-parcelas')?.checked;
-
-  if (!isNaN(valMin) && valMin > 0) txs = txs.filter(t => (t.amount || 0) >= valMin);
-  if (!isNaN(valMax) && valMax > 0) txs = txs.filter(t => (t.amount || 0) <= valMax);
-  if (dtInicio) txs = txs.filter(t => (t.date || '') >= dtInicio);
-  if (dtFim)    txs = txs.filter(t => (t.date || '') <= dtFim);
-  if (apenasProj)     txs = txs.filter(t => t.isProjected);
-  if (apenasParcelas) txs = txs.filter(t => t.installmentTotal > 1);
-
-  txs.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
-
-  const tbody = document.getElementById('gastos-tbody');
-  const total = txs.reduce((s, t) => s + (t.amount || 0), 0);
-
-  document.getElementById('gastos-total').textContent = fmt(total);
-
-  if (!txs.length) {
-    tbody.innerHTML = `<tr><td colspan="7" class="empty-row">Nenhum gasto encontrado para os filtros selecionados.</td></tr>`;
-    return;
-  }
-
-  tbody.innerHTML = txs.map(tx => {
-    const cat   = state.categories.find(c => c.id === tx.categoryId);
-    // O nome da categoria leva ao limite dela no Orçamento: responde "esse gasto
-    // me estourou?" sem sair procurando. Botão, não <a>: não há URL para onde ir.
-    const catDot = cat
-      ? `<button type="button" class="cat-goto" data-goto="orcamento" title="Ver o limite de ${esc(cat.name)} no Orçamento"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${esc(cat.color)};margin-right:0.4rem"></span>${esc(cat.name)}</button>`
-      : '—';
-
-    const tipoTag = _tipoTag(tx.paymentType);
-    const parcTag = tx.installmentTotal > 1
-      ? `<span class="tag-projetada">${tx.installmentCurrent}/${tx.installmentTotal}</span>`
-      : '';
-    const projTag = tx.isProjected
-      ? `<span class="tag-projetada" style="color:var(--warning)">projetada</span>`
-      : '';
-
-    const dataFmt = tx.date
-      ? new Date(tx.date + 'T12:00:00').toLocaleDateString('pt-BR', { day:'2-digit', month:'2-digit' })
-      : '—';
-
-    return `
-      <tr>
-        <td>${dataFmt}</td>
-        <td title="${esc(tx.notes || '')}">${esc(tx.description) || '—'}</td>
-        <td>${catDot}</td>
-        <td>${tipoTag}</td>
-        <td>${parcTag} ${projTag}</td>
-        <td class="col-value"><span class="val-mono val-negative">${fmt(tx.amount)}</span></td>
-        <td class="col-actions">
-          ${tx.isProjected ? `<button class="btn-icon-only" data-action="confirm-tx" data-id="${tx.id}"
-             title="Confirmar: este valor saiu mesmo, do jeito que está aqui"
-             aria-label="Confirmar parcela projetada ${esc(tx.description || '')}">✓</button>` : ''}
-          <button class="btn-icon-only" title="Editar" aria-label="Editar lançamento ${esc(tx.description || '')}" data-action="edit-tx" data-id="${tx.id}">✎</button>
-          <button class="btn-icon-only danger" title="Excluir" aria-label="Excluir lançamento ${esc(tx.description || '')}" data-action="delete-tx" data-id="${tx.id}">✕</button>
-        </td>
-      </tr>`;
-  }).join('');
+/** Preenche o <select> de categoria do modal. */
+function _popularCategorias() {
+  const sel = document.getElementById('gasto-categoria');
+  if (!sel) return;
+  sel.innerHTML = '<option value="">Selecione…</option>' +
+    state.categories.map(c => `<option value="${esc(c.id)}">${esc(c.name)}</option>`).join('');
 }
 
-function _tipoTag(tipo) {
-  const map = {
-    cartao:   ['cartao',   'Cartão'],
-    pix:      ['pix',      'Pix'],
-    debito:   ['debito',   'Débito'],
-    dinheiro: ['dinheiro', 'Dinheiro'],
-    outro:    ['outro',    'Outro'],
-  };
-  const [cls, label] = map[tipo] || ['outro', tipo || 'Outro'];
-  return `<span class="tag-tipo tag-${cls}">${label}</span>`;
-}
-
-// ─── SELECTS DE CATEGORIA ──────────────────────────────────────────────────
-function _populateCategorySelects() {
-  const opts = state.categories.map(c =>
-    `<option value="${esc(c.id)}">${esc(c.name)}</option>`
-  ).join('');
-
-  // Filtro
-  const filterCat = document.getElementById('filter-categoria');
-  const prev = filterCat.value;
-  filterCat.innerHTML = '<option value="">Todas as categorias</option>' + opts
-    + `<option value="${SEM_CATEGORIA_FILTRO}">Sem categoria</option>`;
-  filterCat.value = prev;
-
-  // Modal
-  document.getElementById('gasto-categoria').innerHTML =
-    '<option value="">Selecione…</option>' + opts;
-}
-
-// ─── EVENTOS ───────────────────────────────────────────────────────────────
-function _initGastosEvents() {
-  // Filtros
-  ['filter-categoria','filter-tipo-gasto','filter-busca'].forEach(id => {
-    document.getElementById(id).addEventListener('input', _renderTable);
-    document.getElementById(id).addEventListener('change', _renderTable);
-  });
-
-  // Botão novo lançamento manual
-  document.getElementById('btn-novo-gasto').addEventListener('click', () => {
-    _openGastoModal(null);
-  });
-
-  // Botão importar PDF
-  document.getElementById('btn-import-pdf').addEventListener('click', () => {
-    document.getElementById('modal-pdf').classList.remove('hidden');
-    initPdfImport(_renderTable);
-  });
-
-  // Delegação: editar / deletar
-  document.getElementById('gastos-tbody').addEventListener('click', async (e) => {
-    const btn = e.target.closest('[data-action]');
-    if (!btn) return;
-    const id = btn.dataset.id;
-    const action = btn.dataset.action;
-
-    if (action === 'edit-tx') {
-      const tx = state.transactions.find(t => t.id === id);
-      if (tx) _openGastoModal(tx);
-    }
-    if (action === 'delete-tx') {
-      if (!confirm('Excluir este lançamento?')) return;
-      await deleteTx(id);
-      toast('Lançamento excluído.', 'success');
-      _renderTable();
-    }
-    if (action === 'confirm-tx') await _confirmarProjecao(id);
-  });
-
-  // Salvar gasto
-  document.getElementById('btn-salvar-gasto').addEventListener('click', _salvarGasto);
-
-  // Mostra o seletor de ativo quando a categoria escolhida é de investimento
-  document.getElementById('gasto-categoria').addEventListener('change', _toggleAtivoRow);
-
-}
-
-// Regra única do app (js/utils.js). A cópia local comparava `id + name`
-// CONCATENADOS, o que casa "investiment" atravessando a fronteira dos dois
-// campos — um id terminado em "invest" ao lado de um nome começado em "iment"
-// virava categoria de investimento. Duas leituras diferentes do que é
-// investimento produzem dois totais para o mesmo mês.
-/**
- * Tira uma parcela do estado "projetada" — a única saída manual que existe.
- *
- * O app cria as parcelas futuras como projeção e, até a rodada desta correção,
- * NADA as convertia de volta em lançamento confirmado: uma parcela de fevereiro
- * seguia marcada como previsão em agosto, contando no total de um mês que já
- * fechou. Importar a fatura correspondente reconcilia automaticamente
- * (js/pdf-import.js); este botão é para quem não vai reimportar a fatura antiga.
- *
- * Só mexe em `isProjected`. Valor, data, categoria e procedência ficam como
- * estão — confirmar é dizer "foi isto mesmo", não é uma edição.
- */
-async function _confirmarProjecao(id) {
-  const tx = state.transactions.find(t => t.id === id);
-  if (!tx) return;
-  const parcela = tx.installmentTotal > 1
-    ? ` (parcela ${tx.installmentCurrent}/${tx.installmentTotal})` : '';
-  if (!confirm(
-    `Confirmar "${tx.description}"${parcela} no valor de ${fmt(tx.amount)}?\n\n`
-    + `Deixa de ser parcela prevista e passa a contar como gasto confirmado. `
-    + `Se o valor cobrado foi outro, cancele e use Editar.`
-  )) return;
-
-  try {
-    const { id: _ignorado, ...dados } = tx;
-    await saveTx({ ...dados, isProjected: false }, id);
-    toast('Parcela confirmada.', 'success');
-    _renderTable();
-  } catch (err) {
-    console.error('Erro ao confirmar parcela:', err);
-    toast('Não foi possível confirmar a parcela.', 'error');
-  }
-}
-
-function _isInvestCat(catId) {
-  return !!catId && getInvestCatIds().includes(catId);
-}
-
-function _toggleAtivoRow() {
-  const catId = document.getElementById('gasto-categoria').value;
-  const row   = document.getElementById('gasto-ativo-row');
-  const sel   = document.getElementById('gasto-ativo');
-  if (!row || !sel) return;
-
-  if (_isInvestCat(catId)) {
-    const invest = state.assets.filter(a => a.type === 'investimento');
-    sel.innerHTML = '<option value="">Não vincular a um ativo</option>' +
-      invest.map(a => `<option value="${esc(a.id)}">${esc(a.name)}</option>`).join('');
-    row.classList.remove('hidden');
-  } else {
-    row.classList.add('hidden');
-    sel.value = '';
-  }
-}
-
-function _openGastoModal(tx) {
+export function openGastoModal(tx) {
   document.getElementById('modal-gasto-title').textContent = tx ? 'Editar Lançamento' : 'Novo Lançamento';
   document.getElementById('gasto-id').value            = tx?.id || '';
   document.getElementById('gasto-data').value          = tx?.date || _today();
@@ -251,7 +50,7 @@ function _openGastoModal(tx) {
   document.getElementById('gasto-mes').value           = tx?.competenceMonth || '';
   document.getElementById('gasto-obs').value           = tx?.notes || '';
 
-  _populateCategorySelects();
+  _popularCategorias();
   document.getElementById('gasto-categoria').value = tx?.categoryId || '';
   _toggleAtivoRow();
   document.getElementById('gasto-ativo').value = tx?.assetId || '';
@@ -326,7 +125,7 @@ async function _salvarGasto() {
 
     document.getElementById('modal-gasto').classList.add('hidden');
     toast('Lançamento salvo!', 'success');
-    _renderTable();
+    _aoMudar();
   } catch (err) {
     console.error(err);
     toast('Erro ao salvar. Verifique o console.', 'error');
@@ -358,43 +157,59 @@ function _today() {
 }
 
 
-// ─── FILTROS AVANÇADOS ─────────────────────────────────────────
-function _initAdvancedFilterEvents() {
-  const btn = document.getElementById('btn-filtros-avancados');
-  const panel = document.getElementById('advanced-filter-panel');
-  if (!btn || !panel) return;
 
-  btn.addEventListener('click', () => {
-    const visible = !panel.classList.contains('hidden');
-    panel.classList.toggle('hidden', visible);
-    btn.textContent = visible ? 'Filtros avançados ▾' : 'Filtros avançados ▴';
-  });
+/**
+ * Tira uma parcela do estado "projetada" — a única saída manual que existe.
+ *
+ * O app cria as parcelas futuras como projeção e, até a rodada desta correção,
+ * NADA as convertia de volta em lançamento confirmado: uma parcela de fevereiro
+ * seguia marcada como previsão em agosto, contando no total de um mês que já
+ * fechou. Importar a fatura correspondente reconcilia automaticamente
+ * (js/pdf-import.js); este botão é para quem não vai reimportar a fatura antiga.
+ *
+ * Só mexe em `isProjected`. Valor, data, categoria e procedência ficam como
+ * estão — confirmar é dizer "foi isto mesmo", não é uma edição.
+ */
+export async function confirmarProjecao(id) {
+  const tx = state.transactions.find(t => t.id === id);
+  if (!tx) return;
+  const parcela = tx.installmentTotal > 1
+    ? ` (parcela ${tx.installmentCurrent}/${tx.installmentTotal})` : '';
+  if (!confirm(
+    `Confirmar "${tx.description}"${parcela} no valor de ${fmt(tx.amount)}?\n\n`
+    + `Deixa de ser parcela prevista e passa a contar como gasto confirmado. `
+    + `Se o valor cobrado foi outro, cancele e use Editar.`
+  )) return;
 
-  // Valor mín/máx
-  ['filter-valor-min', 'filter-valor-max'].forEach(id => {
-    document.getElementById(id)?.addEventListener('input', _renderTable);
-  });
-
-  // Data início/fim
-  ['filter-data-inicio', 'filter-data-fim'].forEach(id => {
-    document.getElementById(id)?.addEventListener('change', _renderTable);
-  });
-
-  // Checkboxes
-  ['filter-apenas-projetadas', 'filter-apenas-parcelas'].forEach(id => {
-    document.getElementById(id)?.addEventListener('change', _renderTable);
-  });
-
-  // Limpar filtros avançados
-  document.getElementById('btn-limpar-filtros')?.addEventListener('click', () => {
-    ['filter-valor-min','filter-valor-max','filter-data-inicio','filter-data-fim'].forEach(id => {
-      const el = document.getElementById(id);
-      if (el) el.value = '';
-    });
-    ['filter-apenas-projetadas','filter-apenas-parcelas'].forEach(id => {
-      const el = document.getElementById(id);
-      if (el) el.checked = false;
-    });
-    _renderTable();
-  });
+  try {
+    const { id: _ignorado, ...dados } = tx;
+    await saveTx({ ...dados, isProjected: false }, id);
+    toast('Parcela confirmada.', 'success');
+    _aoMudar();
+  } catch (err) {
+    console.error('Erro ao confirmar parcela:', err);
+    toast('Não foi possível confirmar a parcela.', 'error');
+  }
 }
+
+function _isInvestCat(catId) {
+  return !!catId && getInvestCatIds().includes(catId);
+}
+
+function _toggleAtivoRow() {
+  const catId = document.getElementById('gasto-categoria').value;
+  const row   = document.getElementById('gasto-ativo-row');
+  const sel   = document.getElementById('gasto-ativo');
+  if (!row || !sel) return;
+
+  if (_isInvestCat(catId)) {
+    const invest = state.assets.filter(a => a.type === 'investimento');
+    sel.innerHTML = '<option value="">Não vincular a um ativo</option>' +
+      invest.map(a => `<option value="${esc(a.id)}">${esc(a.name)}</option>`).join('');
+    row.classList.remove('hidden');
+  } else {
+    row.classList.add('hidden');
+    sel.value = '';
+  }
+}
+

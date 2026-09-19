@@ -146,81 +146,26 @@
       </div>
     </header>
 
-    <!-- ════ DASHBOARD ════════════════════════════════════════ -->
-    <section id="tab-dashboard" class="tab-content fit active">
-      <p class="page-intro">A fotografia do mês escolhido acima. <b>Comece pelo número grande</b> — ele diz quanto ainda dá para gastar.</p>
-      <!-- Insights strip -->
-      <div class="insights-strip" id="insights-strip">
-        <div class="insight-chip info">
-          <span>💡</span> Carregando insights…
-        </div>
-      </div>
-
-      <!-- KPIs -->
-      <div class="kpi-grid" id="kpi-grid">
-        <!-- Skeleton inicial — o primeiro acompanha a proporção do hero -->
-        <div class="kpi-skeleton sk-hero"><div class="skeleton sk-title" style="width:45%"></div><div class="skeleton sk-value" style="height:34px"></div><div class="skeleton sk-text" style="width:100%;height:8px"></div><div class="skeleton sk-text" style="width:80%"></div></div>
-        <div class="kpi-skeleton"><div class="skeleton sk-title"></div><div class="skeleton sk-value"></div><div class="skeleton sk-text" style="width:60%"></div></div>
-        <div class="kpi-skeleton"><div class="skeleton sk-title"></div><div class="skeleton sk-value"></div><div class="skeleton sk-text" style="width:60%"></div></div>
-        <div class="kpi-skeleton"><div class="skeleton sk-title"></div><div class="skeleton sk-value"></div><div class="skeleton sk-text" style="width:60%"></div></div>
-      </div>
-
-      <!-- Distribuição × Orçamento: as duas leituras do MESMO total do mês,
-           lado a lado. A evolução desceu para a linha de baixo porque o
-           sparkline de cada KPI já entrega a tendência nos primeiros segundos. -->
-      <div class="dashboard-row">
-        <div class="card card-pizza">
-          <div class="card-header"><span class="card-title">Distribuição dos gastos</span><span class="card-subtitle" id="chart-cat-month"></span></div>
-          <div class="pizza-wrap">
-            <div class="pizza-donut">
-              <canvas id="chart-categorias"></canvas>
-              <div id="pizza-skeleton-ring" class="pizza-skeleton-ring"></div>
-              <div id="pizza-total-center" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;pointer-events:none">
-                <div style="font-size:0.65rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px">Total</div>
-                <div style="font-size:1.05rem;font-weight:700;color:var(--text-primary);font-family:var(--font-mono)" id="pizza-total-value">R$ 0</div>
-              </div>
-            </div>
-            <!-- Skeleton com a altura final das 5 linhas, para a página não pular -->
-            <div id="pizza-legend">
-              <div class="lg-row"><span class="skeleton sk-text" style="width:100%"></span></div>
-              <div class="lg-row"><span class="skeleton sk-text" style="width:100%"></span></div>
-              <div class="lg-row"><span class="skeleton sk-text" style="width:100%"></span></div>
-              <div class="lg-row"><span class="skeleton sk-text" style="width:100%"></span></div>
-              <div class="lg-row"><span class="skeleton sk-text" style="width:100%"></span></div>
-            </div>
+    <!-- ════ MÊS ══════════════════════════════════════════════
+         Montada inteira por js/mes.js (herói, distribuição, resultado,
+         miniatura do fluxo, tabela única e orçamento × real). Seção vazia
+         de propósito: markup aqui não chegaria à tela. -->
+    <section id="tab-mes" class="tab-content active"></section>
+    <!-- ════ ORÇAMENTO ════════════════════════════════════════
+         Definir teto de categoria é CONFIGURAÇÃO, não leitura do mês:
+         decisão da usuária na rodada 3. Vive dentro de Ajustes. O editor é
+         desenhado por js/orcamento.js nos ids que ele já esperava. -->
+    <section id="tab-orcamento" class="tab-content hidden">
+      <div class="folha" id="orcamento-bloco">
+        <div class="linha-topo">
+          <div>
+            <p class="rot">Orçamento por categoria</p>
+            <p class="rot-sub" style="margin:0">Quanto você pretende gastar em cada categoria, e quanto já foi neste mês.
+              Em branco é válido — significa que a categoria não tem teto.</p>
           </div>
+          <button class="btn" id="btn-salvar-orcamento">Salvar orçamento</button>
         </div>
-        <div class="card">
-          <div class="card-header"><span class="card-title">Orçamento × Real</span></div>
-          <div id="orcamento-list" class="orcamento-list">
-            <div class="empty-state">
-              <div class="empty-state-icon">🎯</div>
-              <div class="empty-state-title">Sem orçamento definido</div>
-              <div class="empty-state-text">Defina limites por categoria na aba Orçamento.</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="dashboard-row">
-        <div class="card">
-          <div class="card-header"><span class="card-title">Parcelas previstas — próximos 3 meses</span></div>
-          <div id="parcelas-list" class="parcelas-list">
-            <div class="empty-state">
-              <div class="empty-state-icon">📅</div>
-              <div class="empty-state-title">Sem parcelas futuras</div>
-              <div class="empty-state-text">Nenhuma parcela detectada nos próximos meses.</div>
-            </div>
-          </div>
-        </div>
-        <div class="card card-evolucao">
-          <div class="card-header"><span class="card-title">Evolução — 6 meses</span></div>
-          <!-- Altura elástica, não 220px fixos: o card recebe a sobra da dobra,
-               e um número fixo aqui ou sobraria buraco ou estouraria a tela. -->
-          <div class="evolucao-box">
-            <canvas id="chart-evolucao"></canvas>
-          </div>
-        </div>
+        <div id="orcamento-editor" class="orcamento-editor"></div>
       </div>
     </section>
     <!-- ════ CALENDÁRIO ══════════════════════════════════════ -->
@@ -347,118 +292,6 @@
         </div>
       </div>
     </section>
-    <!-- ════ GASTOS ═══════════════════════════════════════════ -->
-    <section id="tab-gastos" class="tab-content fit hidden">
-      <p class="page-intro">Tudo que saiu no mês, numa tabela só. <b>Se a fatura do cartão ainda não entrou, comece por “Importar Fatura PDF”</b> — depois use os filtros para achar um lançamento específico.</p>
-      <div class="page-header" style="justify-content:flex-end">
-        <div class="page-actions">
-          <button class="btn btn-ghost btn-sm" id="btn-import-pdf">
-            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-            Importar Fatura PDF
-          </button>
-          <button class="btn btn-primary btn-sm" id="btn-novo-gasto">
-            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            Novo Lançamento
-          </button>
-        </div>
-      </div>
-
-      <div class="filter-bar">
-        <select id="filter-categoria" class="filter-select"><option value="">Todas as categorias</option></select>
-        <select id="filter-tipo-gasto" class="filter-select">
-          <option value="">Todos os tipos</option>
-          <option value="cartao">Cartão</option>
-          <option value="pix">Pix</option>
-          <option value="debito">Débito</option>
-          <option value="ted">TED</option>
-          <option value="dinheiro">Dinheiro</option>
-          <option value="outro">Outro</option>
-        </select>
-        <input type="text" id="filter-busca" class="filter-input" placeholder="Buscar descrição…" />
-        <button class="btn btn-ghost btn-sm" id="btn-filtros-avancados">Filtros avançados ▾</button>
-        <div class="filter-chips" id="filter-chips"></div>
-      </div>
-
-      <!-- Painel de filtros avançados -->
-      <div id="advanced-filter-panel" class="advanced-filter-panel hidden">
-        <div class="filter-group">
-          <div class="filter-group-label">Valor mínimo</div>
-          <input type="number" id="filter-valor-min" class="filter-input" placeholder="R$ 0,00" min="0" step="1" />
-        </div>
-        <div class="filter-group">
-          <div class="filter-group-label">Valor máximo</div>
-          <input type="number" id="filter-valor-max" class="filter-input" placeholder="R$ 9999" min="0" step="1" />
-        </div>
-        <div class="filter-group">
-          <div class="filter-group-label">Data início</div>
-          <input type="date" id="filter-data-inicio" class="filter-input" />
-        </div>
-        <div class="filter-group">
-          <div class="filter-group-label">Data fim</div>
-          <input type="date" id="filter-data-fim" class="filter-input" />
-        </div>
-        <div class="filter-group" style="justify-content:flex-end;gap:0.6rem">
-          <label style="display:flex;align-items:center;gap:0.4rem;font-size:0.82rem;color:var(--text-secondary);cursor:pointer">
-            <input type="checkbox" id="filter-apenas-projetadas" /> Só projetadas
-          </label>
-          <label style="display:flex;align-items:center;gap:0.4rem;font-size:0.82rem;color:var(--text-secondary);cursor:pointer">
-            <input type="checkbox" id="filter-apenas-parcelas" /> Só parceladas
-          </label>
-          <button class="btn btn-ghost btn-xs" id="btn-limpar-filtros">Limpar</button>
-        </div>
-      </div>
-
-      <div class="card grow">
-        <p class="card-sub">Clique no ✎ para corrigir um lançamento. O ✓ nas linhas em âmbar confirma que aquela parcela realmente caiu.</p>
-        <div class="table-wrapper">
-          <table class="data-table">
-            <thead>
-              <tr><th scope="col">Data</th><th scope="col">Descrição</th><th scope="col">Categoria</th><th scope="col">Tipo</th><th scope="col">Parcela</th><th scope="col" class="col-value">Valor</th><th scope="col" class="col-actions"></th></tr>
-            </thead>
-            <tbody id="gastos-tbody">
-              <tr><td colspan="7" class="empty-row">Carregando…</td></tr>
-            </tbody>
-          </table>
-        </div>
-        <div class="table-footer">
-          Total: <strong id="gastos-total" class="val-mono">R$ 0,00</strong>
-        </div>
-      </div>
-    </section>
-    <!-- ════ RECEITAS ═════════════════════════════════════════ -->
-    <section id="tab-receitas" class="tab-content fit hidden">
-      <p class="page-intro">O que entrou no mês. <b>Cadastre pelo menos o salário:</b> sem receita lançada, o Radar não consegue calcular quanto sobra e o número da tela inicial fica negativo.</p>
-      <div class="page-header" style="justify-content:flex-end;gap:0.5rem">
-        <button class="btn btn-ghost btn-sm" id="btn-copiar-receitas" title="Copia as receitas manuais do mês anterior para este mês">⟳ Copiar do mês anterior</button>
-        <button class="btn btn-primary btn-sm" id="btn-nova-receita">
-          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          Nova Receita
-        </button>
-      </div>
-      <div class="card grow">
-        <div class="card-header"><span class="card-title">💰 Receitas do mês</span></div>
-        <p class="card-sub">Se o seu salário se repete todo mês, use “Copiar do mês anterior” em vez de digitar tudo de novo.</p>
-        <div class="table-wrapper">
-          <table class="data-table">
-            <thead><tr><th scope="col">Tipo</th><th scope="col">Descrição</th><th scope="col" class="col-value">Valor</th><th scope="col" class="col-actions"></th></tr></thead>
-            <tbody id="receitas-tbody"><tr><td colspan="4" class="empty-row">Nenhuma receita registrada.</td></tr></tbody>
-          </table>
-        </div>
-        <div class="table-footer">Total: <strong id="receitas-total" class="val-mono val-positive">R$ 0,00</strong></div>
-      </div>
-    </section>
-    <!-- ════ ORÇAMENTO ════════════════════════════════════════ -->
-    <section id="tab-orcamento" class="tab-content fit hidden">
-      <p class="page-intro">Quanto você pretende gastar em cada categoria. <b>Digite o limite na caixinha e salve</b> — a barra ao lado mostra quanto disso já foi usado neste mês.</p>
-      <div class="page-header" style="justify-content:flex-end">
-        <button class="btn btn-primary btn-sm" id="btn-salvar-orcamento">Salvar orçamento</button>
-      </div>
-      <div class="card grow">
-        <div class="card-header"><span class="card-title">Orçamento mensal por categoria</span></div>
-        <p class="card-sub">Digite quanto pretende gastar em cada categoria e clique em Salvar. Deixar em branco é válido — só significa que aquela categoria não tem teto.</p>
-        <div id="orcamento-editor" class="orcamento-editor"><p style="color:var(--text-muted);font-size:0.83rem;padding:1rem">Carregando categorias…</p></div>
-      </div>
-    </section>
     <!-- ════ CONFIGURAÇÕES ════════════════════════════════════ -->
     <!-- Configurações é montada inteira por js/configuracoes.js (ele reescreve
          o innerHTML desta seção). O markup que existia aqui era cópia morta:
@@ -466,6 +299,10 @@
     <section id="tab-configuracoes" class="tab-content hidden"></section>
     <!-- ════ TIMELINE ════════════════════════════════════════ -->
     <section id="tab-timeline" class="tab-content hidden"></section>
+    <!-- ════ PREVISÕES ════════════════════════════════════════
+         Os dois cards do dashboard antigo que falam do FUTURO, não do mês
+         corrente. Montados por js/previsoes.js, dentro de Adiante. -->
+    <section id="tab-previsoes" class="tab-content hidden"></section>
     <!-- ════ RELATÓRIOS ══════════════════════════════════════ -->
     <section id="tab-relatorios" class="tab-content hidden"></section>
 

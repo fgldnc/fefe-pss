@@ -1071,6 +1071,105 @@ body { overflow-x: hidden; overflow-y: auto; }
 }
 .rodape strong { font-size: 17px; color: var(--ink); }
 
+/* ═══════════════════════════════════════════════════════════════
+   MÊS (rodada 3) — o que é específico da tela, sobre o vocabulário
+   acima. Prefixo .mes-* só onde a classe é mesmo daqui; tudo que já
+   existe no vocabulário (.folha, .cat, .selo, .rodape) é reusado.
+════════════════════════════════════════════════════════════════ */
+
+/* Âncora de `data-goto`: a topbar é sticky e cobriria o topo do bloco. */
+.folha, .heroi { scroll-margin-top: calc(var(--topbar-h) + 24px); }
+
+/* A dica do herói é o motor de insights de utils.js. Dentro da faixa de
+   marca, o chip perde a caixa: fundo claro sobre gradiente vira remendo. */
+.heroi .insights-strip { display: flex; flex-direction: column; gap: 6px; margin: 0; padding: 0; }
+.heroi .insight-chip {
+  background: transparent; border: 0; padding: 0; color: #fff;
+  font-size: 13px; line-height: 1.45; opacity: 0.92;
+}
+.heroi .dica .btn-2 { margin-top: 10px; align-self: flex-start; }
+.heroi .dica { flex-direction: column; align-items: flex-start; }
+
+.mes-acoes { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+.mes-filtros { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 14px; }
+.mes-filtros .form-input { width: auto; min-width: 128px; }
+.mes-filtros #filter-busca { flex: 1; min-width: 180px; }
+.mes-check { display: flex; align-items: center; gap: 0.4rem; font-size: 0.82rem; color: var(--ink-2); cursor: pointer; }
+
+/* A tabela não fica dentro de .table-wrapper nem de .card: era esse par de
+   embrulhos que impedia o <thead> de grudar (rodada 2). Aqui o único
+   contêiner é este, e ele rola só na horizontal quando precisa. */
+/* SEM `overflow` aqui, e é deliberado: qualquer overflow diferente de
+   `visible` faz deste elemento o scrollport, e o <th> sticky passa a grudar
+   nele em vez de na janela — foi exatamente o que derrubou o cabeçalho preso
+   na rodada 2, com `.table-wrapper`. Medido de novo aqui: com
+   `overflow-x:auto` o <th> descia junto (top −1080 a 2200px de rolagem).
+   No lugar do embrulho, `table-layout: fixed` + quebra na descrição: a
+   tabela não estoura a largura, então não há o que rolar na horizontal.
+   As colunas Categoria e Origem somem abaixo de 900px (`.esconde-sm`). */
+.mes-tabela-rolagem table { table-layout: fixed; }
+/* `break-word`, não `anywhere`: com `anywhere` o navegador quebra no meio da
+   palavra mesmo havendo espaço melhor, e no celular "Compra de teste" virava
+   quatro linhas de uma sílaba. */
+.mes-tabela-rolagem td { overflow-wrap: break-word; }
+
+/* As larguras ficam no CSS, não em `style=` no <th>: com `table-layout: fixed`
+   elas mandam no layout inteiro, e no celular precisam encolher — atributo
+   inline não se deixa sobrescrever por media query. A coluna de descrição não
+   tem largura: é ela que fica com a sobra. */
+.mes-tabela-rolagem th:nth-child(1) { width: 64px; }
+.mes-tabela-rolagem th:nth-child(3) { width: 150px; }
+.mes-tabela-rolagem th:nth-child(4) { width: 96px; }
+.mes-tabela-rolagem th:nth-child(5) { width: 118px; }
+.mes-tabela-rolagem th:nth-child(6) { width: 78px; }
+@media (max-width: 900px) {
+  /* O cabeçalho da folha deixa de ser título | botões: com cinco botões que
+     não quebram, a coluna do título ficava com 40px e a frase virava uma
+     letra por linha. Empilha, título em cima. */
+  .linha-topo { flex-direction: column; }
+  .mes-acoes { justify-content: flex-start; width: 100%; }
+  .mes-tabela-rolagem th:nth-child(1) { width: 48px; }
+  .mes-tabela-rolagem th:nth-child(5) { width: 84px; }
+  /* 68px porque são três botões: com 52px o ✕ saía da folha e era o
+     `overflow-x: hidden` do body que o escondia — botão cortado, não
+     alcançável. Medido. */
+  .mes-tabela-rolagem th:nth-child(6) { width: 68px; }
+  .mes-tabela-rolagem .btn-icon-only { width: 21px; height: 21px; font-size: 0.78rem; }
+  .mes-tabela-rolagem td + td, .mes-tabela-rolagem th + th { padding-left: 8px; }
+}
+.mes-tabela-rolagem thead th {
+  position: sticky; top: var(--topbar-h); z-index: 1;
+  /* Banda opaca de altura própria: com o `padding: 0 0 10px` do vocabulário,
+     o cabeçalho grudado virava um fio fino e a linha que passava por baixo
+     aparecia colada nele, como se as duas estivessem sobrepostas. */
+  background: var(--folha); padding: 14px 0 10px;
+  /* `box-shadow` no lugar de `border-bottom`: borda de elemento sticky
+     descola da caixa e fica flutuando uma linha acima ao rolar. */
+  border-bottom: 0;
+  box-shadow: inset 0 -1px 0 var(--borda-forte);
+}
+.mes-tabela-rolagem thead th + th { padding-left: 16px; }
+/* `font-size: 0` colapsa os nós de espaço em branco ENTRE os <button>: eles
+   são inline-flex, e as quebras de linha do template somavam ~4px cada — três
+   ícones de 21px estouravam a coluna de 68px e o ✕ saía da folha no celular.
+   O tamanho real volta no próprio botão. */
+.mes-acoes-linha { text-align: right; white-space: nowrap; font-size: 0; }
+.mes-acoes-linha .btn-icon-only { font-size: 0.85rem; }
+.mes-acoes-linha .btn-icon-only { width: 24px; height: 24px; }
+/* O ✎/✕ só aparece na linha sob o cursor: seis linhas de ícone cinza
+   competem com a coluna de valor, que é o que se vem ler. O teclado
+   continua chegando neles — :focus-within revela a linha inteira. */
+.mes-tabela-rolagem tbody .mes-acoes-linha .btn-icon-only { opacity: 0; transition: opacity var(--transition); }
+.mes-tabela-rolagem tbody tr:hover .btn-icon-only,
+.mes-tabela-rolagem tbody tr:focus-within .btn-icon-only { opacity: 1; }
+@media (hover: none) {
+  .mes-tabela-rolagem tbody .mes-acoes-linha .btn-icon-only { opacity: 1; }
+}
+
+/* O editor de orçamento é desenhado por orcamento.js dentro da folha daqui. */
+#mes-orcamento .orcamento-input-row { padding-left: 0; padding-right: 0; }
+#mes-orcamento .orc-fechamento { padding: 0; margin-top: 10px; }
+
 /* Abaixo de 1120px as duas colunas não cabem sem espremer número. */
 @media (max-width: 1120px) {
   .faixa { grid-template-columns: 1fr; }
