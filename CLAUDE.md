@@ -179,7 +179,20 @@ Cada item abaixo é uma regra de negócio real codificada como literal, sem cons
 - `js/utils.js:191` — anomalia só é reportada se o desvio for `≥ 30%`.
 - `js/utils.js:197` — no máximo **2** anomalias exibidas.
 - `js/utils.js:214` — projeção de fechamento do mês só aparece a partir do **dia 5**.
-- `js/utils.js:232` — alerta de orçamento dispara em `≥ 90%` do limite (`≥ 100%` = "ultrapassado").
+- `js/utils.js` — alerta de orçamento dispara em `≥ 90%` do limite (`≥ 100%` =
+  "ultrapassado"), e **é UMA linha para todos, não uma por categoria**: quatro
+  categorias estouradas viravam quatro linhas idênticas menos a palavra do
+  meio. Com mais de uma, o chip diz "N orçamentos ultrapassados"; QUAIS são
+  está na distribuição, logo abaixo, e no editor de orçamento.
+- `js/utils.js` (`MAX_INSIGHTS`) — **no máximo 3 chips no herói**, ordenados
+  por quanto pedem ação: orçamento estourado → anomalia de categoria →
+  variação do total → quase no limite → projeção → parcelas do mês que vem.
+  O herói é o número grande e uma frase; com sete linhas de aviso ele deixa de
+  ser um número e vira uma lista — *"muita informação e nada para entender"*,
+  nas palavras da usuária. **O que não cabe não se perde:** cada um desses
+  números está inteiro na tela que fala dele. O corte também é o que mantém o
+  herói e o "Resultado do mês" da mesma altura na `.faixa-par` — era o herói
+  crescendo sem limite que esticava o vizinho e deixava o buraco nele.
 - `js/utils.js:76` — toast dura `4500 ms`.
 
 **Orçamento e dashboard**
@@ -639,11 +652,21 @@ número só.
   `saldoInicial` é mês a mês: gravar o dia do Nubank não pode apagar o do Itaú.
   `null` num cartão remove aquele cartão. No restore de backup vale a mesma
   regra dos outros dois campos — **o que já existe vence o que vem do arquivo**.
-- Em Adiante a faixa ganha **um campo por cartão** mais o "sem cartão marcado".
-  O campo de dia é mais estreito que o de saldo (`.adiante-campo-dia`): com a
-  largura do saldo, quatro campos não caberiam numa fileira só e a faixa
-  voltaria a ter duas linhas. A 375px o saldo toma a linha inteira e os dias
-  ficam dois por linha.
+- **Em Adiante é UM SELETOR, não um campo por cartão.** A primeira versão
+  desenhava um campo de dia para cada cartão mais um para o "sem cartão
+  marcado" — quem tem um cartão só via três caixas para responder uma pergunta.
+  Decisão da usuária: *"tem que ter um seletor de cartão caso a pessoa tenha a
+  mais (eu por exemplo só uso Itaú) e aí colocar o dia"*.
+  - O `<select>` **só aparece quando há mais de uma opção de verdade**: com um
+    cartão só, ou nenhum, sobra o campo do dia sozinho, como sempre foi.
+    "Sem cartão marcado" só entra na lista quando existe gasto de cartão sem
+    nome — senão é uma opção que não serve a ninguém.
+  - **Qual cartão o campo edita vem do `data-venc-cartao` que o render
+    escreveu**, não de uma segunda cópia do estado do seletor. O cartão
+    escolhido mora no módulo (`_cartaoVenc`), como a aba: a tela é remontada a
+    cada gravação, e um seletor que se reposiciona sozinho faz perder o lugar
+    logo depois de uma edição.
+  - Trocar de cartão no seletor **só repinta a faixa; não grava nada**.
 - Fixado por `test/saldos.test.mjs` (três casos novos): dois cartões em dias
   diferentes, a queda em três degraus, e a descrição sem o nome quando o cartão
   é único.

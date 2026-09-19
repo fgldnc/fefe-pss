@@ -197,6 +197,9 @@ function _expensesFallback(month, investIds) {
   }))];
 }
 
+/** Quantos avisos cabem no herói antes de ele parar de ser um número. */
+const MAX_INSIGHTS = 3;
+
 export function renderInsights(getExpenses = null) {
   const strip = document.getElementById('insights-strip');
   if (!strip) return;
@@ -220,7 +223,7 @@ export function renderInsights(getExpenses = null) {
     const delta = ((totalNow - totalPrev) / totalPrev) * 100;
     if (Math.abs(delta) > 5) {
       chips.push({ type: delta > 0 ? 'warn' : 'good', icon: delta > 0 ? '📈' : '📉',
-        text: `Gastos ${delta > 0 ? '+' : ''}${delta.toFixed(0)}% vs mês anterior` });
+        text: `Gastos ${delta > 0 ? '+' : ''}${delta.toFixed(0)}% vs mês anterior`, prio: 2 });
     }
   }
 
@@ -258,6 +261,7 @@ export function renderInsights(getExpenses = null) {
         type: a.dev > 0 ? 'warn' : 'good',
         icon: a.dev > 0 ? '🔺' : '🔻',
         text: `${a.cat.name} ${a.dev > 0 ? '+' : ''}${a.dev.toFixed(0)}% vs sua média de 3 meses (${fmt(a.val)})`,
+        prio: 1,
       });
     }
   }
@@ -278,33 +282,59 @@ export function renderInsights(getExpenses = null) {
         type: worse ? 'warn' : 'info',
         icon: '🔮',
         text: `No ritmo atual, o mês fecha em ~${fmt(projected)}`,
+        prio: 4,
       });
     }
   }
 
-  const budgets = state.budgets[month] || {};
-  for (const [catId, limit] of Object.entries(budgets)) {
-    if (limit <= 0) continue;
-    const spent = catTotals[catId] || 0;
-    const pct   = (spent / limit) * 100;
-    const cat   = state.categories.find(c => c.id === catId);
-    if (pct >= 90 && cat) {
-      chips.push({ type: 'warn', icon: '⚠️',
-        text: `Orçamento de ${cat.name} ${pct >= 100 ? 'ultrapassado' : 'quase no limite'}` });
+  // ── ORÇAMENTO: UMA linha para todos, não uma por categoria ─────────
+  // Quatro categorias estouradas viravam quatro linhas idênticas menos a
+  // palavra do meio, e a faixa do herói virava uma lista de avisos. Quem lê
+  // "4 orçamentos ultrapassados" já sabe o que fazer; QUAIS são está na
+  // distribuição, logo abaixo, e no editor de orçamento.
+  {
+    const budgets = state.budgets[month] || {};
+    const estourados = [];
+    const noLimite   = [];
+    for (const [catId, limit] of Object.entries(budgets)) {
+      if (limit <= 0) continue;
+      const cat = state.categories.find(c => c.id === catId);
+      if (!cat) continue;
+      const pct = ((catTotals[catId] || 0) / limit) * 100;
+      if (pct >= 100)     estourados.push(cat.name);
+      else if (pct >= 90) noLimite.push(cat.name);
     }
+    const linha = (lista, uma, varias) => {
+      if (!lista.length) return null;
+      return lista.length === 1 ? `Orçamento de ${lista[0]} ${uma}`
+                                : `${lista.length} orçamentos ${varias}`;
+    };
+    const txtEstourado = linha(estourados, 'ultrapassado', 'ultrapassados');
+    const txtLimite    = linha(noLimite,   'quase no limite', 'quase no limite');
+    if (txtEstourado) chips.push({ type: 'warn', icon: '⚠️', text: txtEstourado, prio: 0 });
+    if (txtLimite)    chips.push({ type: 'warn', icon: '⚠️', text: txtLimite, prio: 3 });
   }
 
   const nextMonth = offsetMonth(month, 1);
   const parcelas  = state.transactions.filter(t => isOfMonth(t, nextMonth) && t.installmentTotal > 1);
   const totalParc = parcelas.reduce((s, t) => s + (t.amount || 0), 0);
-  if (totalParc > 0) chips.push({ type: 'info', icon: '📅', text: `${fmt(totalParc)} em parcelas no próximo mês` });
+  if (totalParc > 0) chips.push({ type: 'info', icon: '📅', text: `${fmt(totalParc)} em parcelas no próximo mês`, prio: 5 });
 
   if (!chips.length) {
     strip.innerHTML = `<div class="insight-chip info"><span>✨</span> Tudo em ordem por aqui!</div>`;
     return;
   }
 
-  strip.innerHTML = chips.map(c =>
+  // NO MÁXIMO TRÊS. O herói é o número grande e uma frase; com sete linhas de
+  // aviso empilhadas ele deixa de ser um número e vira uma lista — "muita
+  // informação e nada para entender", nas palavras da usuária. A ordem é por
+  // quanto o aviso pede ação: orçamento estourado → anomalia de categoria →
+  // variação do total → quase no limite → projeção → parcelas do mês que vem.
+  // O que não cabe não se perde: cada um desses números está inteiro na tela
+  // que fala dele (distribuição, orçamento, Cartão).
+  chips.sort((a, b) => (a.prio ?? 9) - (b.prio ?? 9));
+
+  strip.innerHTML = chips.slice(0, MAX_INSIGHTS).map(c =>
     `<div class="insight-chip ${esc(c.type)}"><span>${esc(c.icon)}</span>${esc(c.text)}</div>`
   ).join('');
 }

@@ -1211,7 +1211,8 @@ body { overflow-x: hidden; overflow-y: auto; }
    largura do saldo os quatro campos de quem tem dois cartões não caberiam numa
    fileira só — a faixa viraria duas linhas e empurraria a curva para fora da
    dobra outra vez. */
-.adiante-campo-dia { flex: 0 1 158px; }
+.adiante-campo-dia { flex: 0 1 148px; }
+.adiante-campo-cartao { flex: 0 1 210px; }
 .adiante-campo > span { font-size: 13px; font-weight: 600; }
 .adiante-campo > i { font-style: normal; font-size: 11.5px; color: var(--ink-3); line-height: 1.4; }
 @media (max-width: 900px) {
@@ -1221,7 +1222,8 @@ body { overflow-x: hidden; overflow-y: auto; }
      dois dígitos ocupando a largura toda desperdiça a altura que esta faixa
      existe para poupar. */
   .adiante-campo { flex: 1 1 100%; max-width: none; }
-  .adiante-campo-dia { flex: 1 1 140px; }
+  .adiante-campo-dia { flex: 1 1 130px; }
+  .adiante-campo-cartao { flex: 1 1 160px; }
 }
 .adiante-campo > span { font-size: 12.5px; font-weight: 600; color: var(--ink-2); }
 .adiante-campo > i { font-style: normal; font-size: 11.5px; color: var(--ink-3); max-width: 42ch; }

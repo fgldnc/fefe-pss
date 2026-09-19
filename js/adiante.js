@@ -65,6 +65,11 @@ let _init = false;
  *  tela, e voltar para a primeira aba a cada gravação faz perder o lugar. */
 let _aba = 'mes';
 
+/** Cartão cujo vencimento o campo está editando. Mora no módulo, como a aba:
+ *  a tela é remontada por innerHTML a cada gravação, e um seletor que se
+ *  reposiciona sozinho faz perder o lugar logo depois de uma edição. */
+let _cartaoVenc = null;
+
 /** Número sem "R$" para coluna de valor — mesma regra da tabela de Mês. */
 const num = (v) => new Intl.NumberFormat('pt-BR',
   { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Math.abs(v || 0));
@@ -85,7 +90,11 @@ function _dados() {
   // Os cartões que aparecem nos gastos de cartão. A tela pergunta o vencimento
   // de cada um — duas faturas em dias diferentes somadas num dia só inventam
   // um aperto que não existe.
-  const cartoes = cartoesConhecidos(state.transactions.filter(t => t.paymentType === 'cartao'));
+  const gastosCartao = state.transactions.filter(t => t.paymentType === 'cartao');
+  const cartoes = cartoesConhecidos(gastosCartao);
+  // Existe gasto de cartão SEM nome? É o que decide se 'sem cartão marcado' é
+  // uma opção de verdade ou uma linha que não serve a ninguém.
+  const temCartaoSemNome = gastosCartao.some(t => !String(t.card || '').trim());
 
   // `undefined` é "não definido"; zero é uma abertura legítima. A distinção
   // manda em metade da tela, então nunca use `|| 0` aqui.
@@ -112,7 +121,8 @@ function _dados() {
   const diaHoje = noMes ? hoje.getDate() : null;
 
   return {
-    month, ano, mes, daysInMonth, venc, vencCartao, cartoes, abertura, temAbertura,
+    month, ano, mes, daysInMonth, venc, vencCartao, cartoes, temCartaoSemNome,
+    cartaoVenc: _cartaoVenc ?? (cartoes[0] ?? ''), abertura, temAbertura,
     mov, serie, min, diaHoje, sugerido: _fechamentoAnterior(month),
   };
 }
@@ -146,12 +156,42 @@ function _fechamentoAnterior(month) {
 // 1. AJUSTES DO MÊS — os dois números que mandam na tela inteira
 // ═══════════════════════════════════════════════════════════════════════
 
+/**
+ * UM SELETOR, não um campo por cartão. A primeira versão desenhava um campo de
+ * dia para cada cartão e mais um para o "sem cartão marcado" — quem tem um
+ * cartão só via três caixas para responder uma pergunta. Decisão da usuária:
+ * *"tem que ter um seletor de cartão caso a pessoa tenha a mais (eu por
+ * exemplo só uso Itaú) e aí colocar o dia"*.
+ *
+ * O `<select>` só aparece quando há mais de uma opção de verdade. Com um
+ * cartão só, ou nenhum, sobra o campo do dia sozinho, como sempre foi.
+ */
 function _ajustes(d) {
   const mesNome = monthLabel(d.month).split(' ')[0];
+
+  // As opções: cada cartão conhecido, mais "sem cartão marcado" — que só entra
+  // quando existe gasto de cartão sem nome, senão é uma opção que não serve a
+  // ninguém.
+  const opcoes = [...d.cartoes.map(c => ({ v: c, rot: c }))];
+  if (d.temCartaoSemNome || !d.cartoes.length) {
+    opcoes.push({ v: '', rot: d.cartoes.length ? 'Sem cartão marcado' : 'Meu cartão' });
+  }
+  const alvo = opcoes.some(o => o.v === d.cartaoVenc) ? d.cartaoVenc : opcoes[0].v;
+  const diaDoAlvo = alvo ? (d.vencCartao[alvo] ?? '') : (d.venc ?? '');
+
+  const seletor = opcoes.length > 1 ? `
+    <label class="adiante-campo adiante-campo-cartao">
+      <span>Cartão</span>
+      <select class="form-input sm" id="fx-cartao-venc">
+        ${opcoes.map(o => `<option value="${esc(o.v)}"${o.v === alvo ? ' selected' : ''}>${esc(o.rot)}</option>`).join('')}
+      </select>
+      <i>Cada cartão vence no dia dele.</i>
+    </label>` : '';
+
   return `
     <div class="folha faixa-fina" id="adiante-ajustes">
       <div class="adiante-campos">
-        <p class="rot">${d.cartoes.length ? `Os números<br>que esta tela precisa` : `Os dois números<br>que esta tela precisa`}</p>
+        <p class="rot">O que esta<br>tela precisa saber</p>
         <label class="adiante-campo">
           <span>Saldo inicial de ${esc(mesNome)}</span>
           <input type="number" id="fx-saldo-inicial" class="form-input sm" step="0.01" inputmode="decimal"
@@ -161,22 +201,14 @@ function _ajustes(d) {
             ? `<button type="button" class="btn btn-2 btn-xs" id="fx-usar-fechamento">Usar o fechamento de ${esc(monthLabel(offsetMonth(d.month, -1)).split(' ')[0])}</button>`
             : `<i>Sem ele a curva mede fluxo acumulado, não saldo de conta.</i>`}
         </label>
-        ${d.cartoes.map((c, i) => `
+        ${seletor}
         <label class="adiante-campo adiante-campo-dia">
-          <span>Vencimento · ${esc(c)}</span>
-          <input type="number" class="form-input sm" data-venc-cartao="${esc(c)}"
-                 min="1" max="28" step="1" placeholder="não definido"
-                 value="${d.vencCartao[c] || ''}" />
-          ${i === 0 ? '<i>De 1 a 28. Cada cartão vence no dia dele.</i>' : ''}
-        </label>`).join('')}
-        <label class="adiante-campo adiante-campo-dia">
-          <span>${d.cartoes.length ? 'Vencimento · sem cartão marcado' : 'Dia de vencimento da fatura'}</span>
+          <span>Dia de vencimento</span>
           <input type="number" id="fatura-vencimento-dia" class="form-input sm"
                  min="1" max="28" step="1" placeholder="não definido"
-                 value="${d.venc || ''}" />
-          ${d.cartoes.length
-            ? (d.venc ? '' : '<i>Em branco, esses gastos caem no dia da compra.</i>')
-            : `<i>De 1 a 28. ${d.venc ? '' : 'Em branco, o cartão cai no dia de cada compra.'}</i>`}
+                 data-venc-cartao="${esc(alvo)}"
+                 value="${diaDoAlvo}" />
+          <i>De 1 a 28.${diaDoAlvo ? '' : ' Em branco, cai no dia de cada compra.'}</i>
         </label>
       </div>
     </div>`;
@@ -522,11 +554,15 @@ function _ligarEventos() {
   }, true); // capture: 'blur' não borbulha
 
   document.addEventListener('change', e => {
-    if (e.target?.id === 'fatura-vencimento-dia') { _salvarVencimento(e.target); return; }
-    // Um campo por cartão, todos pelo mesmo delegado: a tela é reinjetada por
-    // innerHTML a cada gravação, e listener preso ao campo morreria com ele.
-    const cartao = e.target?.dataset?.vencCartao;
-    if (cartao) _salvarVencimento(e.target, cartao);
+    if (e.target?.id === 'fatura-vencimento-dia') {
+      // O campo é UM só; qual cartão ele está editando vem do atributo que o
+      // render escreveu, não de uma segunda cópia do estado do seletor.
+      const cartao = e.target.dataset.vencCartao || null;
+      _salvarVencimento(e.target, cartao);
+      return;
+    }
+    // Trocar de cartão no seletor só repinta a faixa — não grava nada.
+    if (e.target?.id === 'fx-cartao-venc') { _cartaoVenc = e.target.value; renderAdiante(); }
   });
 
   document.addEventListener('click', e => {
