@@ -69,7 +69,15 @@
         <a class="nav-link" data-tab="importar">
           <svg class="nav-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 3v12"/><polyline points="7 10 12 15 17 10"/><path d="M4 21h16"/></svg>
           Importar
-          <span class="nav-badge" id="nav-badge-extratos" hidden>0</span>
+        </a>
+        <!-- CONFERIR é item FIXO, visível mesmo vazio (decisão da rodada 7):
+             navegação que aparece e some é navegação que não se aprende. São
+             6 destinos na barra do celular, ~62px de alvo a 375px, acima do
+             mínimo de toque — e Ajustes já mora na topbar desde o Cartão. -->
+        <a class="nav-link" data-tab="conferir">
+          <svg class="nav-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+          Conferir
+          <span class="nav-badge" id="nav-badge-conferir" hidden>0</span>
         </a>
         <a class="nav-link active" data-tab="mes">
           <svg class="nav-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
@@ -162,23 +170,6 @@
          miniatura do fluxo, tabela única e orçamento × real). Seção vazia
          de propósito: markup aqui não chegaria à tela. -->
     <section id="tab-mes" class="tab-content active"></section>
-    <!-- ════ ORÇAMENTO ════════════════════════════════════════
-         Definir teto de categoria é CONFIGURAÇÃO, não leitura do mês:
-         decisão da usuária na rodada 3. Vive dentro de Ajustes. O editor é
-         desenhado por js/orcamento.js nos ids que ele já esperava. -->
-    <section id="tab-orcamento" class="tab-content hidden">
-      <div class="folha" id="orcamento-bloco">
-        <div class="linha-topo">
-          <div>
-            <p class="rot">Orçamento por categoria</p>
-            <p class="rot-sub" style="margin:0">Quanto você pretende gastar em cada categoria, e quanto já foi neste mês.
-              Em branco é válido — significa que a categoria não tem teto.</p>
-          </div>
-          <button class="btn" id="btn-salvar-orcamento">Salvar orçamento</button>
-        </div>
-        <div id="orcamento-editor" class="orcamento-editor"></div>
-      </div>
-    </section>
     <!-- ════ ADIANTE ══════════════════════════════════════════
          Montada inteira por js/adiante.js: os dois ajustes do mês, os 3 KPIs,
          a curva diária, a tabela dos dias com movimento, os contratos em
@@ -195,61 +186,25 @@
          seção inteira; este <section> é vazio de propósito, como o de Mês,
          Cartão e Adiante. Editar markup de Guardado aqui não tem efeito. -->
     <section id="tab-guardado" class="tab-content hidden"></section>
-    <!-- ════ EXTRATOS ═════════════════════════════════════════ -->
-    <section id="tab-extratos" class="tab-content fit hidden">
-      <p class="page-intro">A porta de entrada dos dados. <b>Arraste o arquivo do banco em “Importar Extrato”</b> — o Radar lê no seu navegador, classifica o que reconhece e marca em âmbar só o que ficou em dúvida.</p>
-      <div class="page-header" style="justify-content:flex-end">
-        <div class="page-actions">
-          <button class="btn btn-primary btn-sm" id="btn-novo-extrato">
-            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            Importar Extrato
-          </button>
-        </div>
-      </div>
-
-      <!-- Histórico de importações -->
-      <div class="card">
-        <div class="card-header"><span class="card-title">Importações recentes</span></div>
-        <p class="card-sub">Cada linha é um arquivo que você trouxe. Se importou errado, “excluir lote” desfaz aquele arquivo inteiro de uma vez.</p>
-        <div id="importacoes-list">
-          <div class="empty-state">
-            <div class="empty-state-icon">🏦</div>
-            <div class="empty-state-title">Nenhum extrato importado</div>
-            <div class="empty-state-text">Importe extratos do seu banco em PDF, OFX ou CSV.</div>
-            <button class="btn btn-primary btn-sm" data-proxy-click="btn-novo-extrato">Importar agora</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Transações do extrato -->
-      <div class="card grow" style="margin-top:1rem">
-        <div class="card-header">
-          <span class="card-title">Transações importadas</span>
-          <div style="display:flex;gap:0.5rem">
-            <select id="filter-extrato-banco" class="filter-select" style="min-width:120px"><option value="">Todos os bancos</option></select>
-            <select id="filter-extrato-tipo" class="filter-select" style="min-width:110px"><option value="">Todos os tipos</option><option value="income">Receitas</option><option value="expense">Despesas</option></select>
-          </div>
-        </div>
-        <p class="card-sub">As linhas em âmbar são as que o Radar não conseguiu classificar — clique no ✎ para escolher a categoria.</p>
-        <div class="table-wrapper">
-          <table class="data-table">
-            <thead>
-              <tr><th scope="col">Data</th><th scope="col">Banco</th><th scope="col">Descrição</th><th scope="col">Tipo</th><th scope="col">Categoria</th><th scope="col" class="col-value">Valor</th></tr>
-            </thead>
-            <tbody id="extratos-tbody">
-              <tr><td colspan="6" class="empty-row">Nenhuma transação de extrato ainda.</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </section>
-    <!-- ════ CONFIGURAÇÕES ════════════════════════════════════ -->
-    <!-- Configurações é montada inteira por js/configuracoes.js (ele reescreve
-         o innerHTML desta seção). O markup que existia aqui era cópia morta:
-         nunca chegava à tela e divergia do que o módulo monta. -->
-    <section id="tab-configuracoes" class="tab-content hidden"></section>
-    <!-- ════ RELATÓRIOS ══════════════════════════════════════ -->
-    <section id="tab-relatorios" class="tab-content hidden"></section>
+    <!-- ════ IMPORTAR ═════════════════════════════════════════
+         Montada inteira por js/importar.js: as duas portas (fatura de cartão
+         e extrato bancário) em abas explícitas, o offset de competência da
+         fatura e o histórico de lotes. Seção vazia de propósito, como as de
+         Mês, Cartão, Adiante e Guardado — markup aqui não chegaria à tela.
+         Os dois MODAIS de revisão continuam no fim deste arquivo: a tela
+         recebe o arquivo, o modal é onde se revisa. -->
+    <section id="tab-importar" class="tab-content hidden"></section>
+    <!-- ════ CONFERIR ═════════════════════════════════════════
+         Montada inteira por js/conferir.js (rodada 7). Seção vazia de
+         propósito, como as de Mês, Cartão, Adiante, Guardado e Importar. -->
+    <section id="tab-conferir" class="tab-content hidden"></section>
+    <!-- ════ AJUSTES ══════════════════════════════════════════
+         Rodada 8, a última: orçamento, configurações e relatórios eram TRÊS
+         seções empilhadas no mesmo destino — o estado intermediário honesto
+         desde a rodada 2. Agora é uma seção só, montada inteira por
+         js/ajustes.js, e vazia de propósito como todas as outras. Relatórios
+         não foi absorvido: foi apagado (decisão da usuária). -->
+    <section id="tab-ajustes" class="tab-content hidden"></section>
 
   </main>
 </div>
@@ -487,7 +442,7 @@
     <div class="modal-body">
       <input type="hidden" id="cat-id" />
       <div class="form-row"><label class="form-label">Nome *</label><input type="text" id="cat-nome" class="form-input" placeholder="Ex: Saúde" required /></div>
-      <div class="form-row"><label class="form-label">Cor</label><input type="color" id="cat-cor" class="form-input-color" value="#3982f7" /></div>
+      <div class="form-row"><label class="form-label">Cor</label><input type="color" id="cat-cor" class="form-input-color" value="#A8336B" /></div>
     </div>
     <div class="modal-footer"><button class="btn btn-ghost" data-modal="modal-categoria">Cancelar</button><button class="btn btn-primary" id="btn-salvar-categoria">Salvar</button></div>
   </div>

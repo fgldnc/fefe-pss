@@ -59,6 +59,18 @@ export function initPdfImport(onDone) {
   _attachEvents();
 }
 
+/**
+ * Porta de entrada a partir da TELA "Importar" (rodada 6): a drop zone da
+ * fatura saiu do modal e saiu de Mês. O modal continua sendo onde se REVISA —
+ * o arquivo entra por fora e ele abre já no passo 2, tirando um clique do
+ * ciclo. Nada do parsing muda: `_processPdf` é o mesmo de sempre.
+ */
+export function importarFaturaDeArquivo(file, onDone) {
+  document.getElementById('modal-pdf')?.classList.remove('hidden');
+  initPdfImport(onDone);
+  return _processPdf(file);
+}
+
 // ─── RESET ─────────────────────────────────────────────────────────────────
 function _resetModal() {
   document.getElementById('pdf-step-1')?.classList.remove('hidden');

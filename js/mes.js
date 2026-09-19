@@ -29,7 +29,6 @@ import { allExpensesOfMonth, incomesOfMonth, deleteTx, deleteIncome } from './db
 import { buildMovimentos, buildSerie, acharMinimo, contextoDoMinimo } from './saldos.js';
 import { initGastos, openGastoModal, confirmarProjecao } from './gastos.js';
 import { initReceitas, openReceitaModal, copiarReceitasDoMesAnterior } from './receitas.js';
-import { initPdfImport } from './pdf-import.js';
 
 let _init = false;
 
@@ -440,7 +439,6 @@ function _tabela(d) {
         </div>
         <div class="mes-acoes">
           <button class="btn btn-2" id="btn-exportar-csv">Exportar CSV</button>
-          <button class="btn btn-2" id="btn-import-pdf">Importar fatura PDF</button>
           <button class="btn btn-2" id="btn-copiar-receitas"
             title="Copia as receitas manuais do mês anterior para este mês">Copiar receitas</button>
           <button class="btn btn-2" id="btn-nova-receita">+ Receita</button>
@@ -798,11 +796,9 @@ function _ligarEventos() {
     if (btn.id === 'btn-nova-receita') { openReceitaModal(null); return; }
     if (btn.id === 'btn-copiar-receitas') { await copiarReceitasDoMesAnterior(); return; }
     if (btn.id === 'mes-cta-receita')  { openReceitaModal(null); return; }
-    if (btn.id === 'btn-import-pdf') {
-      document.getElementById('modal-pdf').classList.remove('hidden');
-      initPdfImport(renderMes);
-      return;
-    }
+    // O botão "Importar fatura PDF" saiu daqui na rodada 6: as duas portas de
+    // entrada de dado — fatura e extrato — moram na tela "Importar", com uma
+    // aba para cada. Mês é onde se LÊ o mês, não onde se traz arquivo.
 
     // ── ações de linha ─────────────────────────────────────────────────
     const acao = btn.dataset.mesAcao;

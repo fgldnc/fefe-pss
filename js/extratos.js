@@ -1,6 +1,14 @@
 /**
- * extratos.js — Módulo de importação de extratos bancários
- * Orquestra: seleção de banco → parse → revisão → salvar no Firestore
+ * extratos.js — a importação de EXTRATO bancário (OFX/CSV/PDF)
+ * Orquestra: parse → revisão → salvar no Firestore.
+ *
+ * Rodada 6: deixou de desenhar tela, como `gastos.js`/`receitas.js` na rodada 3
+ * e `metas.js`/`patrimonio.js` na rodada 5. Quem desenha a tela "Importar" é
+ * `js/importar.js`; daqui saem só o histórico de lotes (`lotesDeExtrato`), a
+ * exclusão de lote e a porta de entrada de um arquivo (`importarExtratoDeArquivo`).
+ *
+ * NADA DE PARSING MUDOU nesta rodada: `detectDuplicates`, `dedupKey`, os três
+ * parsers e a classificação continuam exatamente como estavam.
  */
 
 import {
@@ -22,8 +30,12 @@ let parsedItems    = [];
 // perdia estado do elemento (ex.: files do input) e dependia de o clone
 // preservar tudo. Delegação + flag resolve sem tocar no DOM.
 let _eventsBound = false;
+// Quem redesenha a tela depois de salvar ou excluir. Antes era `renderExtratos()`
+// chamado daqui de dentro; com a tela morando em outro módulo, o módulo de
+// importação não pode mais saber quem a desenha.
+let _onDone = null;
 
-const BANK_NAMES = {
+export const BANK_NAMES = {
   itau: 'Itaú', nubank: 'Nubank', inter: 'Inter',
   santander: 'Santander', bradesco: 'Bradesco', generico: 'Genérico',
 };
@@ -34,140 +46,59 @@ const FORMAT_ACCEPT = {
   pdf: '.pdf',
 };
 
-// ─── RENDER DA ABA ─────────────────────────────────────────────
-export function renderExtratos() {
-  try { _renderImportacoesList(); } catch(e) { console.error('extratos list:', e); }
-  try { _renderExtratosTable();   } catch(e) { console.error('extratos table:', e); }
-  try { _renderBancoFilters();    } catch(e) { console.error('extratos filters:', e); }
-}
-
-function _renderImportacoesList() {
-  const container = document.getElementById('importacoes-list');
-  if (!container) return;
-
-  const batches = {};
+// ─── DADOS PARA A TELA "IMPORTAR" ─────────────────────────────
+/**
+ * Agrupa as transações de extrato por lote — um lote é um arquivo que ela
+ * trouxe. É a mesma travessia que o card "Importações recentes" fazia; o que
+ * mudou é que agora devolve DADO em vez de HTML, porque quem desenha a tela
+ * é `js/importar.js`.
+ */
+export function lotesDeExtrato() {
+  const lotes = new Map();
   for (const tx of state.extratoTransactions || []) {
     const id = tx.importBatchId || 'sem-lote';
-    if (!batches[id]) batches[id] = { bankName: tx.bankName, fileType: tx.fileType, items: [], date: tx.importedAt };
-    batches[id].items.push(tx);
+    if (!lotes.has(id)) {
+      lotes.set(id, {
+        id, bankName: tx.bankName, fileType: tx.fileType,
+        importedAt: tx.importedAt, itens: [],
+      });
+    }
+    lotes.get(id).itens.push(tx);
   }
-
-  const batchList = Object.entries(batches);
-
-  if (!batchList.length) {
-    container.innerHTML = `
-      <div class="empty-state">
-        <div class="empty-state-icon">🏦</div>
-        <div class="empty-state-title">Nenhum extrato importado</div>
-        <div class="empty-state-text">Importe extratos do Itaú, Nubank, Inter, Santander ou Bradesco em PDF, OFX ou CSV.</div>
-        <button id="btn-extrato-empty-import" class="btn btn-primary btn-sm">Importar agora</button>
-      </div>`;
-    // Listener logo após o innerHTML: o nó é recriado a cada render.
-    container.querySelector('#btn-extrato-empty-import')
-      ?.addEventListener('click', () => document.getElementById('btn-novo-extrato')?.click());
-    return;
-  }
-
-  const rows = batchList.map(([batchId, batch]) => {
-    const inc  = batch.items.filter(t => t.type === 'income').reduce((s,t) => s+t.amount, 0);
-    const exp  = batch.items.filter(t => t.type === 'expense').reduce((s,t) => s+t.amount, 0);
-    const date = batch.date ? new Date(batch.date).toLocaleDateString('pt-BR') : '—';
-    const safeId = batchId.replace(/"/g, '');
-    return '<div style="display:flex;align-items:center;justify-content:space-between;padding:0.7rem 1.25rem;border-bottom:1px solid var(--border-soft);font-size:0.83rem;gap:1rem">'
-      + '<div style="flex:1;min-width:0">'
-      +   '<div style="font-weight:600;color:var(--text-primary)">' + esc(BANK_NAMES[batch.bankName] || batch.bankName)
-      +   ' <span style="color:var(--text-muted);font-size:0.72rem;font-weight:400">.' + esc(batch.fileType || '') + '</span></div>'
-      +   '<div style="color:var(--text-muted);font-size:0.75rem">' + esc(date) + ' · ' + batch.items.length + ' transações</div>'
-      + '</div>'
-      + '<div style="display:flex;align-items:center;gap:0.75rem">'
-      +   '<span style="font-family:var(--font-mono);font-size:0.78rem;color:var(--success)">+' + fmt(inc) + '</span>'
-      +   '<span style="font-family:var(--font-mono);font-size:0.78rem;color:var(--danger)">-' + fmt(exp) + '</span>'
-      +   '<button class="btn btn-danger btn-xs btn-del-batch" data-batchid="' + safeId + '"'
-      +   ' aria-label="Excluir extrato ' + esc(BANK_NAMES[batch.bankName] || batch.bankName) + ' de ' + esc(date) + '"'
-      +   ' style="font-family:var(--font-sans);cursor:pointer">🗑 Excluir</button>'
-      + '</div>'
-      + '</div>';
-  }).join('');
-
-  container.innerHTML = rows;
-
-  container.querySelectorAll('.btn-del-batch').forEach(btn => {
-    btn.addEventListener('click', async () => {
-      const bid   = btn.dataset.batchid;
-      const batch = batches[bid];
-      if (!batch) return;
-      if (!confirm('Excluir esta importação? Remove ' + batch.items.length + ' transação(ões) do Firestore.')) return;
-      await _deleteBatch(bid, batch.items);
-    });
-  });
-}
-function _renderExtratosTable() {
-  const tbody    = document.getElementById('extratos-tbody');
-  const bancoSel = document.getElementById('filter-extrato-banco')?.value || '';
-  const tipoSel  = document.getElementById('filter-extrato-tipo')?.value  || '';
-
-  if (!tbody) return;
-
-  let txs = [...(state.extratoTransactions || [])];
-  if (bancoSel) txs = txs.filter(t => t.bankName === bancoSel);
-  if (tipoSel)  txs = txs.filter(t => t.type    === tipoSel);
-
-  if (!txs.length) {
-    tbody.innerHTML = `<tr><td colspan="6" class="empty-row">Nenhuma transação de extrato.</td></tr>`;
-    return;
-  }
-
-  // Ordena por data desc
-  txs.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
-
-  tbody.innerHTML = txs.map(tx => {
-    // Resolve categoria: aceita ID real (novo) ou slug do parser (legado)
-    const catId = tx.categoryId || resolveCategoryId(tx.category) || tx.category;
-    const cat = state.categories.find(c => c.id === catId) || { name: tx.category || '—', color: '#888' };
-    const isTransfer = tx.type === 'transfer';
-    const valClass = isTransfer ? '' : tx.type === 'income' ? 'val-positive' : 'val-negative';
-    const signal   = isTransfer ? '' : tx.type === 'income' ? '+' : '-';
-    const tipoTag  = isTransfer
-      ? '<span class="tag-tipo tag-debito">Transferência</span>'
-      : `<span class="tag-tipo tag-${esc(tx.type === 'income' ? 'pix' : 'outro')}">${esc(tx.type === 'income' ? 'Entrada' : 'Saída')}</span>`;
-    return `<tr>
-      <td>${esc(tx.date || '—')}</td>
-      <td><span style="font-size:0.72rem;color:var(--text-muted)">${esc(BANK_NAMES[tx.bankName] || tx.bankName || '—')}</span></td>
-      <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(tx.description || '—')}</td>
-      <td>${tipoTag}</td>
-      <td><span class="cat-dot" style="background:${esc(cat.color || '#888')}"></span>${esc(cat.name)}</td>
-      <td class="col-value val-mono ${valClass}" style="${isTransfer ? 'color:var(--text-muted)' : ''}">${signal}${fmt(tx.amount)}</td>
-    </tr>`;
-  }).join('');
+  // Mais recente primeiro: o lote que acabou de entrar é o que se confere.
+  return [...lotes.values()].sort((a, b) =>
+    (b.importedAt || '').localeCompare(a.importedAt || ''));
 }
 
-let _bancoFiltersBound = false;
-function _renderBancoFilters() {
-  const sel = document.getElementById('filter-extrato-banco');
-  if (!sel) return;
-  // Listeners: registra UMA vez (antes empilhavam a cada render sem extratos)
-  if (!_bancoFiltersBound) {
-    sel.addEventListener('change', _renderExtratosTable);
-    document.getElementById('filter-extrato-tipo')?.addEventListener('change', _renderExtratosTable);
-    _bancoFiltersBound = true;
-  }
-  if (sel.children.length > 1) return; // opções já populadas
-  const banks = [...new Set((state.extratoTransactions || []).map(t => t.bankName))];
-  banks.forEach(b => {
-    const opt = document.createElement('option');
-    opt.value = b; opt.textContent = BANK_NAMES[b] || b;
-    sel.appendChild(opt);
-  });
+/** Exclui um lote inteiro. `onDone` redesenha a tela depois. */
+export async function excluirLoteExtrato(batchId, itens, onDone) {
+  if (typeof onDone === 'function') _onDone = onDone;
+  return _deleteBatch(batchId, itens);
 }
 
 // ─── MODAL DE IMPORTAÇÃO ───────────────────────────────────────
-export function initExtratoModal() {
+export function initExtratoModal(onDone) {
+  if (typeof onDone === 'function') _onDone = onDone;
   selectedBank   = '';
   selectedFormat = 'ofx';
   parsedItems    = [];
 
   _resetModal();
   _bindModalEvents();
+}
+
+/**
+ * Porta de entrada a partir da TELA: a drop zone agora vive em "Importar", não
+ * dentro do modal. O modal continua sendo onde se REVISA — o arquivo entra por
+ * fora e ele abre já no passo 2, o que tira um clique do ciclo em vez de somar.
+ */
+export function importarExtratoDeArquivo(file, { bank, format } = {}, onDone) {
+  document.getElementById('modal-extrato')?.classList.remove('hidden');
+  initExtratoModal(onDone);
+  // Depois do reset, senão `_resetModal` os apagaria: banco e formato vêm da tela.
+  if (bank)   selectedBank   = bank;
+  if (format) selectedFormat = format;
+  return _handleFile(file);
 }
 
 // Registra os listeners do modal uma única vez. Tudo por delegação no
@@ -324,7 +255,7 @@ async function _deleteBatch(batchId, items) {
     state.incomes = (state.incomes || []).filter(i => i.importBatchId !== batchId);
 
     toast(`Importação excluída — ${snap.docs.length} transações removidas.`, 'success');
-    renderExtratos();
+    _onDone?.();
 
   } catch (err) {
     console.error('Erro ao excluir batch:', err);
@@ -709,7 +640,7 @@ async function _saveExtrato() {
     );
 
     document.getElementById('modal-extrato').classList.add('hidden');
-    renderExtratos();
+    _onDone?.();
 
   } catch (err) {
     console.error('Erro ao salvar extrato:', err);

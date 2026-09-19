@@ -8,7 +8,7 @@ import { initAuth }    from './auth.js';
 import { loadAllData } from './db.js';
 import {
   state, thisMonth, monthLabel, offsetMonth,
-  showKpiSkeleton, toast, esc, resolveCategoryId,
+  showKpiSkeleton, toast, esc,
 } from './utils.js';
 
 // Re-exporta utils para quem ainda importa de app.js (compatibilidade)
@@ -29,8 +29,18 @@ export { esc, fmt, showKpiSkeleton, showTableSkeleton, renderInsights } from './
  * permitiu trocar o roteamento sem tocar em nenhum módulo de aba.
  */
 const DESTINOS = {
+  // Rodada 6: as DUAS portas de entrada viraram UMA tela com duas abas
+  // explícitas. A fatura em PDF entrava por um botão dentro de Mês; o extrato,
+  // por aqui. `js/importar.js` monta a seção, e `extratos.js`/`pdf-import.js`
+  // viraram camada de parse + revisão + gravação, como `gastos.js` na rodada 3.
   importar: [
-    { secao: 'extratos', mod: () => import('./extratos.js').then(m => m.renderExtratos) },
+    { secao: 'importar', mod: () => import('./importar.js').then(m => m.renderImportar) },
+  ],
+  // Rodada 7: o destino que faltava. `js/conferir.js` é DERIVADO do `state` —
+  // nenhum campo novo no Firestore —, e é item fixo da barra: vazio é o estado
+  // normal dele, e a tela sabe explicar o próprio vazio.
+  conferir: [
+    { secao: 'conferir', mod: () => import('./conferir.js').then(m => m.renderConferir) },
   ],
   // Rodada 3: as quatro telas empilhadas viraram UMA. `js/mes.js` monta a
   // seção inteira; `gastos.js` e `receitas.js` continuam vivos como camada de
@@ -55,12 +65,15 @@ const DESTINOS = {
   guardado: [
     { secao: 'guardado', mod: () => import('./guardado.js').then(m => m.renderGuardado) },
   ],
+  // Rodada 8, a última: as TRÊS seções empilhadas viraram UMA. `js/ajustes.js`
+  // monta a seção inteira; `orcamento.js` continua vivo como editor + gravação,
+  // chamado de lá, e `configuracoes.js` foi absorvido e apagado. Relatórios foi
+  // apagado de vez (decisão da usuária): seis relatórios fixos para uma pessoa
+  // só, e cada tabela do app já exporta o próprio CSV.
+  // Com isto NENHUM destino empilha mais de uma seção — o estado intermediário
+  // das rodadas 2 a 7 acabou.
   ajustes: [
-    // Orçamento é ajuste, não leitura do mês: definir teto de categoria se faz
-    // uma vez e não se olha de novo. Decisão da usuária na rodada 3.
-    { secao: 'orcamento',     mod: () => import('./orcamento.js').then(m => m.renderOrcamento) },
-    { secao: 'configuracoes', mod: () => import('./configuracoes.js').then(m => m.renderConfiguracoes) },
-    { secao: 'relatorios',    mod: () => import('./relatorios.js').then(m => m.renderRelatorios) },
+    { secao: 'ajustes', mod: () => import('./ajustes.js').then(m => m.renderAjustes) },
   ],
 };
 
@@ -79,6 +92,9 @@ const APELIDOS = {
   // está hoje em Cartão, não em Adiante.
   timeline: 'cartao',
   metas: 'guardado', patrimonio: 'guardado',
+  // `relatorios` continua aqui de propósito, apontando para Ajustes: a tela
+  // morreu na rodada 8, mas um `data-goto="relatorios"` esquecido em algum card
+  // antigo tem de levar a algum lugar em vez de não fazer nada.
   orcamento: 'ajustes', configuracoes: 'ajustes', relatorios: 'ajustes',
 };
 
@@ -89,7 +105,7 @@ const APELIDOS = {
  */
 const ANCORAS = {
   dashboard: 'mes-heroi', gastos: 'mes-tabela', receitas: 'mes-tabela',
-  orcamento: 'orcamento-bloco',
+  orcamento: 'ajustes-orcamento', configuracoes: 'ajustes-categorias',
   calendario: 'adiante-curva', timeline: 'cartao-contratos',
   // Rodada 5: `metas` e `patrimonio` deixaram de ser seção e viraram bloco
   // dentro de Guardado — o apelido precisa dizer a que bloco rolar.
@@ -130,6 +146,13 @@ export async function switchTab(name) {
       toast(msg, 'error');
     }
   }
+
+  // O selo de Conferir é recontado a cada navegação, e não só no login e na
+  // virada de mês: uma categoria escolhida no modal de Mês resolve uma
+  // pendência, e um selo que só se atualiza em dois momentos passa o resto do
+  // tempo mentindo. A conta é uma travessia do `state` em memória — barata o
+  // bastante para não valer o risco de ficar velha.
+  await atualizarBadgeConferir();
 }
 
 /**
@@ -148,7 +171,17 @@ async function _goto(el) {
   // com a tabela que ele pediu meia tela abaixo e sem nada dizendo isso.
   const alvo = document.getElementById(ANCORAS[tab] || `tab-${tab}`);
   if (alvo && !alvo.closest('.tab-content')?.classList.contains('hidden')) {
-    alvo.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    // `scrollIntoView` NÃO serve aqui, e isso foi medido na rodada 8: o
+    // `overflow-x: hidden` do `body` (o que corta o estouro horizontal) faz o
+    // computed dele virar `hidden auto`, então o body é um contêiner de
+    // rolagem — que nunca rola, porque quem rola é o documento. O
+    // `scrollIntoView` resolve contra esse scrollport mais próximo e a página
+    // fica parada: todo `data-goto` com âncora levava ao destino certo e ao
+    // TOPO dele, não ao bloco pedido. Mesma família da armadilha do `<thead>`
+    // sticky. Rolar o documento na mão, com a folga da topbar sticky (o
+    // `scroll-margin-top` das folhas é para o mesmo fim e também não valia).
+    const folga = parseFloat(getComputedStyle(alvo).scrollMarginTop) || 84;
+    window.scrollTo({ top: Math.max(0, alvo.getBoundingClientRect().top + window.scrollY - folga), behavior: 'smooth' });
   }
 
   const filtroCat = el.dataset.filtroCat;
@@ -185,39 +218,39 @@ function updateMonthLabel() {
 // por competência em memória. Re-renderizar basta — recarregar as 7 coleções
 // a cada clique de mês era ida ao Firestore sem ganho nenhum.
 /**
- * Contador de pendência na aba Extratos.
+ * Contador de pendência ao lado de "Conferir".
  *
- * A fonte é a MESMA regra que a tela de revisão usa para pintar o campo de
- * âmbar (`extratos.js`, `semCat`): despesa importada sem categoria resolvida.
- * Receita não conta — a revisão não exige categoria dela, e um contador que
- * discorda da tela seria pior que contador nenhum.
+ * Na rodada 7 ele saiu de Importar e a conta saiu daqui: quem conta é
+ * `contarPendencias()` em `js/conferir.js`, a MESMA travessia que desenha as
+ * três listas. Contador que discorda da tela é pior que contador nenhum, e
+ * quando a conta vivia em dois arquivos era só questão de tempo.
  *
- * Só o mês corrente: a sidebar fala do mês que está selecionado no topo, como
- * todas as telas.
+ * A conta olha a BASE INTEIRA, não o mês do topo — ver o cabeçalho de
+ * `conferir.js`. Import dinâmico pelo mesmo motivo dos destinos: `app.js` não
+ * importa módulo de aba estaticamente.
  */
-function _pendenciasExtrato() {
-  return (state.extratoTransactions || []).filter(tx =>
-    tx.type === 'expense' &&
-    String(tx.date || '').slice(0, 7) === state.currentMonth &&
-    !(tx.categoryId || resolveCategoryId(tx.category))
-  ).length;
-}
-
-function atualizarBadgeExtratos() {
-  const el = document.getElementById('nav-badge-extratos');
+async function atualizarBadgeConferir() {
+  const el = document.getElementById('nav-badge-conferir');
   if (!el) return;
-  const n = _pendenciasExtrato();
+  let n = 0;
+  try {
+    const { contarPendencias } = await import('./conferir.js');
+    n = contarPendencias();
+  } catch (err) {
+    console.warn('Não foi possível contar pendências:', err);
+    return; // sem número, o selo fica como está em vez de mentir "0"
+  }
   el.textContent = n;
   // `hidden` em vez de classe: zero pendência é silêncio, e silêncio é o sinal
   // de que está tudo bem — um "0" âmbar na sidebar seria alarme de nada.
   el.hidden = n === 0;
-  el.title = n === 1 ? '1 lançamento sem categoria' : `${n} lançamentos sem categoria`;
+  el.title = n === 1 ? '1 coisa para conferir' : `${n} coisas para conferir`;
 }
 
 async function rerenderCurrentTab() {
   const active = document.querySelector('.nav-link.active');
   if (!active) return;
-  atualizarBadgeExtratos();
+  await atualizarBadgeConferir();
   await switchTab(active.dataset.tab);
 }
 
@@ -309,12 +342,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     _goto(el);
   });
 
-  // Botões de empty-state que apenas reencaminham o clique para o botão real.
-  // Delegação em document porque esses templates são reinjetados via innerHTML.
-  document.addEventListener('click', e => {
-    const proxy = e.target.closest('[data-proxy-click]');
-    if (proxy) document.getElementById(proxy.dataset.proxyClick)?.click();
-  });
+  // `data-proxy-click` saiu na rodada 6: ele existia para o botão do estado
+  // vazio de Extratos reencaminhar o clique ao "Importar Extrato" da topbar da
+  // aba. Os dois sumiram — a tela "Importar" É a drop zone, e não há mais um
+  // botão do qual um segundo botão precise ser eco. Sem nenhum uso no HTML, o
+  // listener era um `closest` em todo clique do app para nada.
 
   // Logout
   document.getElementById('btn-logout')?.addEventListener('click', async () => {
@@ -322,18 +354,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     await signOut(auth);
   });
 
-  // Atalho: importar fatura no dashboard
-  document.getElementById('btn-import-pdf-dash')?.addEventListener('click', () => {
-    switchTab('gastos');
-    setTimeout(() => document.getElementById('btn-import-pdf')?.click(), 200);
-  });
-
-  // Extrato
-  document.getElementById('btn-novo-extrato')?.addEventListener('click', async () => {
-    document.getElementById('modal-extrato').classList.remove('hidden');
-    const { initExtratoModal } = await import('./extratos.js');
-    initExtratoModal();
-  });
+  // Os dois atalhos que abriam os modais de importação saíram na rodada 6:
+  // `btn-import-pdf-dash` levava a Mês e clicava no botão da fatura, e
+  // `btn-novo-extrato` abria o modal do extrato no passo 1. As duas portas
+  // agora são a tela "Importar", e o passo 1 dos modais deixou de ser o
+  // caminho: o arquivo entra pela tela e o modal abre já na revisão.
 
   // Escape fecha modal. Era do bloco da command palette, que tinha prioridade
   // sobre os modais; sem ela, o Escape vai direto ao modal aberto.
@@ -361,7 +386,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         showKpiSkeleton();
         await loadAllData();
-        atualizarBadgeExtratos();
+        // Conferir redesenha a si e pede o selo de volta depois de cada
+        // correção: é o único ponto que sabe que a conta mudou.
+        const { initConferir } = await import('./conferir.js');
+        initConferir(atualizarBadgeConferir);
+        await atualizarBadgeConferir();
         await switchTab('mes');
       } else {
         state.user = null;

@@ -1,5 +1,13 @@
 /**
- * orcamento.js — Aba de orçamento mensal
+ * orcamento.js — o editor de orçamento (redesign v2, rodada 8)
+ *
+ * Deixou de ter tela própria: o bloco `#ajustes-orcamento` é montado por
+ * `js/ajustes.js`, e este módulo só preenche o `#orcamento-editor` dentro dele
+ * e grava. Mesma divisão de `gastos.js` e `receitas.js` na rodada 3.
+ *
+ * O botão de salvar NÃO leva listener daqui: ele é reinjetado por innerHTML a
+ * cada render de Ajustes, e listener preso ao elemento morre com o elemento.
+ * Quem chama `salvarOrcamento()` é o listener delegado da tela.
  */
 
 import { state, esc, fmt, toast, splitGastosPorLimite, renderForaDoLimite, getInvestCatIds } from './utils.js';
@@ -8,7 +16,6 @@ import { saveBudgets, allExpensesOfMonth } from './db.js';
 export function renderOrcamento() {
   const editor = document.getElementById('orcamento-editor');
   if (!editor) return;
-  _initOrcamentoEvents();
 
   const month   = state.currentMonth;
   const budgets = state.budgets[month] || {};
@@ -18,7 +25,7 @@ export function renderOrcamento() {
   const cats = state.categories.filter(c => !investIds.includes(c.id));
 
   if (!cats.length) {
-    editor.innerHTML = `<p style="color:var(--text-muted);font-size:0.83rem;padding:1rem">Nenhuma categoria cadastrada. Crie categorias em Configurações.</p>`;
+    editor.innerHTML = `<p style="color:var(--text-muted);font-size:0.83rem;padding:1rem">Nenhuma categoria cadastrada. O bloco “Categorias”, aqui em cima, é onde se cria a primeira.</p>`;
     return;
   }
 
@@ -41,7 +48,7 @@ export function renderOrcamento() {
     return `
       <div class="orcamento-input-row">
         <span class="orcamento-input-label">
-          <span class="cat-dot" style="background:${esc(cat.color || '#888')}"></span>
+          <span class="cat-dot" style="background:${esc(cat.color || '#616B79')}"></span>
           ${esc(cat.name)}
           ${limit > 0 ? `<span style="font-size:0.72rem;color:var(--text-muted);margin-left:0.4rem">${fmt(spent)} / ${fmt(limit)}</span>` : ''}
         </span>
@@ -60,27 +67,28 @@ export function renderOrcamento() {
   }).join('') + `<div class="orcamento-list orc-fechamento">${renderForaDoLimite(split, month)}</div>`;
 }
 
-// Salvar orçamento
-let _orcInit = false;
-function _initOrcamentoEvents() {
-  if (_orcInit) return;
-  _orcInit = true;
-  document.getElementById('btn-salvar-orcamento')?.addEventListener('click', async () => {
-    const inputs  = document.querySelectorAll('.budget-input');
-    const budgetMap = {};
-    inputs.forEach(inp => {
-      const val = parseFloat(inp.value);
-      if (inp.dataset.cat && val > 0) budgetMap[inp.dataset.cat] = val;
-    });
-
-    try {
-      await saveBudgets(state.currentMonth, budgetMap);
-      if (!state.budgets[state.currentMonth]) state.budgets[state.currentMonth] = {};
-      Object.assign(state.budgets[state.currentMonth], budgetMap);
-      toast('Orçamento salvo com sucesso!', 'success');
-      renderOrcamento();
-    } catch (err) {
-      toast(`Erro ao salvar: ${err.message}`, 'error');
-    }
+/**
+ * Lê os campos da tela e grava o orçamento do mês do topo. Exportada porque
+ * quem dispara é o listener delegado de `js/ajustes.js` — o botão é reinjetado
+ * a cada render e não pode carregar listener próprio.
+ */
+export async function salvarOrcamento() {
+  const budgetMap = {};
+  document.querySelectorAll('.budget-input').forEach(inp => {
+    const val = parseFloat(inp.value);
+    if (inp.dataset.cat && val > 0) budgetMap[inp.dataset.cat] = val;
   });
+
+  try {
+    await saveBudgets(state.currentMonth, budgetMap);
+    // O mês inteiro é SUBSTITUÍDO, não mesclado. `saveBudgets` apaga no
+    // Firestore o teto que saiu da tela; com `Object.assign` o teto apagado
+    // sobrevivia no `state` até o próximo reload, e a barra de progresso
+    // continuava medindo contra um limite que já não existia.
+    state.budgets[state.currentMonth] = { ...budgetMap };
+    toast('Orçamento salvo!', 'success');
+    renderOrcamento();
+  } catch (err) {
+    toast(`Erro ao salvar: ${err.message}`, 'error');
+  }
 }

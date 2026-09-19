@@ -436,33 +436,6 @@
 ::-webkit-scrollbar-thumb { background: var(--border-md); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--border-strong); }
 
-/* ── CONFIG TABS ──────────────────────────────────────────────── */
-.config-tabs {
-  display: flex;
-  gap: 0.25rem;
-  margin-bottom: 1.25rem;
-  background: var(--bg-card);
-  border: 1px solid var(--border-soft);
-  border-radius: var(--radius-md);
-  padding: 0.25rem;
-  width: fit-content;
-  flex-wrap: wrap;
-}
-.config-tab {
-  padding: 0.42rem 0.9rem;
-  border-radius: var(--radius-sm);
-  font-size: 0.82rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all var(--transition);
-  border: none;
-  background: transparent;
-  color: var(--text-muted);
-  font-family: var(--font-sans);
-}
-.config-tab:hover  { color: var(--text-secondary); background: var(--bg-hover); }
-.config-tab.active { background: var(--accent-primary); color: var(--accent-fg); font-weight: 600; }
-
 /* ── CALENDÁRIO ──────────────────────────────────────────────── */
 .cal-header-row {
   display: grid;

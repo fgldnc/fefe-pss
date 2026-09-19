@@ -48,6 +48,30 @@
         "."
       ],
       "port": 4324
+    },
+    {
+      "name": "radar-importar",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "-y",
+        "serve",
+        "-l",
+        "4325",
+        "."
+      ],
+      "port": 4325
+    },
+    {
+      "name": "radar-ajustes",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "-y",
+        "serve",
+        "-l",
+        "4326",
+        "."
+      ],
+      "port": 4326
     }
   ]
 }

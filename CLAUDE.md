@@ -27,22 +27,23 @@ App de **controle financeiro pessoal** (nome exibido: "Radar", `index.html:6` = 
 | `app.js` | Bootstrap: `DOMContentLoaded`, auth, roteamento por **destino** (`DESTINOS` + `APELIDOS`, `switchTab()` com `import()` dinâmico), navegação de mês, `_goto`. |
 | `auth.js` | Login Google, `getUid()`, espera `window._FB` aparecer (timeout 5 s). |
 | `firebase-init.js` | Inicializa o SDK do Firebase (app, auth, firestore) e publica `window._FB`. Carregado direto pelo `index.html`, não importado por nenhum módulo. |
-| `extratos.js` | Aba Extratos: importação de extrato bancário (CSV/OFX/PDF), histórico de lotes, modal de revisão/preview editável com marcação de duplicata e de campo inferido, `_recomputeAtencaoExtrato()`. |
+| `conferir.js` | **A tela "Conferir"** (rodada 7): três listas derivadas do `state` — sem categoria · parcela prevista vencida · possível duplicata —, corrigíveis na própria linha. Exporta `contarPendencias()`, a conta do selo da barra. |
+| `importar.js` | **A tela "Importar"** (rodada 6): duas abas explícitas (fatura de cartão · extrato bancário), a drop zone de cada uma, o offset de competência da fatura e o histórico de lotes abrível. |
+| `extratos.js` | **Parse, revisão e gravação** de extrato bancário (CSV/OFX/PDF): `lotesDeExtrato`, `excluirLoteExtrato`, `importarExtratoDeArquivo`, modal de revisão com marcação de duplicata e de campo inferido, `_recomputeAtencaoExtrato()`. Não desenha tela. |
 | `db.js` | Toda leitura/escrita do Firestore, `loadAllData()`, derivados de mês, backup/restore JSON, `wipeCollection`. |
 | `utils.js` | `state` global, `esc`, `fmt`, helpers de mês, `toast`, skeletons, `resolveCategoryId` e o motor de insights do dashboard. |
 | `mes.js` | **A tela "Mês"** (rodadas 3–4): herói, distribuição (rosca + lista), resultado do mês, miniatura do fluxo, tabela única (gasto + fatura + extrato + receita, com coluna origem) + CSV, e a evolução de 6 meses no fim. |
 | `gastos.js` | **Formulário e gravação** de lançamento: modal, validação, projeção de parcelas, aporte no ativo vinculado, confirmar parcela prevista. Não desenha tela. |
 | `receitas.js` | **Formulário e gravação** de receita: modal, gravação preservando procedência, copiar do mês anterior. Não desenha tela. |
-| `orcamento.js` | Editor de limites por categoria. **Mora em Ajustes** desde a rodada 3. |
+| `ajustes.js` | **A tela "Ajustes"** (rodada 8): categorias · regras · orçamento · backup/restore + apagar coleção · conta · para onde foram os ajustes que mudaram de casa. Absorveu `configuracoes.js`. |
+| `orcamento.js` | **Editor e gravação** de limite por categoria (`renderOrcamento`, `salvarOrcamento`). Não desenha tela: o bloco é de `ajustes.js`. |
 | `guardado.js` | **A tela "Guardado"** (rodada 5): total do patrimônio + barra de composição, metas com progresso, tabela de ativos, aportes por mês. |
 | `metas.js` | **Formulário e gravação** de meta e de aporte na meta. Não desenha tela. |
 | `patrimonio.js` | **Formulário e gravação** de ativo e de aporte no ativo, mais `valorDepreciado()`. Não desenha tela. |
 | `adiante.js` | **A tela "Adiante"** (rodada 4): saldo inicial + dia de vencimento, 3 KPIs, curva diária, tabela dos dias com movimento. |
 | `cartao.js` | **A tela "Cartão"**: resumo, contratos em aberto, parcelas previstas e parcelas já pagas. Os dois do meio vieram de `adiante.js`; o das pagas é novo. |
 | `saldos.js` | **Só cálculo**, sem DOM e sem `state`: `buildMovimentos`/`buildSerie`/`acharMinimo`/`contextoDoMinimo`, fixadas por `test/saldos.test.mjs`. |
-| `relatorios.js` | Relatórios exportáveis em CSV e JSON. |
-| `configuracoes.js` | Categorias, regras de classificação, estatísticas, backup/restore, preferências, conta. |
-| `pdf-import.js` | Importação de **fatura de cartão** em PDF: extração, parse por banco, preview editável, projeção de parcelas. |
+| `pdf-import.js` | Importação de **fatura de cartão** em PDF: extração, parse por banco, preview editável, projeção de parcelas. O arquivo entra por `importarFaturaDeArquivo` (a tela) desde a rodada 6. Não desenha tela. |
 | `parsers/base-parser.js` | Utilitários compartilhados dos parsers de extrato: `parseMoney`, `parseDate`, `normalizeDesc`, `autoClassify`, `dedupKey`/`detectDuplicates`, `genId`. |
 | `parsers/csv-parser.js` | Extrato em CSV, com esquema de colunas por banco (`BANK_SCHEMAS`). |
 | `parsers/ofx-parser.js` | Extrato em OFX, detectando SGML legado vs. XML puro. |
@@ -137,7 +138,7 @@ estiveram aqui na rodada 4 e foram para `js/cartao.js`.
 ## Convenções observadas no código
 
 - **`state` global exportado de `utils.js`** (`js/utils.js:7`). Todos os módulos importam e mutam o mesmo objeto: `user`, `currentMonth`, `categories`, `transactions`, `incomes`, `budgets`, `assets`, `goals`, `extratoTransactions`, `importRules`, `fluxoConfig`. Não há encapsulamento nem notificação de mudança.
-- **`getInvestCatIds()` (`js/utils.js`) é a regra única de "categoria é de investimento"**, consumida por `mes.js`, `orcamento.js` e `adiante.js`. Compara `id` e `name` **separadamente**: concatenar casa "investiment" atravessando a fronteira dos dois campos. Investimento sai do total de despesas em toda tela que fala de gasto — duas leituras diferentes viram dois totais para o mesmo mês. **Não existe mais nenhuma cópia local dessa regra:** `gastos.js`, `extratos.js` e `relatorios.js` chamam `getInvestCatIds()`. `relatorios.js` também parou de somar investimento dentro de "despesa" — a evolução mensal tem coluna `investido` própria, como o gráfico de evolução em Mês.
+- **`getInvestCatIds()` (`js/utils.js`) é a regra única de "categoria é de investimento"**, consumida por `mes.js`, `orcamento.js` e `adiante.js`. Compara `id` e `name` **separadamente**: concatenar casa "investiment" atravessando a fronteira dos dois campos. Investimento sai do total de despesas em toda tela que fala de gasto — duas leituras diferentes viram dois totais para o mesmo mês. **Não existe mais nenhuma cópia local dessa regra:** `gastos.js` e `extratos.js` chamam `getInvestCatIds()`. (`relatorios.js` também a chamava; o arquivo foi apagado na rodada 8.)
 - **`esc()` obrigatório em toda interpolação de `innerHTML`** (`js/utils.js:44`). Escapa `& < > " ' /`. Todo dado vindo do Firestore ou de arquivo importado passa por `esc()` antes de entrar no HTML.
 - **`toast(msg, type)`** (`js/utils.js:76`) é o canal padrão de feedback — tipos `success | error | warning | info`. `alert()` só sobrevive no erro de login (`js/auth.js:23`); `confirm()` nativo é usado nas exclusões, deliberadamente.
 - **Cada módulo de aba exporta uma função `render*`** sem argumentos (`renderDashboard`, `renderGastos`, `renderMetas`, …), registrada em `TAB_MODULES` (`js/app.js:19-31`). É o único ponto de entrada da aba.
@@ -235,10 +236,11 @@ antes de escrever qualquer linha de CSS.** O plano das 8 rodadas está em
 
 Aplicado até aqui: **rodada 1 (fundação)** — a pele —, **rodada 2
 (navegação)** — o roteamento —, **rodada 3 (Mês)**, **rodada 4 (Adiante)**,
-**Cartão** e **rodada 5 (Guardado)**.
-As `<section class="tab-content">` das abas que ainda não foram refeitas
-continuam no `index.html` e os `render*` continuam escrevendo nelas por id: o
-que mudou foi quem as mostra e quando.
+**Cartão**, **rodada 5 (Guardado)**, **rodada 6 (Importar)**,
+**rodada 7 (Conferir)** e **rodada 8 (Ajustes)** — a última.
+**A sequência acabou.** Nenhum destino empilha mais de uma seção, e não sobrou
+nenhuma `<section class="tab-content">` com markup no `index.html`: todas as
+sete são vazias de propósito e montadas pelo módulo da tela.
 
 - **Material de papel, um tema só.** Fundo cinza-claro (`--fundo`), folha branca
   (`--folha`) com raio 16 e sombra quase invisível. **O tema escuro acabou** — a
@@ -300,7 +302,8 @@ que mudou foi quem as mostra e quando.
 
 - **`DESTINOS` em `js/app.js` é o mapa da navegação.** Um destino é uma LISTA de
   seções do `index.html`, mostradas juntas e renderizadas na ordem do array:
-  `importar` = extratos · `mes` = a tela de Mês · `cartao` = a tela de Cartão ·
+  `importar` = a tela de Importar · `conferir` = a tela de Conferir ·
+  `mes` = a tela de Mês · `cartao` = a tela de Cartão ·
   `adiante` = a tela de Adiante · `guardado` = a tela de Guardado ·
   `ajustes` = configuracoes, relatorios. **Empilhar é o estado intermediário**:
   as rodadas 3 a 8 fundem cada destino numa tela só, e a lista encolhe junto.
@@ -311,9 +314,11 @@ que mudou foi quem as mostra e quando.
   para o destino que hoje contém a seção, e `_goto` **rola até a seção** dentro
   dele (`scroll-margin-top` cobre a topbar sticky). Não vale a pena caçar as
   chamadas agora — a rodada da tela reescreve o card que as contém.
-- **CONFERIR ainda não está na navegação.** O destino existe no plano
-  (ARQUITETURA-v2.md) mas quem o preenche é `js/conferir.js`, da rodada 7.
-  Item de navegação que leva a tela vazia é pior que navegação que cresce.
+- **CONFERIR entrou na navegação na rodada 7**, como item FIXO — visível mesmo
+  vazio. São 6 destinos na barra do celular; medido a 375px, cada alvo tem
+  **61px**, acima do mínimo de toque, e Ajustes já morava na topbar desde o
+  Cartão. Navegação que aparece e some é navegação que não se aprende, e a tela
+  sabe explicar o próprio vazio.
 - **`APELIDOS.timeline` aponta para `cartao`**, não para `adiante`: o que
   sobrou da Timeline — contratos em aberto — mora lá agora.
 - **Saíram**: a command palette (Ctrl+K), o onboarding de 4 passos (um dos
@@ -322,8 +327,8 @@ que mudou foi quem as mostra e quando.
   onboarding coletava entram pelos botões normais.
 - **Celular (< 900px): a barra lateral vira barra fixa no rodapé.** Somem a
   marca, os rótulos de grupo e o rodapé de conta; "Sair da conta" continua em
-  Ajustes, onde já estava. Com Cartão são **5 destinos na barra**, e **Ajustes
-  subiu para a topbar** (`.nav-topo` no `index.html`, `display:none` acima de
+  Ajustes, onde já estava. Com Cartão e Conferir são **6 destinos na barra**
+  (61px de alvo a 375px, medido), e **Ajustes subiu para a topbar** (`.nav-topo` no `index.html`, `display:none` acima de
   900px): um sexto item deixaria cada alvo de toque estreito demais.
 - **`.main-content` não pode ter `overflow-x`.** Qualquer `overflow` diferente
   de `visible` ali faz dele um contêiner de rolagem que nunca rola, e tudo que
@@ -339,9 +344,15 @@ que mudou foi quem as mostra e quando.
   `app.js` (`_goto`), com `data-filtro-cat` e `data-filtro-proj` para chegar já
   filtrado. Nunca ligar listener no elemento: os cards são reinjetados por
   `innerHTML` a cada render.
-- **Configurações é montada inteira por `js/configuracoes.js`** — a seção em
-  `index.html` é um `<section>` vazio de propósito. Editar markup de
-  Configurações no HTML não tem efeito nenhum.
+- **Toda seção de tela é montada pelo módulo dela** — as sete `<section>` do
+  `index.html` são vazias de propósito. Editar markup de tela no HTML não tem
+  efeito nenhum. Só os MODAIS continuam no HTML, e por isso só neles vale
+  listener preso ao elemento.
+- **`_goto` rola o documento na mão, não com `scrollIntoView`.** Medido na
+  rodada 8: o `overflow-x: hidden` do `body` faz o computed virar `hidden auto`,
+  o que torna o body um contêiner de rolagem que nunca rola — e
+  `scrollIntoView` resolve contra ele. Toda âncora de `data-goto` levava ao
+  destino certo e ao TOPO dele. Mesma família da armadilha do `<thead>` sticky.
 
 ### A tela "Mês" (rodada 3)
 
@@ -477,12 +488,188 @@ Quatro blocos em `js/guardado.js`, cada um com id próprio (`guardado-total`,
   `<th>` **e no `<td>`**. Abaixo de 900px sobram Ativo · Hoje · ações, e o
   "+ Aporte" da linha some para os dois ícones caberem inteiros.
 
+### A tela "Conferir" (rodada 7)
+
+Três blocos em `js/conferir.js`, cada um com id próprio (as âncoras de
+`data-goto`): **sem categoria** (`conferir-sem-categoria`) · **parcelas
+previstas que já venceram** (`conferir-projetadas`) · **parece lançado duas
+vezes** (`conferir-duplicatas`).
+
+- **Por que existe:** até aqui uma pendência só aparecia onde ela por acaso
+  passava — o lançamento sem categoria era uma linha âmbar no meio da tabela
+  de Mês, a parcela projetada vencida ficava indistinguível de uma que ainda
+  vai vencer, e duplicata só era detectada NA HORA da importação; depois de
+  salva, ninguém mais olhava.
+- **TUDO É DERIVADO DO `state`.** Nenhum campo novo no Firestore, nenhuma
+  coleção nova: as três listas são três travessias sobre o que já existe. É o
+  que permitiu a tela nascer sem migração.
+- **CONFERIR OLHA A BASE INTEIRA, NÃO O MÊS DO TOPO.** É a única tela do app
+  assim, e de propósito: pendência escondida atrás da navegação de mês é
+  pendência que não se acha. Se o selo falasse só do mês selecionado, ele
+  mudaria ao trocar de mês e deixaria de ser "o que falta fazer". A tela diz
+  isso em negrito no `page-intro`, porque contraria a expectativa do resto do app.
+- **O selo de pendência saiu de Importar e veio para Conferir**, e a conta saiu
+  de `app.js`: quem conta é `contarPendencias()`, a MESMA travessia que desenha
+  as três listas. Quando a conta vivia em dois arquivos era só questão de tempo
+  até divergir. O selo é **recontado a cada `switchTab`** — antes só no login e
+  na virada de mês, e uma categoria escolhida no modal de Mês o deixava velho.
+  Import dinâmico, como todo módulo de aba.
+- **A regra de "sem categoria" é a mesma do resto do app** (`semCat` em
+  `extratos.js`): despesa sem categoria resolvida; receita não conta.
+- **Parcela prevista vencida é pergunta, não erro.** `isProjected` e
+  competência **menor que o mês DE HOJE** (não o do topo). Enquanto a
+  competência é futura a projeção está fazendo o trabalho dela. Importar a
+  fatura responde sozinho — `_acharParcela` reconcilia —; quem não importa
+  responde aqui, e o "Aconteceu" chama a MESMA `confirmarProjecao` de
+  `gastos.js` que a tabela de Mês usa. Duas conversões de projeção em fato
+  viram duas regras que divergem.
+- **A chave de duplicata é `dedupKey` MAIS o número da parcela.** O acréscimo
+  não é enfeite: as parcelas de um contrato compartilham a data da compra, a
+  descrição e o valor, e diferem só no número — sem ele, um parcelado em 10x
+  virava um grupo de 10 "duplicatas", e a tela acusaria como erro exatamente o
+  que o app acabou de criar de propósito. **Medido:** 2/10 e 3/10 do mesmo
+  notebook caíam no mesmo grupo. Duas importações da mesma parcela 2/10
+  continuam colidindo, que é o caso que a lista existe para achar.
+- **"São dois mesmo" mora no `localStorage`** (`fluxo_conferir_nao_duplicata`),
+  não no Firestore: a tela é derivada e não pode inventar campo, e isto é um
+  julgamento sobre um PAR, não um dado do lançamento. O custo é conhecido — não
+  viaja entre dispositivos. Refazer o julgamento é barato; mudar o modelo, não.
+- **Apagar linha de extrato é recusado com aviso**, a mesma recusa da tabela de
+  Mês: ela pertence a um lote, e apagá-la sozinha deixaria o contador do lote
+  mentindo. O caminho é "excluir lote", em Importar.
+- **Teto de 40 por lista** (`MAX_LISTA`), com rodapé "mostrando 40 de N" — a
+  omissão nunca é silenciosa, como em `MAX_PAGAS`. Uma tela de 400 linhas não
+  se confere: desiste-se dela.
+- **Bloco zerado some; a tela inteira zerada diz o que é.** Ela é item fixo da
+  barra, então vazio é o estado NORMAL dela e precisa se explicar, senão parece
+  quebrada — mesma regra de `cartao.js`.
+- **`tr.conferir` pinta TODA linha das duas tabelas.** Não é redundância: é o
+  que amarra esta tela à linha âmbar que ela já viu em Mês e na revisão de
+  importação — o mesmo símbolo significando a mesma coisa nos três lugares.
+- **`.conferir-btn` NÃO é `.ir`** — armadilha já paga em `.guardado-toggle`
+  (rodada 5) e `.imp-lote-btn` (rodada 6).
+- **A 375px a goteira da tabela cai para 8px e a coluna VALOR some** em "sem
+  categoria" (`esconde-sm` no `<th>` E no `<td>`): para escolher categoria quem
+  identifica é a descrição, e o valor está em Mês. Nas previstas quem some é a
+  coluna **Data**, com a competência passando a viver no `.sub` da descrição.
+  **Medido:** o `padding-left: 16px` de `td + td` come 48px antes de qualquer
+  coluna, e sem isso a descrição ficava com 41px — uma letra por linha.
+
+### A tela "Importar" (rodada 6)
+
+Dois blocos em `js/importar.js`, cada um com id próprio (as âncoras de
+`data-goto`): **portas** (`importar-portas`, com `importar-fatura-ajuste`
+dentro) e **histórico** (`importar-historico`).
+
+- **Duas abas explícitas, não uma drop zone que adivinha.** Decisão da usuária.
+  Fatura e extrato leem PDF os dois, e as regras de competência são diferentes:
+  a fatura conta no mês em que FECHA, o extrato no dia de cada lançamento.
+  Adivinhar pelo arquivo erraria em silêncio, e o erro só apareceria depois —
+  como gasto no mês errado, que é exatamente o que a rodada da competência foi
+  corrigir. Por isso quem decide para onde o arquivo vai é a **aba aberta**.
+- **O botão "Importar fatura PDF" saiu de Mês** e `btn-novo-extrato` saiu do
+  `index.html`: as duas portas são esta tela. Os dois atalhos de `app.js`
+  (`btn-import-pdf-dash` e `btn-novo-extrato`) saíram junto.
+- **O passo 1 dos modais deixou de ser o caminho.** A drop zone mora na tela; o
+  arquivo entra por `importarFaturaDeArquivo` / `importarExtratoDeArquivo` e o
+  modal abre **já no passo 2**, a revisão. O ciclo ficou com um clique a MENOS,
+  não a mais. O markup do passo 1 continua nos modais como caminho de recuo.
+- **A REVISÃO CONTINUA NO MODAL, com o mesmo vocabulário** — `.mark-inferido`,
+  `.field-inferido`/`.field-editado`, `.row-atencao`, `.import-summary-bar`,
+  `.btn-atencao`, `.modal-import` e os helpers no fim de `js/utils.js`. Nada foi
+  reinventado, e **salvar continua nunca sendo bloqueado**.
+- **NADA DE PARSING MUDOU.** `competenciaDaFatura`, `_tolerancia`,
+  `_acharParcela`, a reconciliação de parcela projetada, `dedupKey`,
+  `detectDuplicates` e a ordem de `SECTION_HEADERS` estão intactos, e nenhum
+  teste precisou mudar (68/68).
+- **O offset de competência da fatura veio de Ajustes** (era a 4ª sub-aba de
+  Configurações), pelo mesmo motivo que o dia de vencimento veio para Adiante na
+  rodada 4: ele decide em que mês uma fatura INTEIRA cai, e o lugar de mexer
+  nele é onde a consequência aparece. Fica **só na aba da fatura** — no extrato
+  a competência é a data de cada lançamento e o offset não significa nada. A
+  frase diz a consequência com mês de verdade ("vence em setembro → conta em
+  agosto"), porque "X−1" não se confere. Em Ajustes ficou um ponteiro com
+  `data-goto="importar"`; o `localStorage.fluxo_billing_offset` é o mesmo.
+- **A lista solta de "transações importadas" morreu.** Ela repetia a tabela de
+  Mês — que já traz os lançamentos de extrato, com coluna `origem` — sem dizer
+  de que importação vinha cada linha. No lugar, **cada lote abre**: a pergunta
+  de Importar é "o que veio neste arquivo?", a de Mês é "o que aconteceu neste
+  mês?". Os filtros por banco e por tipo saíram junto — o lote já nomeia o banco.
+- **O lote de FATURA não abre**, e é de propósito: o registro dela
+  (`importedInvoices`) existe para travar reimportação e não guarda os
+  lançamentos. Botão que não abre nada é pior que botão nenhum. Esse histórico
+  vem do Firestore e não do `state`, então a tela desenha sem ele e **repinta só
+  o bloco** quando a leitura chega — tela que espera rede parece quebrada.
+- **Lado zerado não aparece** no lote: "+R$ 0,00" num lote só de despesas é
+  ruído, e silêncio é o sinal de que não há nada daquele lado.
+- **Os círculos coloridos de banco saíram.** O do Bradesco é azul, e azul não
+  entra em papel nenhum nesta pele; e cor de marca de banco não identifica
+  melhor que o nome escrito ao lado dela — é o mesmo argumento da rosca com a
+  legenda. O banco também virou opcional (clicar de novo desmarca): o parser
+  reconhece pelo nome do arquivo.
+- **`.imp-lote-btn` NÃO é `.ir`**, pela razão já paga em `.guardado-toggle` na
+  rodada 5: `.ir` é um quadrado de 28px para o glifo "↗" e texto dentro dele
+  quebra em três linhas.
+- A tabela do lote segue a regra das outras: `.tabela-folha`, **nenhum
+  `overflow` no contêiner**, `table-layout: fixed`, larguras **no CSS por id de
+  bloco**, `<thead>` sticky em `top: var(--topbar-h)`, `esconde-sm` no `<th>`
+  **e no `<td>`**. Medido: sem rolagem horizontal em 1420, 1120, 1000, 900 e
+  375px, e o sticky resolve em 60px.
+
+### A tela "Ajustes" (rodada 8 — a última)
+
+Seis blocos em `js/ajustes.js`, na ordem de quanto se mexe em cada um, cada um
+com id próprio (as âncoras de `data-goto`): **categorias**
+(`ajustes-categorias`) · **regras de classificação** (`ajustes-regras`) ·
+**orçamento** (`ajustes-orcamento`) · **backup** (`ajustes-backup`) ·
+**conta** (`ajustes-conta`) · **o que mudou de casa** (`ajustes-mudou`).
+
+- **SEM SUB-ABAS.** As `.config-tabs`/`.config-section` eram vocabulário
+  anterior ao híbrido e um terceiro jeito de fazer aba (depois de `.imp-abas`)
+  não se justificava: desde a rodada 1 A PÁGINA ROLA, e Ajustes é a tela que
+  menos se visita — cinco folhas empilhadas se leem de uma vez, cinco abas
+  escondem quatro delas. O CSS das `.config-tab*` foi **removido**, não deixado
+  sem uso.
+- **`configuracoes.js` morreu**, absorvido inteiro por `ajustes.js` (como
+  `dashboard.js` na rodada 3). **`relatorios.js` morreu de vez** — decisão da
+  usuária: seis relatórios fixos para uma pessoa só, e cada tabela do app já
+  exporta o próprio CSV com o que está na tela. `APELIDOS.relatorios` continua
+  apontando para `ajustes`, para um `data-goto` esquecido não virar clique
+  morto.
+- **`orcamento.js` seguiu `gastos.js`:** virou editor + gravação. O markup do
+  bloco saiu do `index.html` e é de `ajustes.js`; o botão de salvar **não tem
+  listener próprio** (é reinjetado a cada render) e chama `salvarOrcamento()`
+  pelo delegado da tela.
+- **Salvar orçamento SUBSTITUI o mês no `state`, não mescla.** `saveBudgets`
+  apaga no Firestore o teto que saiu da tela; com o `Object.assign` antigo o
+  teto apagado sobrevivia em memória até o reload, e a barra media contra um
+  limite que já não existia.
+- **As estatísticas e o apagar-coleção FICARAM** (decisão da usuária): o wipe é
+  o que torna "restaurar backup" utilizável sem duplicar tudo. Duas
+  confirmações, de propósito. `wipeCollection` continua morando em `db.js`.
+- **Vermelho na zona de risco não é dinheiro negativo** — é borda de bloco, e
+  vem com a palavra "Apagar" escrita: o segundo canal, como em toda tela.
+- **O offset de competência e o dia de vencimento NÃO voltaram.** O bloco
+  `ajustes-mudou` é um rodapé que diz para onde cada um foi (Importar, rodada
+  6; Adiante, rodada 4) com um botão `data-goto`. Custa menos que a pessoa
+  procurar e não achar.
+- **A cor padrão de categoria nova era `#3982f7`** — azul, que não entra em
+  papel nenhum nesta pele. Virou `#A8336B`, a primeira da série categórica, no
+  módulo e no `value` do `<input type="color">` do modal.
+- **Nenhuma tabela nesta tela** — são listas (`.aj-lista`/`.aj-item`). Por isso
+  Ajustes não tem `<thead>` sticky, largura de coluna nem `esconde-sm`.
+  **Medido a 375px:** o padrão do regex toma a linha inteira (em linha com o
+  nome da categoria ficava com 92px, e um regex de 11 caracteres não cabe
+  nisso), e a cor em hex some — o círculo ao lado já mostra a cor.
+
+
 ### Onde o orçamento mora (decisão da usuária, rodada 3)
 
 **Orçamento é ajuste, não leitura do mês.** Definir teto de categoria se faz uma
-vez e não se olha de novo; sai de Mês e vive em Ajustes (`#tab-orcamento`,
-desenhado por `orcamento.js` nos ids que ele já esperava). `data-goto="orcamento"`
-leva a Ajustes. O plano original listava "orçamento × real" como sexto bloco de
+vez e não se olha de novo; sai de Mês e vive em Ajustes. Desde a rodada 8 é o
+terceiro bloco de `#tab-ajustes` (`#ajustes-orcamento`), montado por
+`ajustes.js`; `orcamento.js` só preenche `#orcamento-editor` e grava.
+`data-goto="orcamento"` leva a Ajustes, no bloco. O plano original listava "orçamento × real" como sexto bloco de
 Mês — foi revogado.
 
 ### Decisões da rodada A8 que viram regra
@@ -520,17 +707,17 @@ mudança de interface:
 
 Rodadas: **1 fundação (feita)** · **2 navegação (feita)** · **3 Mês (feita)** ·
 **4 Adiante (feita)** · **Cartão (feita)** · **5 Guardado (feita)** ·
-6 Importar · 7 Conferir · 8 Ajustes. Uma por vez, cada uma
-terminando com o app funcionando.
+**6 Importar (feita)** · **7 Conferir (feita)** · **8 Ajustes (feita)**.
+**As oito estão feitas — o redesign v2 acabou.** O fecho da sequência, com o
+que mudou e o que ficou pendente, está em `FECHO-REDESIGN-v2.md`.
 
 ### Decisões da usuária que mudam o plano original
 
 - **Importar leva fatura E extrato, com uma aba para trocar entre os dois**
-  (dito na rodada 3, vale para a rodada 6). Os dois fluxos ficam no mesmo
-  destino, não em telas separadas: hoje a fatura em PDF entra por um botão de
-  Mês (`initPdfImport`) e o extrato por `extratos.js`. `PROMPT-implementar-v2.md`
-  já previa a porta única; o que está fechado agora é que ela tem **duas abas
-  explícitas**, e não uma drop zone que adivinha sozinha o que é o arquivo.
+  (dito na rodada 3, **implementado na rodada 6**). Os dois fluxos ficam no
+  mesmo destino, não em telas separadas. `PROMPT-implementar-v2.md` já previa a
+  porta única; o que a usuária fechou é que ela tem **duas abas explícitas**, e
+  não uma drop zone que adivinha sozinha o que é o arquivo.
 - **Orçamento mora em Ajustes**, não em Mês (aplicado na rodada 3). O plano
   original listava "orçamento × real" como sexto bloco de Mês; foi revogado.
 - **Cartão virou destino próprio** (dito na rodada 4, **implementado**).

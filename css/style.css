@@ -652,7 +652,6 @@ body {
 ════════════════════════════════════════════════════════════════ */
 .receitas-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
 .metas-grid    { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem; }
-.config-grid   { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
 .extratos-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
 
 
@@ -691,7 +690,6 @@ body {
   #kpi-grid { grid-template-columns: 1fr 1fr; }
   #kpi-grid .kpi-hero, #kpi-grid .kpi-skeleton.sk-hero { grid-column: 1 / -1; }
   .receitas-grid { grid-template-columns: 1fr; }
-  .config-grid   { grid-template-columns: 1fr; }
   .extratos-grid { grid-template-columns: 1fr; }
 }
 @media (max-width: 768px) {
@@ -1027,9 +1025,6 @@ body { overflow-x: hidden; overflow-y: auto; }
   .mes-tabela-rolagem tbody .mes-acoes-linha .btn-icon-only { opacity: 1; }
 }
 
-/* O editor de orçamento é desenhado por orcamento.js dentro da folha daqui. */
-#mes-orcamento .orcamento-input-row { padding-left: 0; padding-right: 0; }
-#mes-orcamento .orc-fechamento { padding: 0; margin-top: 10px; }
 
 /* ═══════════════════════════════════════════════════════════════
    ADIANTE (rodada 4)
@@ -1303,4 +1298,303 @@ body { overflow-x: hidden; overflow-y: auto; }
   #guardado-ativos .guardado-acoes-td .btn-xs { display: none; }
   .guardado-meta-val { margin-left: 0; width: 100%; }
   .guardado-acoes { margin-left: 0; }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   IMPORTAR (rodada 6) — as duas portas numa tela só
+
+   As DUAS ABAS são explícitas por decisão da usuária: não é uma drop
+   zone que adivinha o tipo do arquivo. Fatura e extrato têm regras de
+   competência diferentes, e adivinhar erra em silêncio — o erro só
+   aparece depois, como gasto no mês errado.
+
+   O vocabulário da REVISÃO não está aqui: ele mora em components.css
+   (`.import-summary-bar`, `.field-inferido`, `.row-atencao`, `.modal-import`)
+   e continua sendo o mesmo dos dois modais. Reusar, não reinventar.
+════════════════════════════════════════════════════════════════ */
+
+/* A aba escolhida se marca por TRÊS canais, não só cor: peso da fonte,
+   tinta e o fio de 2px embaixo. `aria-selected` diz o mesmo ao leitor. */
+.imp-abas {
+  display: flex; gap: 4px; margin-bottom: var(--goteira);
+  border-bottom: 1px solid var(--borda);
+}
+.imp-aba {
+  appearance: none; background: none; border: 0; cursor: pointer;
+  font: 500 14px var(--fonte); color: var(--ink-3);
+  padding: 10px 16px; margin-bottom: -1px;
+  border-bottom: 2px solid transparent; border-radius: var(--raio-sm) var(--raio-sm) 0 0;
+}
+.imp-aba:hover { color: var(--ink); background: var(--folha-2); }
+.imp-aba.ativa { color: var(--ink); font-weight: 600; border-bottom-color: var(--marca); }
+.imp-aba:focus-visible { outline: 2px solid var(--marca); outline-offset: -2px; }
+
+/* A drop zone é a única coisa grande da tela: é o que se faz aqui. */
+.imp-zona {
+  border: 1.5px dashed var(--borda-forte); border-radius: var(--raio);
+  background: var(--folha-2); color: var(--ink-2);
+  padding: 34px 20px; text-align: center; cursor: pointer;
+}
+.imp-zona:hover, .imp-zona.arrastando { border-color: var(--marca); background: var(--marca-tinta); }
+.imp-zona:focus-visible { outline: 2px solid var(--marca); outline-offset: 2px; }
+.imp-zona svg { display: block; margin: 0 auto 10px; opacity: 0.5; }
+.imp-zona-titulo { margin: 0 0 4px; font-size: 15px; font-weight: 600; color: var(--ink); }
+.imp-zona-ou { font-weight: 400; color: var(--ink-3); }
+.imp-zona-hint { font-size: 12px; color: var(--ink-3); }
+
+/* O offset de competência veio de Ajustes: ele decide em que mês a fatura
+   INTEIRA cai, e o lugar de mexer nele é onde a consequência aparece —
+   a mesma razão do dia de vencimento ter ido para Adiante na rodada 4. */
+.imp-ajuste { margin-top: var(--goteira); }
+.imp-ajuste-rot {
+  display: block; margin: 0 0 8px;
+  font: 600 10.5px var(--fonte); text-transform: uppercase; letter-spacing: 0.13em; color: var(--ink-3);
+}
+.imp-escolhas {
+  display: grid; grid-template-columns: 1.6fr 1fr; gap: var(--goteira);
+  margin-bottom: var(--goteira);
+}
+.imp-escolhas > * { min-width: 0; }
+
+.imp-bancos { display: flex; flex-wrap: wrap; gap: 8px; }
+.imp-banco {
+  cursor: pointer;
+  background: var(--folha); border: 1px solid var(--borda-forte); border-radius: var(--raio-sm);
+  padding: 8px 12px; font: 500 13px var(--fonte); color: var(--ink);
+}
+.imp-banco:hover { background: var(--folha-2); }
+/* Escolhido = contorno grosso da marca + fundo. Cor sozinha não basta. */
+.imp-banco.ativo {
+  border-color: var(--marca); box-shadow: inset 0 0 0 1px var(--marca);
+  background: var(--marca-tinta); font-weight: 600;
+}
+.imp-banco:focus-visible { outline: 2px solid var(--marca); outline-offset: 2px; }
+
+.imp-formatos { display: flex; gap: 8px; }
+.imp-formato {
+  cursor: pointer; background: var(--folha); border: 1px solid var(--borda-forte);
+  border-radius: var(--raio-sm); padding: 8px 14px; font: 500 13px var(--fonte); color: var(--ink);
+}
+.imp-formato:hover { background: var(--folha-2); }
+.imp-formato.ativo {
+  border-color: var(--marca); box-shadow: inset 0 0 0 1px var(--marca);
+  background: var(--marca-tinta); font-weight: 600;
+}
+.imp-formato:focus-visible { outline: 2px solid var(--marca); outline-offset: 2px; }
+
+/* A frase de privacidade fica junto da zona, não no rodapé da página:
+   a dúvida "para onde vai meu extrato?" é na hora de soltar o arquivo. */
+.imp-privacidade { margin: var(--goteira) 0 0; }
+
+/* ── histórico: um lote é um arquivo ───────────────────────────── */
+.imp-lote { border-top: 1px solid var(--borda); padding: 12px 0; }
+.imp-lote:first-child { border-top: 0; padding-top: 0; }
+.imp-lote-topo { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.imp-lote-nome { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.imp-lote-titulo { font-size: 13.5px; font-weight: 600; color: var(--ink); overflow-wrap: break-word; }
+.imp-lote-dir { display: flex; align-items: center; gap: 10px; flex: none; }
+.imp-lote-val { font-size: 13px; font-weight: 600; white-space: nowrap; }
+
+/* NÃO é `.ir`: `.ir` é um quadrado de 28px para o glifo "↗" e texto dentro
+   dele quebra em três linhas (medido na rodada 5, com `.guardado-toggle`). */
+.imp-lote-btn {
+  cursor: pointer; background: var(--folha); border: 1px solid var(--borda-forte);
+  border-radius: var(--raio-sm); padding: 5px 10px; white-space: nowrap;
+  font: 500 12px var(--fonte); color: var(--ink-2);
+}
+.imp-lote-btn:hover { background: var(--folha-2); color: var(--ink); border-color: var(--ink-2); }
+.imp-lote-excluir:hover { color: var(--saiu); border-color: var(--saiu); }
+.imp-lote-linhas { margin-top: 10px; }
+/* Mesma regra das outras: NADA de `overflow` no contêiner (mata o <thead>
+   sticky), `table-layout: fixed`, larguras aqui e não em `style=`. */
+.imp-lote-tabela th:nth-child(1) { width: 96px; }
+.imp-lote-tabela th:nth-child(3) { width: 150px; }
+.imp-lote-tabela th:nth-child(4) { width: 110px; }
+.imp-lote-tabela td { font-size: 13px; }
+
+@media (max-width: 900px) {
+  .imp-escolhas { grid-template-columns: 1fr; }
+  .imp-lote-topo { flex-wrap: wrap; }
+  .imp-lote-dir { width: 100%; justify-content: flex-end; }
+  .imp-lote-tabela th:nth-child(1) { width: 78px; }
+  .imp-lote-tabela th:nth-child(4) { width: 96px; }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   CONFERIR (rodada 7) — o que ficou pela metade
+
+   A tela inteira é sobre pendência, então `tr.conferir` (o fundo âmbar
+   + a barra na borda esquerda, do vocabulário v2) pinta TODA linha das
+   duas tabelas. Não é redundância: é o que amarra visualmente esta tela
+   à linha âmbar que a usuária já viu em Mês e na revisão de importação —
+   o mesmo símbolo significando a mesma coisa nos três lugares.
+
+   O botão de ação NÃO é `.ir` — quadrado de 28px para o glifo "↗", onde
+   texto quebra em três linhas. É a armadilha já paga em `.guardado-toggle`
+   (rodada 5) e em `.imp-lote-btn` (rodada 6).
+════════════════════════════════════════════════════════════════ */
+
+.conferir-btn {
+  cursor: pointer; background: var(--folha); border: 1px solid var(--borda-forte);
+  border-radius: var(--raio-sm); padding: 5px 10px; white-space: nowrap;
+  font: 500 12px var(--fonte); color: var(--ink-2);
+}
+.conferir-btn:hover { background: var(--folha-2); color: var(--ink); border-color: var(--ink-2); }
+/* Vermelho só na BORDA do hover, nunca no rótulo em repouso: nesta tela o
+   vermelho da coluna de valor já significa dinheiro que saiu. */
+.conferir-btn-nao:hover { color: var(--saiu); border-color: var(--saiu); }
+.conferir-btn:focus-visible { outline: 2px solid var(--marca); outline-offset: 2px; }
+.conferir-acoes { display: flex; gap: 8px; justify-content: flex-end; }
+
+/* Larguras NO CSS, por id de bloco — em `style=` a media query não consegue
+   encolher a coluna e a descrição fica com quatro linhas no celular. */
+#conferir-tab-cat  th:nth-child(1) { width: 104px; }
+#conferir-tab-cat  th:nth-child(3) { width: 200px; }
+#conferir-tab-cat  th:nth-child(4) { width: 110px; }
+#conferir-tab-proj th:nth-child(1) { width: 118px; }
+#conferir-tab-proj th:nth-child(3) { width: 110px; }
+#conferir-tab-proj th:nth-child(4) { width: 216px; }
+.conferir-tabela .form-input.sm { width: 100%; }
+
+/* ── duplicata: um grupo, não uma linha ──────────────────────────
+   O par é o assunto — mostrar as duas como linhas soltas de tabela faria
+   procurar qual bate com qual. Por isso é um bloco com as duas dentro. */
+.conferir-dup {
+  border: 1px solid var(--deduzido); border-radius: var(--raio-sm);
+  background: var(--deduzido-fundo); padding: 12px 14px; margin-bottom: 12px;
+}
+.conferir-dup:last-of-type { margin-bottom: 0; }
+.conferir-dup-topo {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  padding-bottom: 10px; margin-bottom: 4px; border-bottom: 1px solid var(--borda);
+}
+.conferir-dup-topo .nota { flex: 1; min-width: 200px; }
+.conferir-dup-data { font-size: 13px; font-weight: 600; color: var(--ink); white-space: nowrap; }
+.conferir-dup-linha {
+  display: flex; align-items: center; gap: 12px;
+  padding: 9px 0; border-bottom: 1px solid var(--borda);
+}
+.conferir-dup-linha:last-child { border-bottom: 0; padding-bottom: 0; }
+.conferir-dup-quem { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; }
+.conferir-dup-desc { font-size: 13px; overflow-wrap: break-word; min-width: 0; }
+.conferir-dup-val { font-size: 13.5px; font-weight: 600; white-space: nowrap; }
+
+@media (max-width: 900px) {
+  /* Medido a 375px: a folha tem ~343px por dentro, e o `padding-left: 16px` de
+     `td + td` come 48px antes de qualquer coluna. Com quatro colunas fixas
+     sobravam 41px para a descrição e ela quebrava UMA LETRA POR LINHA. Três
+     coisas resolvem: a coluna VALOR some (`esconde-sm` no th E no td — para
+     escolher categoria o que identifica é a descrição, não o valor, e o valor
+     está em Mês), a goteira cai para 8px, e o resto é da descrição. */
+  .conferir-tabela td + td, .conferir-tabela th + th { padding-left: 8px; }
+  #conferir-tab-cat  th:nth-child(1) { width: 62px; }
+  #conferir-tab-cat  th:nth-child(3) { width: 116px; }
+  /* Na tabela das previstas a coluna Data some (esconde-sm no th E no td) e a
+     competência passa a viver no .sub da descrição: são dois botões na última
+     coluna e não havia como caber as quatro. */
+  #conferir-tab-proj th:nth-child(3) { width: 84px; }
+  #conferir-tab-proj th:nth-child(4) { width: 112px; }
+  .conferir-tabela .form-input.sm { font-size: 12px; padding-left: 6px; padding-right: 6px; }
+  /* Os dois botões empilham: lado a lado eles espremem a descrição. */
+  .conferir-acoes { flex-direction: column; align-items: stretch; gap: 5px; }
+  .conferir-dup-linha { flex-wrap: wrap; }
+  .conferir-dup-quem { flex: 1 1 100%; }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   AJUSTES — rodada 8 (a última do redesign v2)
+   Cinco folhas empilhadas, sem sub-aba: as `.config-tabs` eram
+   vocabulário anterior ao híbrido, e um terceiro jeito de fazer aba
+   (depois de `.imp-abas`) não se justifica numa tela que rola e que
+   se visita uma vez.
+   Sem tabela nenhuma aqui — listas. Por isso esta tela não tem
+   `<thead>` sticky, largura de coluna nem `esconde-sm`.
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── lista de categorias e de regras ───────────────────────────── */
+.aj-lista { display: flex; flex-direction: column; }
+.aj-item {
+  display: flex; align-items: center; gap: 11px;
+  padding: 9px 0; border-top: 1px solid var(--borda); min-width: 0;
+}
+.aj-item:first-child { border-top: 0; padding-top: 0; }
+.aj-cor { width: 11px; height: 11px; border-radius: 50%; flex: none; box-shadow: inset 0 0 0 1px rgba(20,24,33,0.12); }
+.aj-item-nome { font-size: 13.5px; font-weight: 500; color: var(--ink); flex: 1; min-width: 0; overflow-wrap: break-word; }
+.aj-item-nota { font-size: 11.5px; color: var(--ink-3); flex: none; }
+.aj-item-acoes { display: flex; gap: 5px; flex: none; }
+/* A monoespaçada é do sistema — não há webfont de código nesta pele. */
+.aj-padrao {
+  font-family: var(--font-code); font-size: 12.5px; color: var(--ink);
+  background: var(--folha-2); border-radius: var(--raio-sm);
+  padding: 3px 8px; overflow-wrap: anywhere; min-width: 0; max-width: 46%;
+}
+.aj-seta { color: var(--ink-3); flex: none; }
+
+/* ── backup ────────────────────────────────────────────────────── */
+.aj-duplo { display: grid; grid-template-columns: 1fr 1fr; gap: var(--goteira); }
+.aj-duplo > * { min-width: 0; }
+.aj-bloco { background: var(--folha-2); border-radius: var(--raio-sm); padding: 16px; }
+.aj-bloco-rot {
+  font-size: 11px; text-transform: uppercase; letter-spacing: 0.12em;
+  color: var(--ink-3); margin: 0 0 8px; font-weight: 600;
+}
+.aj-linha-form { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.aj-rotulo { font-size: 12.5px; color: var(--ink-2); font-weight: 500; }
+
+.aj-stats {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(146px, 1fr));
+  gap: 8px; margin-bottom: var(--goteira);
+}
+.aj-stat { background: var(--folha-2); border-radius: var(--raio-sm); padding: 10px 12px; }
+.aj-stat-val { font-size: 20px; font-weight: 600; letter-spacing: -0.015em; color: var(--ink); }
+.aj-stat-rot { font-size: 11.5px; color: var(--ink-3); margin-top: 1px; }
+
+/* A zona de risco é a única coisa da tela que apaga em massa e sem desfazer.
+   Vermelho aqui NÃO é dinheiro negativo: é a borda de um bloco, e vem com a
+   palavra "Apagar" escrita — o segundo canal, como em toda tela. */
+.aj-risco {
+  margin-top: var(--goteira); border: 1px solid var(--saiu);
+  border-radius: var(--raio-sm); background: var(--saiu-tinta); padding: 16px;
+}
+.aj-risco-rot {
+  font-size: 11px; text-transform: uppercase; letter-spacing: 0.12em;
+  color: var(--saiu); font-weight: 700; margin: 0 0 6px;
+}
+.aj-btn-risco { color: var(--saiu); border-color: var(--saiu); background: var(--folha); }
+.aj-btn-risco:hover { background: var(--saiu); border-color: var(--saiu); color: #fff; }
+.aj-btn-risco[disabled] { opacity: 0.6; cursor: default; }
+
+/* ── conta ─────────────────────────────────────────────────────── */
+.aj-conta { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.aj-conta-avatar {
+  width: 42px; height: 42px; border-radius: 50%; flex: none;
+  background: var(--marca-tinta); color: var(--marca);
+  display: grid; place-items: center; font-size: 17px; font-weight: 700;
+}
+.aj-conta-quem { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+.aj-conta-quem b { font-size: 14px; font-weight: 600; color: var(--ink); }
+.aj-conta-quem i { font-style: normal; font-size: 12.5px; color: var(--ink-3); overflow-wrap: anywhere; }
+
+/* ── rodapé: os ajustes que mudaram de casa ────────────────────── */
+.aj-mudou { display: grid; grid-template-columns: 1fr 1fr; gap: var(--goteira); }
+.aj-mudou > * { min-width: 0; }
+
+/* ── o editor do orçamento dentro da folha ─────────────────────── */
+/* `.orcamento-editor` nasceu com o padding de um `.card`; dentro da folha o
+   padding já é da folha, e o dobro empurra a coluna do valor para fora. */
+#ajustes-orcamento .orcamento-editor { padding: 0; }
+#ajustes-orcamento .orcamento-input-row { padding-left: 0; padding-right: 0; border-color: var(--borda); }
+
+@media (max-width: 900px) {
+  .aj-duplo, .aj-mudou { grid-template-columns: 1fr; }
+  /* Medido a 375px: em linha com o nome da categoria o padrão ficava com 92px,
+     e um regex de 11 caracteres não cabe nisso. Ele toma a linha inteira e o
+     resto da regra desce para a seguinte. */
+  .aj-padrao { flex: 1 1 100%; max-width: 100%; }
+  .aj-seta { display: none; }
+  /* A cor em hex é redundância: o círculo ao lado já mostra a cor, e no
+     celular ela é o que empurra os dois botões para fora da folha. */
+  .aj-item-nota { display: none; }
+  .aj-item { flex-wrap: wrap; }
+  .aj-item-acoes { margin-left: auto; }
 }
