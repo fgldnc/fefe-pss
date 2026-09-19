@@ -37,21 +37,40 @@ import { isOfMonth } from './utils.js';
  * pesa na fatura de maio — é lá que ela desconta o caixa.
  *
  * Sobre a fatura: gasto de cartão não sai do caixa no dia da compra, sai no dia
- * do vencimento. Com `faturaVencimentoDia` definido, todo o cartão do mês vira
- * UMA linha nesse dia. Sem ele, cai no comportamento antigo (dia da compra) e a
- * tela avisa que está inferindo — dez parcelas espalhadas pelo mês fazem o
- * "menor saldo" apontar o dia errado.
+ * do vencimento. Com vencimento definido, todo o cartão do mês vira UMA linha
+ * nesse dia. Sem ele, cai no comportamento antigo (dia da compra) e a tela
+ * avisa que está inferindo — dez parcelas espalhadas pelo mês fazem o "menor
+ * saldo" apontar o dia errado.
+ *
+ * UM VENCIMENTO POR CARTÃO. Quem tem dois cartões tem duas faturas, em dias
+ * diferentes, e somá-las num dia só inventa um aperto que não existe — ou
+ * esconde o que existe. `vencimentoPorCartao` é um mapa nome→dia;
+ * `faturaVencimentoDia` continua sendo o dia do cartão SEM nome informado,
+ * que é o caso de todo mundo que nunca preencheu o campo. Sem nenhum dos dois
+ * para um lançamento, ele cai no dia da compra, como sempre foi.
  */
 export function buildMovimentos({
   ym, daysInMonth, transactions = [], extratos = [], incomes = [],
-  investIds = [], faturaVencimentoDia = null, resolveCat = id => id,
+  investIds = [], faturaVencimentoDia = null, vencimentoPorCartao = {},
+  resolveCat = id => id,
 }) {
   const dias = {};
   const dia = d => (dias[d] = dias[d] || { entradas: 0, saidas: 0, itens: [] });
 
   let investimento = 0;
   let projetado    = 0;
-  const fatura     = { total: 0, itens: 0, projetado: 0 };
+
+  // Uma fatura POR CARTÃO. A chave é o nome em minúsculas ('' = cartão não
+  // informado), e cada uma carrega o dia em que ela vence.
+  const faturas = new Map();
+  const diaDaFatura = (cartao) => {
+    const nome = String(cartao || '').trim();
+    if (!nome) return faturaVencimentoDia;
+    // Cartão nomeado sem dia próprio usa o dia geral: é melhor agrupar no dia
+    // provável do que espalhar a fatura pelos dias das compras.
+    const proprio = vencimentoPorCartao?.[nome] ?? vencimentoPorCartao?.[nome.toLowerCase()];
+    return proprio ?? faturaVencimentoDia;
+  };
 
   const diaDe = (dataISO) => {
     const d = parseInt(String(dataISO).slice(8, 10), 10);
@@ -72,10 +91,15 @@ export function buildMovimentos({
     }
     if (tx.isProjected) projetado += valor;
 
-    if (tx.paymentType === 'cartao' && faturaVencimentoDia) {
-      fatura.total += valor;
-      fatura.itens++;
-      if (tx.isProjected) fatura.projetado += valor;
+    const vencDele = tx.paymentType === 'cartao' ? diaDaFatura(tx.card) : null;
+    if (vencDele) {
+      const nome  = String(tx.card || '').trim();
+      const chave = nome.toLowerCase();
+      const f = faturas.get(chave) || { nome, dia: vencDele, total: 0, itens: 0, projetado: 0 };
+      f.total += valor;
+      f.itens++;
+      if (tx.isProjected) f.projetado += valor;
+      faturas.set(chave, f);
       continue;
     }
 
@@ -90,15 +114,22 @@ export function buildMovimentos({
     });
   }
 
-  if (fatura.itens > 0) {
-    const d = Math.min(faturaVencimentoDia, daysInMonth);
-    dia(d).saidas += fatura.total;
+  // Uma linha por fatura. O nome do cartão entra na descrição só quando há mais
+  // de uma: com uma só, "Fatura do cartão · Nubank" repete o que já é único.
+  const varias = faturas.size > 1;
+  for (const f of faturas.values()) {
+    if (f.itens === 0) continue;
+    const d = Math.min(f.dia, daysInMonth);
+    dia(d).saidas += f.total;
     dia(d).itens.push({
-      desc: 'Fatura do cartão',
-      valor: fatura.total, tipo: 'out',
-      projetada: fatura.projetado > 0,
+      desc: varias && f.nome ? `Fatura do cartão · ${f.nome}`
+          : varias          ? 'Fatura do cartão · sem cartão informado'
+          :                   'Fatura do cartão',
+      valor: f.total, tipo: 'out',
+      projetada: f.projetado > 0,
       parcela: null,
-      agrupados: fatura.itens,
+      agrupados: f.itens,
+      cartao: f.nome || null,
     });
   }
 
@@ -133,7 +164,10 @@ export function buildMovimentos({
     });
   }
 
-  return { dias, investimento, projetado, faturaAgrupada: fatura.itens > 0 };
+  // `faturaAgrupada` continua sendo um booleano: quem consome só quer saber se
+  // houve agrupamento, para dizer se está mostrando fatura ou dia da compra.
+  const faturaAgrupada = [...faturas.values()].some(f => f.itens > 0);
+  return { dias, investimento, projetado, faturaAgrupada };
 }
 
 /**

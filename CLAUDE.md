@@ -222,12 +222,19 @@ Cada item abaixo é uma regra de negócio real codificada como literal, sem cons
 
 **Fluxo de caixa — `js/saldos.js` (cálculo), `js/adiante.js` (tela) e `js/db.js`**
 - `settings/fluxo` (documento único, `users/{uid}/settings/fluxo`) guarda
-  `saldoInicial` (mapa `"YYYY-MM"` → número) e `faturaVencimentoDia`. **Ausente
-  nunca é zero:** zero é abertura legítima, ausente esconde os KPIs de mínimo e
-  de projeção e troca o cabeçalho da coluna para "Acumulado".
-- `faturaVencimentoDia` limitado a **1–28**: 29/30/31 não existem em todo mês.
-  Fora da faixa vira `null`. Com o dia definido, todo o cartão do mês vira **uma
-  linha** nele; sem ele, cai no dia da compra e a tela marca `.mark-inferido`.
+  `saldoInicial` (mapa `"YYYY-MM"` → número), `faturaVencimentoDia` e
+  `vencimentoPorCartao` (mapa `nome do cartão` → dia). **Ausente nunca é
+  zero:** zero é abertura legítima, ausente esconde os KPIs de mínimo e de
+  projeção e troca o cabeçalho da coluna para "Acumulado".
+- **Todo dia de vencimento é limitado a 1–28**, no campo geral e no mapa:
+  29/30/31 não existem em todo mês e "último dia válido" mentiria sobre a data
+  em que o dinheiro sai. Fora da faixa vira `null`.
+- **Um vencimento POR CARTÃO** (ver "Mais de um cartão", adiante).
+  `faturaVencimentoDia` é o dia do cartão **sem nome marcado**;
+  `vencimentoPorCartao` cobre quem tem mais de um. A queda é em três degraus —
+  dia do cartão → dia geral → dia da compra —, e cada fatura vira **uma linha**
+  no dia dela. Sem nenhum dos dois, o gasto cai no dia da compra e a tela marca
+  `.mark-inferido`.
 - `saveFluxoConfig` usa `setDoc` **sem** merge (ao contrário de `saveDoc`): com
   merge, um mês removido de `saldoInicial` sobreviveria no Firestore.
 - `contextoDoMinimo` considera "entrada logo depois" até **3 dias** após o
@@ -608,6 +615,38 @@ sticky é `var(--topbar-h)`, não 0 — com 0 ele grudaria ATRÁS da topbar.
 - **Filtro que esvazia a tela NÃO pode esconder a fileira**, senão escolher um
   cartão sem parcelas vira beco sem saída — some o conteúdo e some junto o
   botão de voltar para "Todos".
+
+**UM VENCIMENTO POR CARTÃO** (a consequência que a usuária apontou: *"se tiver
+mais de um cartão fica meio pá né"*). Duas faturas em dias diferentes somadas
+num dia só **inventam um aperto que não existe** naquele dia — e escondem o que
+existe no outro. Era exatamente o que acontecia: `faturaVencimentoDia` era um
+número só.
+
+- `settings/fluxo` ganhou **`vencimentoPorCartao`**, mapa `nome → dia`.
+  **`faturaVencimentoDia` continua existindo e não mudou de sentido:** é o dia
+  do cartão **sem nome marcado**, que é o caso de todo mundo que nunca
+  preencheu o campo. Documento sem o mapa novo se comporta exatamente como
+  antes.
+- **A queda é em três degraus:** dia do cartão → dia geral → dia da compra.
+  Cartão nomeado sem dia próprio usa o geral (melhor agrupar no dia provável do
+  que espalhar a fatura pelos dias das compras); sem nenhum dos dois, cai no
+  dia da compra e a tela marca que está inferindo, como sempre foi.
+- **`buildMovimentos` devolve UMA LINHA POR FATURA**, cada uma no dia dela. O
+  nome do cartão só entra na descrição quando há mais de uma — com uma só,
+  "Fatura do cartão · Nubank" repete o que já é único. `faturaAgrupada` segue
+  booleano: quem consome só quer saber se houve agrupamento.
+- **O mapa é mesclado cartão a cartão** em `saveFluxoConfig`, como
+  `saldoInicial` é mês a mês: gravar o dia do Nubank não pode apagar o do Itaú.
+  `null` num cartão remove aquele cartão. No restore de backup vale a mesma
+  regra dos outros dois campos — **o que já existe vence o que vem do arquivo**.
+- Em Adiante a faixa ganha **um campo por cartão** mais o "sem cartão marcado".
+  O campo de dia é mais estreito que o de saldo (`.adiante-campo-dia`): com a
+  largura do saldo, quatro campos não caberiam numa fileira só e a faixa
+  voltaria a ter duas linhas. A 375px o saldo toma a linha inteira e os dias
+  ficam dois por linha.
+- Fixado por `test/saldos.test.mjs` (três casos novos): dois cartões em dias
+  diferentes, a queda em três degraus, e a descrição sem o nome quando o cartão
+  é único.
 
 ### A tela "Cartão" (pedida pela usuária depois da rodada 4)
 

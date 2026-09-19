@@ -37,7 +37,7 @@
 import {
   state, fmt, esc, monthLabel, offsetMonth, toast,
   getInvestCatIds, resolveCategoryId,
-  abas, painelAba, ligarAbas, focarAba, pegarAbaPedida,
+  abas, painelAba, ligarAbas, focarAba, pegarAbaPedida, cartoesConhecidos,
 } from './utils.js';
 import { incomesOfMonth, saveFluxoConfig } from './db.js';
 import { buildMovimentos, buildSerie, acharMinimo, contextoDoMinimo } from './saldos.js';
@@ -79,8 +79,13 @@ function _dados() {
   const [ano, mes]  = month.split('-').map(Number);
   const daysInMonth = new Date(ano, mes, 0).getDate();
 
-  const cfg  = state.fluxoConfig || { saldoInicial: {}, faturaVencimentoDia: null };
+  const cfg  = state.fluxoConfig || { saldoInicial: {}, faturaVencimentoDia: null, vencimentoPorCartao: {} };
   const venc = cfg.faturaVencimentoDia || null;
+  const vencCartao = cfg.vencimentoPorCartao || {};
+  // Os cartões que aparecem nos gastos de cartão. A tela pergunta o vencimento
+  // de cada um — duas faturas em dias diferentes somadas num dia só inventam
+  // um aperto que não existe.
+  const cartoes = cartoesConhecidos(state.transactions.filter(t => t.paymentType === 'cartao'));
 
   // `undefined` é "não definido"; zero é uma abertura legítima. A distinção
   // manda em metade da tela, então nunca use `|| 0` aqui.
@@ -96,6 +101,7 @@ function _dados() {
     investIds: getInvestCatIds(),
     resolveCat: resolveCategoryId,
     faturaVencimentoDia: venc,
+    vencimentoPorCartao: vencCartao,
   });
 
   const serie = buildSerie(mov.dias, daysInMonth, temAbertura ? abertura : 0);
@@ -106,7 +112,7 @@ function _dados() {
   const diaHoje = noMes ? hoje.getDate() : null;
 
   return {
-    month, ano, mes, daysInMonth, venc, abertura, temAbertura,
+    month, ano, mes, daysInMonth, venc, vencCartao, cartoes, abertura, temAbertura,
     mov, serie, min, diaHoje, sugerido: _fechamentoAnterior(month),
   };
 }
@@ -130,6 +136,7 @@ function _fechamentoAnterior(month) {
     investIds: getInvestCatIds(),
     resolveCat: resolveCategoryId,
     faturaVencimentoDia: cfg.faturaVencimentoDia || null,
+    vencimentoPorCartao: cfg.vencimentoPorCartao || {},
   });
   if (!Object.keys(mov.dias).length) return null;
   return buildSerie(mov.dias, dias, base)[dias - 1].saldo;
@@ -144,7 +151,7 @@ function _ajustes(d) {
   return `
     <div class="folha faixa-fina" id="adiante-ajustes">
       <div class="adiante-campos">
-        <p class="rot">Os dois números<br>que esta tela precisa</p>
+        <p class="rot">${d.cartoes.length ? `Os números<br>que esta tela precisa` : `Os dois números<br>que esta tela precisa`}</p>
         <label class="adiante-campo">
           <span>Saldo inicial de ${esc(mesNome)}</span>
           <input type="number" id="fx-saldo-inicial" class="form-input sm" step="0.01" inputmode="decimal"
@@ -154,12 +161,22 @@ function _ajustes(d) {
             ? `<button type="button" class="btn btn-2 btn-xs" id="fx-usar-fechamento">Usar o fechamento de ${esc(monthLabel(offsetMonth(d.month, -1)).split(' ')[0])}</button>`
             : `<i>Sem ele a curva mede fluxo acumulado, não saldo de conta.</i>`}
         </label>
-        <label class="adiante-campo">
-          <span>Dia de vencimento da fatura</span>
+        ${d.cartoes.map((c, i) => `
+        <label class="adiante-campo adiante-campo-dia">
+          <span>Vencimento · ${esc(c)}</span>
+          <input type="number" class="form-input sm" data-venc-cartao="${esc(c)}"
+                 min="1" max="28" step="1" placeholder="não definido"
+                 value="${d.vencCartao[c] || ''}" />
+          ${i === 0 ? '<i>De 1 a 28. Cada cartão vence no dia dele.</i>' : ''}
+        </label>`).join('')}
+        <label class="adiante-campo adiante-campo-dia">
+          <span>${d.cartoes.length ? 'Vencimento · sem cartão marcado' : 'Dia de vencimento da fatura'}</span>
           <input type="number" id="fatura-vencimento-dia" class="form-input sm"
                  min="1" max="28" step="1" placeholder="não definido"
                  value="${d.venc || ''}" />
-          <i>De 1 a 28. ${d.venc ? '' : 'Em branco, o cartão cai no dia de cada compra.'}</i>
+          ${d.cartoes.length
+            ? (d.venc ? '' : '<i>Em branco, esses gastos caem no dia da compra.</i>')
+            : `<i>De 1 a 28. ${d.venc ? '' : 'Em branco, o cartão cai no dia de cada compra.'}</i>`}
         </label>
       </div>
     </div>`;
@@ -505,7 +522,11 @@ function _ligarEventos() {
   }, true); // capture: 'blur' não borbulha
 
   document.addEventListener('change', e => {
-    if (e.target?.id === 'fatura-vencimento-dia') _salvarVencimento(e.target);
+    if (e.target?.id === 'fatura-vencimento-dia') { _salvarVencimento(e.target); return; }
+    // Um campo por cartão, todos pelo mesmo delegado: a tela é reinjetada por
+    // innerHTML a cada gravação, e listener preso ao campo morreria com ele.
+    const cartao = e.target?.dataset?.vencCartao;
+    if (cartao) _salvarVencimento(e.target, cartao);
   });
 
   document.addEventListener('click', e => {
@@ -552,21 +573,31 @@ async function _salvarAbertura(bruto) {
 /** 1–28: 29, 30 e 31 não existem em todo mês, e "último dia válido" mentiria
  *  sobre a data em que o dinheiro sai. Campo vazio é "não definido" de
  *  propósito — deixa o cartão cair no dia da compra, marcado como inferido. */
-async function _salvarVencimento(input) {
+async function _salvarVencimento(input, cartao = null) {
   const bruto = input.value.trim();
   const n = Math.trunc(Number(bruto));
   const valor = bruto === '' ? null : n;
 
+  const cfg = state.fluxoConfig || {};
+  const atual = cartao ? ((cfg.vencimentoPorCartao || {})[cartao] ?? null)
+                       : (cfg.faturaVencimentoDia ?? null);
+
   if (valor !== null && !(Number.isFinite(n) && n >= 1 && n <= 28)) {
     toast('O dia de vencimento precisa estar entre 1 e 28.', 'error');
-    input.value = state.fluxoConfig?.faturaVencimentoDia || '';
+    input.value = atual || '';
     return;
   }
-  if ((state.fluxoConfig?.faturaVencimentoDia ?? null) === valor) return;
+  if (atual === valor) return;
+
+  // O patch nomeia SÓ o que mudou: em `saveFluxoConfig` o mapa é mesclado
+  // cartão a cartão, então gravar o dia do Nubank não apaga o do Itaú.
+  const patch = cartao ? { vencimentoPorCartao: { [cartao]: valor } }
+                       : { faturaVencimentoDia: valor };
+  const quem = cartao ? `A fatura do ${cartao}` : 'A fatura';
 
   try {
-    await saveFluxoConfig({ faturaVencimentoDia: valor });
-    toast(valor === null ? 'Dia de vencimento removido.' : `Fatura vence no dia ${valor}.`, 'success');
+    await saveFluxoConfig(patch);
+    toast(valor === null ? 'Dia de vencimento removido.' : `${quem} vence no dia ${valor}.`, 'success');
     renderAdiante();
   } catch (err) {
     console.error('Erro ao salvar dia de vencimento:', err);

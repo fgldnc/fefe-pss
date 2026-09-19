@@ -18,7 +18,11 @@ export const state = {
   // Configurações de fluxo de caixa (users/{uid}/settings/fluxo).
   // saldoInicial é por mês e "ausente" NÃO é zero: zero é abertura legítima,
   // ausente é a tela que ainda não pode chamar a curva de "saldo".
-  fluxoConfig: { saldoInicial: {}, faturaVencimentoDia: null },
+  // `faturaVencimentoDia` é o dia do cartão SEM nome informado (o caso de quem
+  // nunca preencheu o campo); `vencimentoPorCartao` é o mapa nome→dia de quem
+  // tem mais de um. Duas faturas em dias diferentes somadas num dia só
+  // inventam um aperto que não existe.
+  fluxoConfig: { saldoInicial: {}, faturaVencimentoDia: null, vencimentoPorCartao: {} },
 };
 
 // ─── CATEGORIA DE INVESTIMENTO (regra única) ───────────────────

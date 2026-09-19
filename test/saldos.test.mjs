@@ -124,6 +124,57 @@ test('com vencimento definido, o cartão do mês vira uma linha só no dia certo
   assert.equal(mov.faturaAgrupada, true);
 });
 
+test('dois cartões viram duas faturas, cada uma no dia dela', () => {
+  // Somar as duas num dia só inventa um aperto que não existe naquele dia — e
+  // esconde o que existe no outro. É por isso que a chave da fatura é o cartão.
+  const mov = buildMovimentos({
+    ym: MES, daysInMonth: DIAS,
+    vencimentoPorCartao: { Nubank: 5, 'Itaú': 20 },
+    transactions: [
+      tx({ date: '2026-08-03', amount: 100, paymentType: 'cartao', card: 'Nubank' }),
+      tx({ date: '2026-08-07', amount:  40, paymentType: 'cartao', card: 'Nubank' }),
+      tx({ date: '2026-08-19', amount: 250, paymentType: 'cartao', card: 'Itaú' }),
+    ],
+  });
+  assert.equal(mov.dias[5].saidas, 140);
+  assert.equal(mov.dias[5].itens[0].desc, 'Fatura do cartão · Nubank');
+  assert.equal(mov.dias[5].itens[0].agrupados, 2);
+  assert.equal(mov.dias[20].saidas, 250);
+  assert.equal(mov.dias[20].itens[0].desc, 'Fatura do cartão · Itaú');
+  assert.equal(mov.faturaAgrupada, true);
+});
+
+test('cartão sem dia próprio usa o dia geral; sem nenhum dos dois, cai no dia da compra', () => {
+  const comGeral = buildMovimentos({
+    ym: MES, daysInMonth: DIAS,
+    faturaVencimentoDia: 15, vencimentoPorCartao: { Nubank: 5 },
+    transactions: [
+      tx({ date: '2026-08-03', amount: 100, paymentType: 'cartao', card: 'Nubank' }),
+      tx({ date: '2026-08-19', amount: 250, paymentType: 'cartao', card: 'Itaú' }),
+    ],
+  });
+  assert.equal(comGeral.dias[5].saidas, 100);
+  assert.equal(comGeral.dias[15].saidas, 250);
+
+  // Nem dia do cartão nem dia geral: comportamento antigo, o dia da compra.
+  const semNada = buildMovimentos({
+    ym: MES, daysInMonth: DIAS,
+    transactions: [tx({ date: '2026-08-03', amount: 100, paymentType: 'cartao', card: 'Nubank' })],
+  });
+  assert.equal(semNada.dias[3].saidas, 100);
+  assert.equal(semNada.faturaAgrupada, false);
+});
+
+test('com um cartão só, a descrição da fatura não repete o nome dele', () => {
+  // "Fatura do cartão · Nubank" quando só existe o Nubank é a mesma informação
+  // duas vezes. O nome entra quando ele distingue alguma coisa.
+  const mov = buildMovimentos({
+    ym: MES, daysInMonth: DIAS, vencimentoPorCartao: { Nubank: 5 },
+    transactions: [tx({ date: '2026-08-03', amount: 100, paymentType: 'cartao', card: 'Nubank' })],
+  });
+  assert.equal(mov.dias[5].itens[0].desc, 'Fatura do cartão');
+});
+
 test('o total projetado do mês soma só o que entra no saldo', () => {
   const mov = buildMovimentos({
     ym: MES, daysInMonth: DIAS, investIds: ['cat-inv'],

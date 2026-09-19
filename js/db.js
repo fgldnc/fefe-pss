@@ -170,7 +170,26 @@ function _normalizeFluxoConfig(doc) {
       if (Number.isFinite(n)) saldoInicial[mes] = n;
     }
   }
-  return { saldoInicial, faturaVencimentoDia: _normalizeVencimento(doc?.faturaVencimentoDia) };
+  // Um vencimento POR CARTÃO. `faturaVencimentoDia` continua sendo o dia do
+  // cartão sem nome informado — é o que todo mundo que nunca preencheu o campo
+  // tem —, e este mapa cobre quem tem mais de um. Mesmo filtro do resto:
+  // chave sem nome ou dia fora de 1–28 não entra, para lixo no documento não
+  // virar um vencimento silencioso.
+  const vencimentoPorCartao = {};
+  const mapa = doc?.vencimentoPorCartao;
+  if (mapa && typeof mapa === 'object') {
+    for (const [nome, val] of Object.entries(mapa)) {
+      const chave = String(nome || '').trim();
+      const dia = _normalizeVencimento(val);
+      if (chave && dia !== null) vencimentoPorCartao[chave] = dia;
+    }
+  }
+
+  return {
+    saldoInicial,
+    faturaVencimentoDia: _normalizeVencimento(doc?.faturaVencimentoDia),
+    vencimentoPorCartao,
+  };
 }
 
 /**
@@ -194,10 +213,21 @@ export async function saveFluxoConfig(patch = {}) {
     ? _normalizeVencimento(patch.faturaVencimentoDia)
     : atual.faturaVencimentoDia;
 
+  // Mesclado cartão a cartão, como `saldoInicial` é mês a mês: gravar o dia do
+  // Nubank não pode apagar o do Itaú. `null` no cartão remove aquele cartão.
+  const vencimentoPorCartao = { ...(atual.vencimentoPorCartao || {}) };
+  for (const [nome, val] of Object.entries(patch.vencimentoPorCartao || {})) {
+    const chave = String(nome || '').trim();
+    if (!chave) continue;
+    const dia = _normalizeVencimento(val);
+    if (dia === null) delete vencimentoPorCartao[chave];
+    else vencimentoPorCartao[chave] = dia;
+  }
+
   // setDoc SEM merge, ao contrário de saveDoc: o documento inteiro é montado
   // aqui a partir do state, e com merge um mês removido de saldoInicial
   // sobreviveria no Firestore e voltaria no próximo load.
-  const dados = { saldoInicial, faturaVencimentoDia };
+  const dados = { saldoInicial, faturaVencimentoDia, vencimentoPorCartao };
   const { setDoc } = fb();
   await setDoc(docRef('settings', 'fluxo'), dados);
   state.fluxoConfig = dados;
@@ -685,10 +715,14 @@ export async function importBackup(file) {
     // saldoInicial é mesclado mês a mês sobre o que já existe, não substituído:
     // restaurar um backup de agosto não pode apagar a abertura de setembro que
     // a usuária declarou depois. Mesma regra de `saveFluxoConfig`.
-    const atual = state.fluxoConfig || { saldoInicial: {}, faturaVencimentoDia: null };
+    const atual = state.fluxoConfig || { saldoInicial: {}, faturaVencimentoDia: null, vencimentoPorCartao: {} };
     const dados = {
       saldoInicial: { ...settings.saldoInicial, ...atual.saldoInicial },
       faturaVencimentoDia: atual.faturaVencimentoDia ?? settings.faturaVencimentoDia,
+      // Mesma regra dos outros dois: o que já existe vence o que vem do
+      // arquivo — restaurar um backup antigo não apaga um vencimento definido
+      // depois dele.
+      vencimentoPorCartao: { ...(settings.vencimentoPorCartao || {}), ...(atual.vencimentoPorCartao || {}) },
     };
     await setDoc(docRef('settings', 'fluxo'), dados);
   }

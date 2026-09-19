@@ -1196,24 +1196,32 @@ body { overflow-x: hidden; overflow-y: auto; }
    do campo que ele explica, custa zero linha e chega na hora certa. */
 .faixa-fina { padding: 14px 24px; }
 
-/* Rótulo + os dois campos numa fileira só. Colunas IGUAIS para os dois
-   campos: são o mesmo tipo de campo, e larguras diferentes liam como um sendo
+/* Rótulo + os campos numa fileira só. FLEX e não grid de colunas fixas: o
+   número de campos VARIA — quem tem dois cartões responde um vencimento para
+   cada, mais o do cartão sem nome marcado. Todos com a mesma base de largura,
+   porque são o mesmo tipo de campo e larguras diferentes liam como um sendo
    mais importante que o outro. */
-.adiante-campos {
-  display: grid; grid-template-columns: auto 1fr 1fr;
-  gap: 8px 28px; align-items: start;
+.adiante-campos { display: flex; flex-wrap: wrap; gap: 12px 26px; align-items: flex-start; }
+.adiante-campos > .rot { margin: 4px 10px 0 0; line-height: 1.5; flex: none; }
+.adiante-campo {
+  display: flex; flex-direction: column; gap: 5px;
+  flex: 1 1 200px; min-width: 0; max-width: 270px;
 }
-.adiante-campos > .rot { margin: 4px 24px 0 0; line-height: 1.5; }
-.adiante-campo { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+/* Campo de DIA é mais estreito que o de saldo: cabem dois dígitos, e com a
+   largura do saldo os quatro campos de quem tem dois cartões não caberiam numa
+   fileira só — a faixa viraria duas linhas e empurraria a curva para fora da
+   dobra outra vez. */
+.adiante-campo-dia { flex: 0 1 158px; }
 .adiante-campo > span { font-size: 13px; font-weight: 600; }
 .adiante-campo > i { font-style: normal; font-size: 11.5px; color: var(--ink-3); line-height: 1.4; }
-.adiante-campo .form-input.sm { max-width: 220px; }
 @media (max-width: 900px) {
-  .adiante-campos { grid-template-columns: 1fr 1fr; gap: 14px 20px; }
-  .adiante-campos > .rot { grid-column: 1 / -1; margin: 0; }
-}
-@media (max-width: 560px) {
-  .adiante-campos { grid-template-columns: 1fr; }
+  .adiante-campos > .rot { flex: 1 0 100%; margin: 0; }
+  /* O saldo toma a linha inteira e os dias ficam DOIS POR LINHA: a 375px a
+     folha tem 343px por dentro, e 2×158 + a goteira cabem justo. Um campo de
+     dois dígitos ocupando a largura toda desperdiça a altura que esta faixa
+     existe para poupar. */
+  .adiante-campo { flex: 1 1 100%; max-width: none; }
+  .adiante-campo-dia { flex: 1 1 140px; }
 }
 .adiante-campo > span { font-size: 12.5px; font-weight: 600; color: var(--ink-2); }
 .adiante-campo > i { font-style: normal; font-size: 11.5px; color: var(--ink-3); max-width: 42ch; }
