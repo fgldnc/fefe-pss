@@ -34,8 +34,9 @@ App de **controle financeiro pessoal** (nome exibido: "Radar", `index.html:6` = 
 | `gastos.js` | **Formulário e gravação** de lançamento: modal, validação, projeção de parcelas, aporte no ativo vinculado, confirmar parcela prevista. Não desenha tela. |
 | `receitas.js` | **Formulário e gravação** de receita: modal, gravação preservando procedência, copiar do mês anterior. Não desenha tela. |
 | `orcamento.js` | Editor de limites por categoria. **Mora em Ajustes** desde a rodada 3. |
-| `metas.js` | CRUD de metas financeiras e seus aportes. |
-| `patrimonio.js` | CRUD de ativos, aportes e vínculo ativo→meta (`linkedGoalId`). |
+| `guardado.js` | **A tela "Guardado"** (rodada 5): total do patrimônio + barra de composição, metas com progresso, tabela de ativos, aportes por mês. |
+| `metas.js` | **Formulário e gravação** de meta e de aporte na meta. Não desenha tela. |
+| `patrimonio.js` | **Formulário e gravação** de ativo e de aporte no ativo, mais `valorDepreciado()`. Não desenha tela. |
 | `adiante.js` | **A tela "Adiante"** (rodada 4): saldo inicial + dia de vencimento, 3 KPIs, curva diária, tabela dos dias com movimento. |
 | `cartao.js` | **A tela "Cartão"**: resumo, contratos em aberto, parcelas previstas e parcelas já pagas. Os dois do meio vieram de `adiante.js`; o das pagas é novo. |
 | `saldos.js` | **Só cálculo**, sem DOM e sem `state`: `buildMovimentos`/`buildSerie`/`acharMinimo`/`contextoDoMinimo`, fixadas por `test/saldos.test.mjs`. |
@@ -233,7 +234,8 @@ antes de escrever qualquer linha de CSS.** O plano das 8 rodadas está em
 `PROMPT-implementar-v2.md`; a arquitetura de 5 destinos, em `ARQUITETURA-v2.md`.
 
 Aplicado até aqui: **rodada 1 (fundação)** — a pele —, **rodada 2
-(navegação)** — o roteamento —, **rodada 3 (Mês)** e **rodada 4 (Adiante)**.
+(navegação)** — o roteamento —, **rodada 3 (Mês)**, **rodada 4 (Adiante)**,
+**Cartão** e **rodada 5 (Guardado)**.
 As `<section class="tab-content">` das abas que ainda não foram refeitas
 continuam no `index.html` e os `render*` continuam escrevendo nelas por id: o
 que mudou foi quem as mostra e quando.
@@ -272,7 +274,7 @@ que mudou foi quem as mostra e quando.
 - **Chart.js pinta em canvas e não resolve `var(--…)`.** As cores vêm de
   `getComputedStyle` na hora de montar o gráfico — `coresGrafico()` em
   `js/adiante.js`, `_token()` em `js/mes.js`, `_token()` em
-  `js/patrimonio.js`. HEX literal no código é regressão conhecida.
+  `js/guardado.js`. HEX literal no código é regressão conhecida.
 - **Segundo canal em tudo** (WCAG 1.4.1): sinal `+` / `−` (U+2212) na coluna de
   valor, parênteses no KPI negativo, `◇` + texto + barra na borda esquerda da
   linha pendente (`.marca-d`, `tr.conferir`), tracejado na projeção, nome escrito
@@ -287,12 +289,19 @@ que mudou foi quem as mostra e quando.
   do `hibrido.html`, **não reinventado** — reusar, não criar símbolo novo. Os
   seletores de elemento (`table`, `th`, `td`) estão escopados em `.folha` para
   não pegarem as `.data-table` das abas antigas.
+- **`.btn-2` (botão secundário) só entrou no CSS na rodada 5.** Ele existe no
+  `hibrido.html` desde a primeira versão, mas nunca tinha sido copiado: os
+  botões `class="btn btn-2"` de Mês, Adiante e Cartão caíam no `.btn`
+  genérico, que tem `border-color: transparent` — apareciam como texto solto
+  sobre a folha branca. O contorno é `--borda-forte`, não `--borda`, pela
+  mesma razão do campo de formulário.
+
 ### Roteamento por destino (rodada 2)
 
 - **`DESTINOS` em `js/app.js` é o mapa da navegação.** Um destino é uma LISTA de
   seções do `index.html`, mostradas juntas e renderizadas na ordem do array:
   `importar` = extratos · `mes` = a tela de Mês · `cartao` = a tela de Cartão ·
-  `adiante` = a tela de Adiante · `guardado` = metas, patrimonio ·
+  `adiante` = a tela de Adiante · `guardado` = a tela de Guardado ·
   `ajustes` = configuracoes, relatorios. **Empilhar é o estado intermediário**:
   as rodadas 3 a 8 fundem cada destino numa tela só, e a lista encolhe junto.
   Os `render*` são chamados **em série** — a ordem é a de leitura da tela, e
@@ -421,6 +430,53 @@ já pagas**.
   deixou de ser de uma tela só. Vale a mesma regra: nenhum `overflow` no
   contêiner, `table-layout: fixed`, `<thead>` sticky em `top: var(--topbar-h)`.
 
+### A tela "Guardado" (rodada 5)
+
+Quatro blocos em `js/guardado.js`, cada um com id próprio (`guardado-total`,
+`guardado-metas`, `guardado-ativos`, `guardado-aportes-mes` — as âncoras de
+`data-goto`): **total · metas · onde está guardado · aportes por mês**.
+`APELIDOS.metas` e `APELIDOS.patrimonio` apontam para `guardado`, e as
+`ANCORAS` levam a `guardado-metas` e `guardado-ativos`.
+
+- **`metas.js` e `patrimonio.js` deixaram de desenhar tela**, como
+  `gastos.js`/`receitas.js` na rodada 3: viraram `initMetas(aoMudar)` /
+  `openMetaModal` / `openAporteMetaModal` / `excluirMeta` e
+  `initPatrimonio(aoMudar)` / `openAtivoModal` / `openAporteAtivoModal` /
+  `excluirAtivo` / `valorDepreciado`. Os modais seguem no `index.html` e não
+  são remontados — ali listener no elemento é seguro. Na TELA não é: um
+  listener só, delegado em `#tab-guardado` por `data-guardado="…"`.
+- **`valorDepreciado()` é a regra única de "quanto este bem vale hoje"**, e a
+  tela a importa em vez de repetir a conta. Duas leituras do mesmo bem viram
+  dois patrimônios totais.
+- **A rosca "Composição" morreu.** Os três números do `.apoio` já SÃO a
+  composição, em número; a rosca repetia em desenho o que já estava escrito, e
+  pintava com `--c2/--c4/--c5`, cor do tema antigo. No lugar ficou
+  `.guardado-barra`: uma barra empilhada de 10px, com `.guardado-legenda`
+  nomeando cada parte ao lado — cor nunca sozinha.
+- **"Aportes por mês" continua sendo o único gráfico de série**, e continua
+  pelo mesmo motivo: **o app não guarda histórico de valor de ativo**.
+  `currentValue` é o valor de hoje; o histórico que existe é o de aportes.
+  Desenhar "patrimônio mês a mês" seria inventar número. Só existe com
+  snapshot mensal — mudança de modelo, não de tela.
+- **O vínculo ativo→meta se nomeia dos dois lados**: a meta diz "↳ alimentada
+  por *ativo*", o ativo diz "↳ credita a meta *meta*". Antes isso só existia
+  dentro de um `<select>` que só aparecia com tipo "investimento". Quem
+  credita continua sendo `db.js:addAporteToAsset` — a regra mora lá de
+  propósito, para valer venha o aporte de onde vier.
+- **A barra de progresso da meta usa `--marca`**; meta cumprida vira
+  `--entrou` com "Meta alcançada" escrito ao lado. O valor em R$ ao lado
+  segue em `--ink`: a marca nunca toca um número de dinheiro.
+- **O selo do tipo da meta só aparece quando acrescenta.** "Reserva de
+  emergência · RESERVA DE EMERGÊNCIA" é a mesma palavra duas vezes; se o nome
+  já contém a primeira palavra do tipo, o selo some.
+- **`.guardado-toggle` NÃO é `.ir`.** `.ir` é um quadrado de 28px para o glifo
+  "↗": texto dentro dele quebra em três linhas ("2 / aport / e"). Foi medido.
+- A tabela de ativos segue a regra das outras: `.tabela-folha`, **nenhum
+  `overflow` no contêiner**, `table-layout: fixed`, larguras **no CSS por id
+  de bloco**, `<thead>` sticky em `top: var(--topbar-h)`, e `esconde-sm` no
+  `<th>` **e no `<td>`**. Abaixo de 900px sobram Ativo · Hoje · ações, e o
+  "+ Aporte" da linha some para os dois ícones caberem inteiros.
+
 ### Onde o orçamento mora (decisão da usuária, rodada 3)
 
 **Orçamento é ajuste, não leitura do mês.** Definir teto de categoria se faz uma
@@ -463,8 +519,8 @@ mudança de interface:
 | `PESQUISA-UX.md` | a evidência. O que está `[NÃO CONFIRMADO]` lá segue não confirmado. |
 
 Rodadas: **1 fundação (feita)** · **2 navegação (feita)** · **3 Mês (feita)** ·
-**4 Adiante (feita)** ·
-5 Guardado · 6 Importar · 7 Conferir · 8 Ajustes. Uma por vez, cada uma
+**4 Adiante (feita)** · **Cartão (feita)** · **5 Guardado (feita)** ·
+6 Importar · 7 Conferir · 8 Ajustes. Uma por vez, cada uma
 terminando com o app funcionando.
 
 ### Decisões da usuária que mudam o plano original

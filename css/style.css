@@ -1174,3 +1174,133 @@ body { overflow-x: hidden; overflow-y: auto; }
   #cartao-previstas th:nth-child(4),
   #cartao-pagas     th:nth-child(4) { width: 78px; }
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   BOTÃO SECUNDÁRIO DO v2
+
+   `.btn-2` existe no hibrido.html (linha 198) e nunca tinha sido copiado
+   para cá: os botões `class="btn btn-2"` de Mês, Adiante e Cartão estavam
+   caindo no `.btn` genérico, que tem `border-color: transparent` — ou seja,
+   apareciam como texto solto. Folha branca sobre folha branca precisa de
+   contorno, e o contorno é `--borda-forte` (3:1) e não `--borda` (1,3:1),
+   pela mesma razão que o campo de formulário usa.
+════════════════════════════════════════════════════════════════ */
+.btn-2 {
+  background: var(--folha); border-color: var(--borda-forte); color: var(--ink);
+}
+.btn-2:hover { background: var(--folha-2); border-color: var(--ink-2); color: var(--ink); }
+
+/* ═══════════════════════════════════════════════════════════════
+   GUARDADO (rodada 5) — metas + patrimônio numa folha só
+════════════════════════════════════════════════════════════════ */
+
+/* O total do patrimônio é o número grande da tela, mas NÃO é `.heroi`:
+   herói é a folha escura de Mês, e duas folhas escuras no app competem
+   entre si. Aqui o tamanho já basta como hierarquia. */
+.guardado-total-val {
+  font: 600 40px/1 var(--fonte); letter-spacing: -0.03em; color: var(--ink);
+  margin: 0 0 16px;
+}
+
+/* A barra empilhada que substituiu a rosca "Composição". Uma linha de 10px
+   diz a mesma proporção que uma rosca de 240px — e ao lado dela os três
+   números do `.apoio` já nomeiam cada parte. */
+.guardado-barra {
+  display: flex; height: 10px; border-radius: 5px; overflow: hidden;
+  background: var(--folha-2);
+}
+.guardado-barra > span { display: block; }
+.guardado-legenda {
+  display: flex; flex-wrap: wrap; gap: 6px 18px; margin-top: 10px;
+  font-size: 12px; color: var(--ink-3);
+}
+/* Segundo canal da cor: o nome vem escrito ao lado do quadradinho. */
+.guardado-legenda span { display: inline-flex; align-items: center; gap: 6px; }
+.guardado-legenda i { width: 9px; height: 9px; border-radius: 2px; flex: none; }
+.guardado-legenda b { color: var(--ink-2); font-weight: 600; }
+
+/* ── uma meta ───────────────────────────────────────────────── */
+.guardado-meta { padding: 14px 0; border-top: 1px solid var(--borda); }
+.guardado-meta:first-of-type { border-top: 0; padding-top: 0; }
+.guardado-meta-topo {
+  display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-bottom: 9px;
+}
+.guardado-meta-nome { font-size: 15px; font-weight: 600; color: var(--ink); }
+.guardado-meta-val {
+  margin-left: auto; font-size: 16px; font-weight: 600; color: var(--ink); white-space: nowrap;
+}
+.guardado-meta-val em { font-style: normal; font-size: 12.5px; font-weight: 400; color: var(--ink-3); }
+
+/* A barra de progresso usa `--marca`: a marca pinta navegação, botão, foco e
+   curva — e progresso é curva, não valor em R$. O número em reais ao lado
+   continua em `--ink`. Meta cumprida vira `--entrou`, com "Meta alcançada"
+   escrito do lado: cor nunca sozinha. */
+.guardado-progresso {
+  height: 8px; border-radius: 4px; background: var(--folha-2); overflow: hidden;
+}
+.guardado-progresso > span { display: block; height: 100%; background: var(--marca); }
+.guardado-progresso.pronta > span { background: var(--entrou); }
+
+.guardado-meta-pe {
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  margin-top: 9px; font-size: 12.5px; color: var(--ink-3);
+}
+.guardado-meta-pe b { color: var(--ink-2); font-weight: 600; }
+.guardado-acoes { margin-left: auto; display: flex; align-items: center; gap: 6px; }
+
+/* O vínculo ativo→meta, que antes só existia dentro de um <select>. */
+.guardado-vinculo { margin: 8px 0 0; font-size: 12px; color: var(--ink-3); }
+
+/* ── histórico de aportes (meta e ativo usam o mesmo) ───────── */
+.guardado-aportes { margin-top: 10px; padding-left: 13px; border-left: 2px solid var(--borda); }
+.guardado-aporte {
+  display: flex; justify-content: space-between; align-items: baseline; gap: 12px;
+  font-size: 12.5px; color: var(--ink-3); padding: 5px 0;
+}
+.guardado-aporte + .guardado-aporte { border-top: 1px solid var(--borda); }
+.guardado-aporte i { font-style: normal; font-size: 11px; }
+/* NÃO é `.ir`: aquele é um quadrado de 28px para o glifo "↗", e texto
+   dentro dele quebra em três linhas ("2 / aport / e"). Foi medido. */
+.guardado-toggle {
+  display: inline-flex; align-items: center; gap: 4px; white-space: nowrap;
+  background: none; border: 0; padding: 2px 0; cursor: pointer;
+  font: 600 11.5px var(--fonte); color: var(--ink-3);
+  text-decoration: underline; text-underline-offset: 3px;
+  text-decoration-color: var(--borda-forte);
+}
+.guardado-toggle:hover { color: var(--ink); }
+
+/* ── tabela de ativos ───────────────────────────────────────── */
+.guardado-ativo-nome { font-size: 13.5px; font-weight: 500; }
+.chip-tipo {
+  display: inline-block; font-size: 11px; font-weight: 600;
+  border-radius: 6px; padding: 2px 8px; white-space: nowrap;
+}
+.guardado-acoes-td { text-align: right; white-space: nowrap; }
+#guardado-ativos .guardado-acoes-td .btn-xs { margin-right: 4px; }
+/* A linha do histórico não tem a altura de linha de tabela: ela é conteúdo. */
+#guardado-ativos tr.guardado-detalhe td { height: auto; padding: 0 0 12px; }
+#guardado-ativos tr.guardado-detalhe .guardado-aportes { margin-top: 0; }
+
+/* Larguras AQUI, não em `style=`: em atributo a media query não consegue
+   encolher a coluna e no celular o nome do ativo fica com quatro linhas. */
+#guardado-ativos th:nth-child(2) { width: 132px; }
+#guardado-ativos th:nth-child(3) { width: 108px; }
+#guardado-ativos th:nth-child(4) { width: 118px; }
+#guardado-ativos th:nth-child(5) { width: 92px; }
+#guardado-ativos th:nth-child(6) { width: 132px; }
+
+.guardado-chart { position: relative; height: 220px; }
+.guardado-chart canvas { position: absolute; inset: 0; }
+
+@media (max-width: 900px) {
+  .guardado-total-val { font-size: 34px; }
+  /* Só sobram "Ativo · Hoje · ações": o nome é o que precisa de espaço. */
+  #guardado-ativos th:nth-child(4) { width: 104px; }
+  #guardado-ativos th:nth-child(6) { width: 86px; }
+  /* O "+ Aporte" da linha some no celular; o ✎ abre o mesmo caminho e o
+     alvo de toque dos dois ícones fica inteiro. */
+  #guardado-ativos .guardado-acoes-td .btn-xs { display: none; }
+  .guardado-meta-val { margin-left: 0; width: 100%; }
+  .guardado-acoes { margin-left: 0; }
+}

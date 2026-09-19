@@ -36,6 +36,18 @@
         "."
       ],
       "port": 4323
+    },
+    {
+      "name": "radar-guardado",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "-y",
+        "serve",
+        "-l",
+        "4324",
+        "."
+      ],
+      "port": 4324
     }
   ]
 }

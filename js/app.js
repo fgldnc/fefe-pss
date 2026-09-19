@@ -49,9 +49,11 @@ const DESTINOS = {
   adiante: [
     { secao: 'adiante', mod: () => import('./adiante.js').then(m => m.renderAdiante) },
   ],
+  // Rodada 5: as duas telas empilhadas viraram UMA. `js/guardado.js` monta a
+  // seção; `metas.js` e `patrimonio.js` continuam vivos como camada de
+  // formulário e gravação, chamados de lá.
   guardado: [
-    { secao: 'metas',      mod: () => import('./metas.js').then(m => m.renderMetas) },
-    { secao: 'patrimonio', mod: () => import('./patrimonio.js').then(m => m.renderPatrimonio) },
+    { secao: 'guardado', mod: () => import('./guardado.js').then(m => m.renderGuardado) },
   ],
   ajustes: [
     // Orçamento é ajuste, não leitura do mês: definir teto de categoria se faz
@@ -89,6 +91,9 @@ const ANCORAS = {
   dashboard: 'mes-heroi', gastos: 'mes-tabela', receitas: 'mes-tabela',
   orcamento: 'orcamento-bloco',
   calendario: 'adiante-curva', timeline: 'cartao-contratos',
+  // Rodada 5: `metas` e `patrimonio` deixaram de ser seção e viraram bloco
+  // dentro de Guardado — o apelido precisa dizer a que bloco rolar.
+  metas: 'guardado-metas', patrimonio: 'guardado-ativos',
 };
 
 /** Destino de `name`, seja ele um destino ou um id de aba antigo. */

@@ -190,80 +190,11 @@
          Os dois primeiros blocos vieram de Adiante; o das parcelas pagas
          não existia em tela nenhuma antes. -->
     <section id="tab-cartao" class="tab-content hidden"></section>
-    <!-- ════ METAS ════════════════════════════════════════════ -->
-    <section id="tab-metas" class="tab-content fit hidden">
-      <p class="page-intro">Alvos com prazo. <b>Use “+ Aporte” para registrar quanto guardou</b>; se a meta estiver ligada a um ativo do Patrimônio, o aporte lá credita aqui sozinho.</p>
-      <div class="page-header" style="justify-content:flex-end">
-        <button class="btn btn-primary btn-sm" id="btn-nova-meta">
-          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          Nova Meta
-        </button>
-      </div>
-      <div id="metas-grid" class="metas-grid">
-        <div class="empty-state" style="grid-column:1/-1">
-          <div class="empty-state-icon">🎯</div>
-          <div class="empty-state-title">Nenhuma meta criada</div>
-          <div class="empty-state-text">Defina objetivos financeiros e acompanhe seu progresso.</div>
-          <button class="btn btn-primary btn-sm" data-proxy-click="btn-nova-meta">Criar primeira meta</button>
-        </div>
-      </div>
-    </section>
-    <!-- ════ PATRIMÔNIO ═══════════════════════════════════════ -->
-    <section id="tab-patrimonio" class="tab-content fit hidden">
-      <p class="page-intro">Tudo que você tem: investimento, dinheiro em conta e bens. <b>Atualize o valor atual de vez em quando</b> — é o que mantém o total certo.</p>
-      <div class="page-header" style="justify-content:flex-end">
-        <button class="btn btn-primary btn-sm" id="btn-novo-ativo">
-          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          Novo Ativo / Bem
-        </button>
-      </div>
-      <div class="kpi-grid">
-        <div class="kpi-card">
-          <div class="kpi-header"><span class="kpi-label">Patrimônio Total</span><div class="kpi-icon">💎</div></div>
-          <span class="kpi-value accent" id="pat-total">R$ —</span>
-          <div class="kpi-delta" id="pat-total-sub">—</div>
-        </div>
-        <div class="kpi-card">
-          <div class="kpi-header"><span class="kpi-label">Investimentos</span><div class="kpi-icon">📈</div></div>
-          <span class="kpi-value gold" id="pat-investimentos">R$ —</span>
-        </div>
-        <div class="kpi-card">
-          <div class="kpi-header"><span class="kpi-label">Caixa / Conta</span><div class="kpi-icon">🏦</div></div>
-          <span class="kpi-value positive" id="pat-caixa">R$ —</span>
-        </div>
-        <div class="kpi-card">
-          <div class="kpi-header"><span class="kpi-label">Bens Pessoais</span><div class="kpi-icon">🏠</div></div>
-          <span class="kpi-value" id="pat-bens">R$ —</span>
-        </div>
-      </div>
-      <div class="dashboard-row" id="pat-graficos">
-        <div class="card card-pat-chart">
-          <div class="card-header"><span class="card-title">Composição</span></div>
-          <p class="card-sub">A proporção entre o que rende, o que está parado em conta e o que só perde valor.</p>
-          <div class="pat-chart-box"><canvas id="chart-pat-composicao"></canvas></div>
-        </div>
-        <div class="card card-pat-chart">
-          <div class="card-header"><span class="card-title">Aportes por mês</span></div>
-          <!-- NÃO é "o patrimônio mês a mês": o app guarda o valor ATUAL de cada
-               ativo, não o histórico de quanto ele valia em cada mês. Desenhar
-               uma curva de patrimônio passado seria inventar número. O que
-               existe de verdade é o histórico de aportes — e é isso que o
-               gráfico mostra, com o nome do que é. -->
-          <p class="card-sub">Quanto você aportou em cada um dos últimos 6 meses. Não é o valor do patrimônio no passado — esse histórico o app não guarda.</p>
-          <div class="pat-chart-box"><canvas id="chart-pat-aportes"></canvas></div>
-        </div>
-      </div>
-      <div class="card grow" style="margin-top:1rem">
-        <div class="card-header"><span class="card-title">Todos os ativos e bens</span></div>
-        <p class="card-sub">Use o + para registrar um aporte e o ✎ para atualizar o valor atual. Bem com taxa de depreciação se atualiza sozinho.</p>
-        <div class="table-wrapper">
-          <table class="data-table">
-            <thead><tr><th scope="col">Nome</th><th scope="col">Tipo</th><th scope="col">Valor Inicial</th><th scope="col">Valor Atual</th><th scope="col">Aquisição</th><th scope="col">Obs.</th><th scope="col" class="col-actions"></th></tr></thead>
-            <tbody id="ativos-tbody"><tr><td colspan="7" class="empty-row">Nenhum ativo cadastrado.</td></tr></tbody>
-          </table>
-        </div>
-      </div>
-    </section>
+    <!-- ════ GUARDADO ═════════════════════════════════════════
+         Rodada 5: Metas e Patrimônio viraram UMA tela. js/guardado.js monta a
+         seção inteira; este <section> é vazio de propósito, como o de Mês,
+         Cartão e Adiante. Editar markup de Guardado aqui não tem efeito. -->
+    <section id="tab-guardado" class="tab-content hidden"></section>
     <!-- ════ EXTRATOS ═════════════════════════════════════════ -->
     <section id="tab-extratos" class="tab-content fit hidden">
       <p class="page-intro">A porta de entrada dos dados. <b>Arraste o arquivo do banco em “Importar Extrato”</b> — o Radar lê no seu navegador, classifica o que reconhece e marca em âmbar só o que ficou em dúvida.</p>

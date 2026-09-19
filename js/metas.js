@@ -1,154 +1,85 @@
 /**
- * metas.js — Aba de metas financeiras
+ * metas.js — formulário e gravação de METAS (redesign v2, rodada 5)
+ *
+ * Deixou de desenhar tela. A tela é `js/guardado.js`, que funde metas e
+ * patrimônio numa folha só; aqui ficou o que é gravação: abrir o modal,
+ * validar, somar o aporte no progresso e persistir.
+ *
+ * É o mesmo recorte que `gastos.js` e `receitas.js` receberam na rodada 3, e
+ * pela mesma razão: a tela é remontada por innerHTML a cada gravação, mas os
+ * modais moram no `index.html` e NÃO são remontados — então listener no
+ * elemento do modal é seguro, e listener no elemento da tela não é.
+ *
+ * Nenhuma regra mudou: o aporte continua empilhando em `contributions` e
+ * somando em `currentAmount`, que é o que `db.js:addAporteToAsset` também faz
+ * quando o aporte chega pelo ativo vinculado.
  */
 
-import { state, fmt, toast, esc } from './utils.js';
+import { state, fmt, toast } from './utils.js';
 import { saveGoal, deleteGoal } from './db.js';
 
-let _metasInit = false;
+let _init = false;
+/** Quem redesenha a tela depois de gravar. Quem chama `initMetas` decide. */
+let _aoMudar = () => {};
 
-export function renderMetas() {
-  if (!_metasInit) {
-    _initMetasEvents();
-    _metasInit = true;
-  }
-  _renderMetasGrid();
+export const TIPO_META = {
+  reserva_emergencia: 'Reserva de emergência',
+  aposentadoria: 'Aposentadoria',
+  viagem: 'Viagem',
+  compra: 'Compra de bem',
+  outro: 'Outro objetivo',
+};
+
+/** Liga os botões DOS MODAIS uma única vez. A tela liga os dela. */
+export function initMetas(aoMudar) {
+  if (typeof aoMudar === 'function') _aoMudar = aoMudar;
+  if (_init) return;
+  _init = true;
+
+  document.getElementById('btn-salvar-meta')?.addEventListener('click', _salvarMeta);
+  document.getElementById('btn-salvar-aporte')?.addEventListener('click', _salvarAporte);
 }
 
-function _renderMetasGrid() {
-  const grid = document.getElementById('metas-grid');
-
-  if (!state.goals.length) {
-    grid.innerHTML = '<p class="empty-state" style="grid-column:1/-1">Nenhuma meta criada ainda. Que tal começar com uma reserva de emergência?</p>';
-    return;
-  }
-
-  const tipoLabel = {
-    reserva_emergencia: 'Reserva de emergência',
-    aposentadoria: 'Aposentadoria',
-    viagem: 'Viagem',
-    compra: 'Compra de bem',
-    outro: 'Outro objetivo',
-  };
-
-  grid.innerHTML = state.goals.map(g => {
-    const pct     = g.targetAmount > 0 ? Math.min(100, (g.currentAmount / g.targetAmount) * 100) : 0;
-    const prazoFmt = g.deadline
-      ? new Date(g.deadline + 'T12:00:00').toLocaleDateString('pt-BR', {month:'short', year:'numeric'})
-      : 'Sem prazo';
-    const aportes  = (g.contributions || []);
-    const totalAp  = aportes.reduce((s, a) => s + (a.amount || 0), 0);
-
-    return `
-      <div class="meta-card">
-        <div class="meta-card-header">
-          <span class="meta-nome">${esc(g.name)}</span>
-          <span class="meta-tipo-tag">${esc(tipoLabel[g.type] || g.type)}</span>
-        </div>
-        <div class="meta-values">
-          <span class="meta-atual-val">${fmt(g.currentAmount || 0)}</span>
-          <span class="meta-alvo-val">de ${fmt(g.targetAmount)}</span>
-        </div>
-        <div class="meta-progress-bar">
-          <div class="meta-progress-fill" style="width:${pct.toFixed(1)}%"></div>
-        </div>
-        <div class="meta-footer">
-          <span>${pct.toFixed(0)}% concluído · Prazo: ${prazoFmt}</span>
-          <div class="meta-actions">
-            <button class="btn btn-xs btn-secondary" data-action="aporte-meta" data-id="${g.id}">+ Aporte</button>
-            <button class="btn-icon-only" title="Editar" aria-label="Editar meta ${esc(g.name || '')}" data-action="edit-meta" data-id="${g.id}">✎</button>
-            <button class="btn-icon-only danger" title="Excluir" aria-label="Excluir meta ${esc(g.name || '')}" data-action="delete-meta" data-id="${g.id}">✕</button>
-          </div>
-        </div>
-        ${aportes.length ? `
-          <div style="margin-top:0.75rem;border-top:1px solid var(--border-soft);padding-top:0.6rem">
-            <button class="btn-toggle-aportes" data-meta-id="${g.id}" style="display:flex;align-items:center;gap:0.4rem;width:100%;background:none;border:none;cursor:pointer;padding:0;color:var(--text-muted);font-family:var(--font-sans)">
-              <span class="aporte-chevron" style="font-size:0.65rem;transition:transform 0.15s">▶</span>
-              <span style="font-size:0.72rem">${aportes.length} aporte(s) · total: ${fmt(totalAp)}</span>
-            </button>
-            <div class="aportes-detail" data-meta-id="${g.id}" style="margin-top:0.5rem;display:none;flex-direction:column;gap:0.35rem">
-              ${[...aportes].sort((a,b) => (b.date||'').localeCompare(a.date||'')).map(a => `
-                <div style="display:flex;justify-content:space-between;align-items:baseline;font-size:0.74rem;padding:0.3rem 0;border-bottom:1px solid var(--border-soft)">
-                  <span style="color:var(--text-secondary)">
-                    ${a.date ? new Date(a.date + 'T12:00:00').toLocaleDateString('pt-BR') : '—'}
-                    ${a.obs ? `<span style="color:var(--text-muted)"> · ${esc(a.obs)}</span>` : ''}
-                  </span>
-                  <span style="font-family:var(--font-mono);color:var(--accent-bright);flex-shrink:0;margin-left:0.5rem">${fmt(a.amount)}</span>
-                </div>`).join('')}
-            </div>
-          </div>` : ''}
-      </div>`;
-  }).join('');
-
-  // Toggle de expansão do histórico de aportes
-  grid.querySelectorAll('.btn-toggle-aportes').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const id = btn.dataset.metaId;
-      const detail  = grid.querySelector(`.aportes-detail[data-meta-id="${id}"]`);
-      const chevron = btn.querySelector('.aporte-chevron');
-      if (!detail) return;
-      const isHidden = detail.style.display === 'none' || !detail.style.display;
-      detail.style.display = isHidden ? 'flex' : 'none';
-      if (chevron) chevron.style.transform = isHidden ? 'rotate(90deg)' : 'rotate(0deg)';
-    });
-  });
-}
-
-function _initMetasEvents() {
-  document.getElementById('btn-nova-meta').addEventListener('click', () => {
-    _openMetaModal(null);
-  });
-
-  document.getElementById('btn-salvar-meta').addEventListener('click', _salvarMeta);
-  document.getElementById('btn-salvar-aporte').addEventListener('click', _salvarAporte);
-
-  document.getElementById('metas-grid').addEventListener('click', async (e) => {
-    const btn = e.target.closest('[data-action]');
-    if (!btn) return;
-    const id = btn.dataset.id;
-
-    if (btn.dataset.action === 'edit-meta') {
-      const g = state.goals.find(x => x.id === id);
-      if (g) _openMetaModal(g);
-    }
-    if (btn.dataset.action === 'delete-meta') {
-      if (!confirm('Excluir esta meta?')) return;
-      await deleteGoal(id);
-      toast('Meta excluída.', 'success');
-      _renderMetasGrid();
-    }
-    if (btn.dataset.action === 'aporte-meta') {
-      document.getElementById('aporte-meta-id').value = id;
-      document.getElementById('aporte-valor').value   = '';
-      document.getElementById('aporte-data').value    = new Date().toISOString().slice(0,10);
-      document.getElementById('aporte-obs').value     = '';
-      document.getElementById('modal-aporte').classList.remove('hidden');
-    }
-  });
-}
-
-function _openMetaModal(g) {
+export function openMetaModal(g) {
   document.getElementById('modal-meta-title').textContent = g ? 'Editar Meta' : 'Nova Meta';
-  document.getElementById('meta-id').value      = g?.id || '';
-  document.getElementById('meta-nome').value    = g?.name || '';
-  document.getElementById('meta-tipo').value    = g?.type || 'reserva_emergencia';
-  document.getElementById('meta-alvo').value    = g?.targetAmount || '';
-  document.getElementById('meta-atual').value   = g?.currentAmount || '';
-  document.getElementById('meta-prazo').value   = g?.deadline || '';
+  document.getElementById('meta-id').value     = g?.id || '';
+  document.getElementById('meta-nome').value   = g?.name || '';
+  document.getElementById('meta-tipo').value   = g?.type || 'reserva_emergencia';
+  document.getElementById('meta-alvo').value   = g?.targetAmount || '';
+  document.getElementById('meta-atual').value  = g?.currentAmount || '';
+  document.getElementById('meta-prazo').value  = g?.deadline || '';
   document.getElementById('modal-meta').classList.remove('hidden');
 }
 
+export function openAporteMetaModal(goalId) {
+  document.getElementById('aporte-meta-id').value = goalId;
+  document.getElementById('aporte-valor').value   = '';
+  document.getElementById('aporte-data').value    = new Date().toISOString().slice(0, 10);
+  document.getElementById('aporte-obs').value     = '';
+  document.getElementById('modal-aporte').classList.remove('hidden');
+}
+
+/** Exclusão com o `confirm()` nativo, como nas outras exclusões do app. */
+export async function excluirMeta(id) {
+  if (!confirm('Excluir esta meta?')) return false;
+  await deleteGoal(id);
+  toast('Meta excluída.', 'success');
+  _aoMudar();
+  return true;
+}
+
 async function _salvarMeta() {
-  const id      = document.getElementById('meta-id').value || null;
-  const name    = document.getElementById('meta-nome').value.trim();
-  const type    = document.getElementById('meta-tipo').value;
-  const target  = parseFloat(document.getElementById('meta-alvo').value);
-  const current = parseFloat(document.getElementById('meta-atual').value) || 0;
+  const id       = document.getElementById('meta-id').value || null;
+  const name     = document.getElementById('meta-nome').value.trim();
+  const type     = document.getElementById('meta-tipo').value;
+  const target   = parseFloat(document.getElementById('meta-alvo').value);
+  const current  = parseFloat(document.getElementById('meta-atual').value) || 0;
   const deadline = document.getElementById('meta-prazo').value;
 
-  if (!name)           return toast('Informe o nome da meta.', 'error');
+  if (!name)                  return toast('Informe o nome da meta.', 'error');
   if (!target || target <= 0) return toast('Informe o valor alvo.', 'error');
 
+  // O histórico de aportes não vem dos inputs do modal: preservar ao editar.
   const existing = id ? state.goals.find(g => g.id === id) : null;
   await saveGoal({
     name, type, targetAmount: target, currentAmount: current,
@@ -157,7 +88,7 @@ async function _salvarMeta() {
 
   document.getElementById('modal-meta').classList.add('hidden');
   toast('Meta salva!', 'success');
-  _renderMetasGrid();
+  _aoMudar();
 }
 
 async function _salvarAporte() {
@@ -172,11 +103,9 @@ async function _salvarAporte() {
   if (!goal) return;
 
   const contributions = [...(goal.contributions || []), { amount, date, obs }];
-  const newCurrent    = (goal.currentAmount || 0) + amount;
-
-  await saveGoal({ ...goal, currentAmount: newCurrent, contributions }, metaId);
+  await saveGoal({ ...goal, currentAmount: (goal.currentAmount || 0) + amount, contributions }, metaId);
 
   document.getElementById('modal-aporte').classList.add('hidden');
-  toast(`Aporte de ${new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(amount)} registrado!`, 'success');
-  _renderMetasGrid();
+  toast(`Aporte de ${fmt(amount)} registrado!`, 'success');
+  _aoMudar();
 }
