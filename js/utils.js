@@ -533,3 +533,180 @@ export function updateImportConfirmButton(btn, semCategoria, labelPadrao = 'Conf
     btn.classList.remove('btn-atencao');
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   ABA DENTRO DA TELA — o vocabulário ÚNICO (`.abas` / `.aba`)
+   ═══════════════════════════════════════════════════════════════════════
+
+   A rodada 8 decidiu que Ajustes seria cinco folhas empilhadas porque "a
+   página rola". A usuária olhou e disse o contrário: "rolar tudo pra
+   encontrar o que quer é muito paia". Sub-aba dentro da tela passou a ser o
+   padrão — em Ajustes, Cartão, Conferir, Mês, Adiante e Guardado.
+
+   "A PÁGINA ROLA" continua valendo para o que sobra DENTRO de cada aba: a
+   revogação da v1 era contra espremer a linha da tabela para caber numa dobra,
+   e isso segue proibido. O que mudou é que a tela deixou de empilhar tudo.
+
+   As classes vieram de `.imp-abas`/`.imp-aba` (rodada 6) RENOMEADAS para um
+   nome neutro, como `.adiante-tabela-rolagem` virou `.tabela-folha` quando
+   deixou de ser de uma tela só. Um TERCEIRO jeito de fazer aba foi o argumento
+   que matou as `.config-tabs`, e ele continua valendo contra qualquer um.
+
+   Estes helpers moram aqui porque `utils.js` é o único módulo comum a todas
+   as telas que não fecha ciclo de import — o mesmo motivo dos helpers da
+   revisão de importação, logo acima.
+*/
+
+/**
+ * A fileira de abas. `itens` = [{ id, nome, conta? }].
+ *
+ * `conta` só aparece quando é > 0: contador zerado some, como o selo de
+ * Conferir na barra. Silêncio é o sinal de que não há nada ali.
+ *
+ * `alerta` pinta o contador de âmbar, e só Conferir o usa: lá o número É
+ * pendência. Em Cartão "3 contratos" é informação, e âmbar num número que não
+ * pede nada de ninguém é alarme de nada — a mesma regra do selo da barra.
+ *
+ * Só a aba ATIVA leva `aria-controls`: a tela renderiza apenas o painel
+ * aberto (ver `painelAba`), e apontar para um id que não existe no documento
+ * é pior para o leitor de tela que não apontar.
+ */
+export function abas(grupo, itens, ativa, rotulo) {
+  const botoes = itens.map(it => {
+    const on = it.id === ativa;
+    const selo = it.conta > 0
+      ? ` <span class="aba-conta${it.alerta ? ' alerta' : ''}">${esc(String(it.conta))}</span>`
+      : '';
+    return `<button type="button" class="aba${on ? ' ativa' : ''}" role="tab"
+      id="aba-${esc(grupo)}-${esc(it.id)}" aria-selected="${on}" tabindex="${on ? 0 : -1}"
+      ${on ? `aria-controls="painel-${esc(grupo)}-${esc(it.id)}"` : ''}
+      data-aba-grupo="${esc(grupo)}" data-aba="${esc(it.id)}">${esc(it.nome)}${selo}</button>`;
+  }).join('');
+
+  return `<div class="abas abas-tela" role="tablist" aria-label="${esc(rotulo)}">${botoes}</div>`;
+}
+
+/**
+ * O painel da aba aberta. A tela monta SÓ ESTE — e isso não é economia:
+ * Chart.js mede o `<canvas>` na hora de montar, e canvas dentro de um painel
+ * escondido (`display:none`) mede zero. Gráfico nascido com 0px fica com 0px.
+ * Renderizar só o painel visível resolve o problema na raiz, sem cada tela ter
+ * de lembrar de repintar o gráfico ao trocar de aba.
+ */
+export function painelAba(grupo, id, html) {
+  return `<div class="painel-aba" id="painel-${esc(grupo)}-${esc(id)}" role="tabpanel"
+    aria-labelledby="aba-${esc(grupo)}-${esc(id)}">${html}</div>`;
+}
+
+/**
+ * Liga a fileira de abas de um grupo. Chamar UMA vez, no init da tela: a
+ * `<section>` sobrevive ao innerHTML, os botões não — listener preso ao botão
+ * morre na primeira troca.
+ *
+ * As setas ← → andam entre as abas, como manda o padrão de tablist.
+ */
+export function ligarAbas(sec, grupo, aoTrocar) {
+  const seletor = `.aba[data-aba-grupo="${grupo}"]`;
+
+  sec.addEventListener('click', (e) => {
+    const b = e.target.closest(seletor);
+    if (!b) return;
+    e.preventDefault();
+    if (!b.classList.contains('ativa')) aoTrocar(b.dataset.aba);
+  });
+
+  sec.addEventListener('keydown', (e) => {
+    if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+    const b = e.target.closest?.(seletor);
+    if (!b) return;
+    const lista = [...b.parentElement.querySelectorAll(seletor)];
+    const i = lista.indexOf(b);
+    const passo = e.key === 'ArrowRight' ? 1 : lista.length - 1;
+    e.preventDefault();
+    aoTrocar(lista[(i + passo) % lista.length].dataset.aba);
+  });
+}
+
+/** Devolve o foco à aba recém-aberta depois do innerHTML. Sem isto o teclado
+ *  volta para o começo do documento a cada troca. */
+export function focarAba(grupo, id) {
+  document.getElementById(`aba-${grupo}-${id}`)?.focus();
+}
+
+/**
+ * Aba que um `data-goto` pediu. `app.js` escreve aqui ANTES de `switchTab`
+ * (ele não pode importar módulo de tela), a tela lê no começo do render e
+ * apaga. Sem isto, `data-goto="gastos"` leva a Mês e rola até uma tabela que
+ * está dentro de uma aba fechada — o atalho chega a lugar nenhum.
+ */
+export const abaPedida = {};
+
+export function pegarAbaPedida(destino) {
+  const a = abaPedida[destino];
+  delete abaPedida[destino];
+  return a || null;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   TEMA (rodada 9, frente D)
+
+   A rodada 1 da v2 tinha decidido "um tema só"; a usuária revogou. A
+   preferência tem TRÊS valores e mora em `localStorage.fluxo_tema`:
+   `auto` (segue o sistema, o padrão), `claro` e `escuro`.
+
+   O atributo `data-tema` no <html> é sempre um dos DOIS resolvidos —
+   `claro` ou `escuro`. Resolver "auto" aqui, e não com um
+   `@media (prefers-color-scheme: dark)` no CSS, evita duplicar o bloco
+   inteiro de tokens dentro da media query; o CSS tem um seletor só.
+════════════════════════════════════════════════════════════════ */
+export const TEMA_KEY = 'fluxo_tema';
+
+export function temaPreferido() {
+  try {
+    const v = localStorage.getItem(TEMA_KEY);
+    return (v === 'claro' || v === 'escuro') ? v : 'auto';
+  } catch { return 'auto'; }
+}
+
+const _sistemaEscuro = () =>
+  typeof window.matchMedia === 'function' &&
+  window.matchMedia('(prefers-color-scheme: dark)').matches;
+
+/**
+ * Resolve a preferência e escreve no <html>. Devolve 'claro' | 'escuro'.
+ *
+ * Quando o tema REALMENTE muda, dispara `tema-mudou` no documento. É o único
+ * jeito de o gráfico acompanhar: Chart.js pinta em canvas e não resolve
+ * `var(--…)` — as cores foram lidas por `getComputedStyle` na hora de montar
+ * o gráfico, e trocar de tema não repinta um pixel do que já está lá. Quem
+ * ouve o evento é `app.js`, que rerenderiza a tela inteira. Tem de ser o
+ * `render*` da tela e não um `chart.update()`: desde a frente B cada tela
+ * monta só o gráfico do painel ABERTO e destrói a instância quando a aba dele
+ * fecha — um update repintaria um gráfico que pode nem existir.
+ */
+export function aplicarTema() {
+  const resolvido = temaPreferido() === 'auto'
+    ? (_sistemaEscuro() ? 'escuro' : 'claro')
+    : temaPreferido();
+  const antes = document.documentElement.getAttribute('data-tema');
+  document.documentElement.setAttribute('data-tema', resolvido);
+  if (antes && antes !== resolvido) {
+    document.dispatchEvent(new CustomEvent('tema-mudou', { detail: resolvido }));
+  }
+  return resolvido;
+}
+
+export function definirTema(valor) {
+  try { localStorage.setItem(TEMA_KEY, valor); } catch { /* modo privado */ }
+  return aplicarTema();
+}
+
+/** Com a preferência em `auto`, o tema do sistema pode mudar com o app aberto
+ *  (agenda do SO ao anoitecer). Registrado uma vez, no bootstrap. */
+export function ligarTemaDoSistema() {
+  if (typeof window.matchMedia !== 'function') return;
+  const mq = window.matchMedia('(prefers-color-scheme: dark)');
+  const ao = () => { if (temaPreferido() === 'auto') aplicarTema(); };
+  if (mq.addEventListener) mq.addEventListener('change', ao);
+  else if (mq.addListener) mq.addListener(ao);
+}

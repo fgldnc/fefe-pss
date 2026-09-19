@@ -8,6 +8,11 @@
  *   herói · distribuição · resultado do mês · miniatura do fluxo ·
  *   tabela única · evolução de 6 meses
  *
+ * DUAS ABAS desde a rodada 9: a tabela "Tudo que entrou e saiu" deixou de
+ * ficar à vista — pedido da usuária ("poderia ser outra aba dentro do mês").
+ * Ela é a coisa mais alta da tela e empurrava a evolução de 6 meses para fora
+ * de qualquer dobra. Os outros cinco blocos ficam na primeira aba.
+ *
  * O orçamento NÃO está aqui: por decisão da usuária no meio da rodada 3, ele
  * mora em Ajustes. Definir teto é configuração, não leitura do mês.
  *
@@ -24,6 +29,7 @@
 import {
   state, fmt, esc, monthLabel, offsetMonth, toast,
   getInvestCatIds, renderInsights, resolveCategoryId, SEM_CATEGORIA_FILTRO,
+  abas, painelAba, ligarAbas, focarAba, pegarAbaPedida,
 } from './utils.js';
 import { allExpensesOfMonth, incomesOfMonth, deleteTx, deleteIncome } from './db.js';
 import { buildMovimentos, buildSerie, acharMinimo, contextoDoMinimo } from './saldos.js';
@@ -31,6 +37,11 @@ import { initGastos, openGastoModal, confirmarProjecao } from './gastos.js';
 import { initReceitas, openReceitaModal, copiarReceitasDoMesAnterior } from './receitas.js';
 
 let _init = false;
+
+/** Aba aberta. Mora no módulo, não no DOM — mesma razão dos filtros abaixo:
+ *  gravar um lançamento remonta a tela, e voltar para a primeira aba depois de
+ *  cada edição faz perder o lugar exatamente onde se estava trabalhando. */
+let _aba = 'visao';
 
 /**
  * Filtros da tabela. Moram no módulo, não no DOM: salvar um lançamento
@@ -699,24 +710,44 @@ export function renderMes() {
 
   const d = _dados();
 
+  // `data-goto="gastos"` aponta para `mes-tabela`, que agora vive na segunda
+  // aba: sem abrir a aba antes de rolar, o atalho leva a um bloco escondido.
+  _aba = pegarAbaPedida('mes') || _aba;
+
+  const naVisao = _aba === 'visao';
+
   sec.innerHTML = `
     <p class="page-intro">O mês inteiro numa tela. <b>Comece pelo número grande</b> —
-      ele diz quanto ainda dá para gastar; a tabela embaixo diz por onde foi.</p>
-    <div class="faixa">${_heroi(d)}${_distribuicao(d)}</div>
-    <div class="faixa">${_resultado(d)}${_fluxo(d)}</div>
-    ${_tabela(d)}
-    ${_evolucao()}`;
+      ele diz quanto ainda dá para gastar; a aba ao lado diz por onde foi.</p>
+    ${abas('mes', [
+      { id: 'visao',  nome: 'O mês' },
+      { id: 'tabela', nome: 'Tudo que entrou e saiu' },
+    ], _aba, 'O que ver do mês')}
+    ${painelAba('mes', _aba, naVisao
+      ? `<div class="faixa">${_heroi(d)}${_distribuicao(d)}</div>
+         <div class="faixa">${_resultado(d)}${_fluxo(d)}</div>
+         ${_evolucao()}`
+      : _tabela(d))}`;
 
-  // A dica do herói é o motor de insights de utils.js, com a MESMA base dos
-  // números da tela (despesas sem investimento) — chip e total que discordam
-  // são pior que chip nenhum.
-  renderInsights(m => allExpensesOfMonth(m).filter(t => !d.investIds.includes(t.categoryId)));
-
-  _restaurarFiltros();
-  _renderLinhas(d);
-  _renderEvolucao(d);
+  if (naVisao) {
+    // A dica do herói é o motor de insights de utils.js, com a MESMA base dos
+    // números da tela (despesas sem investimento) — chip e total que discordam
+    // são pior que chip nenhum.
+    renderInsights(m => allExpensesOfMonth(m).filter(t => !d.investIds.includes(t.categoryId)));
+    // O gráfico só é montado quando o painel dele está no DOM: Chart.js mede o
+    // canvas na hora, e canvas dentro de aba fechada mede zero — e fica zero.
+    _renderEvolucao(d);
+  } else {
+    // Sem a aba aberta o canvas saiu do DOM; a instância do Chart.js ficaria
+    // viva sobre ele, com o listener de resize junto. Mesma limpeza de
+    // `chartSaldo` em adiante.js.
+    if (_chartEvolucao) { _chartEvolucao.destroy(); _chartEvolucao = null; }
+    _restaurarFiltros();
+    _renderLinhas(d);
+  }
 
   if (!_init) {
+    ligarAbas(sec, 'mes', (id) => { _aba = id; renderMes(); focarAba('mes', id); });
     _ligarEventos();
     initGastos(renderMes);
     initReceitas(renderMes);

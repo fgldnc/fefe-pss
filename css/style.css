@@ -24,8 +24,30 @@
 
 :root {
   /* ── malha e ritmo — os números que mandam no layout ───────── */
-  --coluna: 1180px; --margem: 32px; --goteira: 20px; --u: 8px;
-  --ar-secao: 40px; --linha: 52px; --nav: 232px;
+  /* A MALHA RESPONDE À VIEWPORT (rodada 9, frente C).
+     Era tudo fixo: --coluna 1180px, --margem 32px, --goteira 20px. Numa tela
+     de 2560px sobravam 1148px de cinza morto À DIREITA (medido) — a coluna
+     não crescia e nem sequer era centrada; numa de 1366px a margem de 32px
+     comia largura que a linha da tabela precisava.
+
+     TETO da coluna: 1560px. Existe porque linha de tabela mais larga que isso
+     não se lê — o olho perde a volta da linha —, e porque a folha branca
+     precisa continuar parecendo folha, não parede. O que sobra do teto é
+     dividido pelos dois lados (margin-inline: auto em .tab-content/.topbar),
+     não jogado tudo no fim.
+
+     Os pisos são os valores do celular, que já estavam medidos a 375px. */
+  --coluna: clamp(1180px, 76vw, 1560px);
+  --margem: clamp(16px, 2.3vw, 36px);
+  --goteira: clamp(14px, 1.4vw, 24px);
+  --u: 8px;
+  --ar-secao: clamp(26px, 2.8vw, 48px); --linha: 52px; --nav: 232px;
+  /* O ar ENTRE blocos de uma tela. Maior que a goteira de propósito: a
+     goteira separa colunas de uma mesma linha, isto separa dois assuntos.
+     Sem ele, blocos empilhados nasciam COLADOS (medido: 0px entre
+     `importar-portas` e `importar-historico`) e duas folhas brancas encostadas
+     leem-se como uma folha só, interrompida. Ar, não borda nova. */
+  --ar-bloco: clamp(20px, 2vw, 32px);
   --raio: 16px; --raio-sm: 10px;
 
   /* ── superfícies ───────────────────────────────────────────── */
@@ -127,9 +149,96 @@
 /* ── MARCA — pinta navegação, botão, foco e a curva do saldo.
       NUNCA um valor em R$. Três opções, NENHUMA azul. A troca é de
       um atributo no <html>; não há botão na interface. ───────── */
+/* DOIS PAPÉIS, DOIS TOKENS (rodada 9, frente D). `--marca` é a marca como
+   TINTA: texto do item ativo, contorno de foco, a curva do saldo.
+   `--marca-fundo` é a marca como SUPERFÍCIE, com branco por cima: o botão
+   primário, o losango do logo, a faixa do herói. No claro são a mesma cor —
+   por isso o apelido. No escuro NÃO PODEM ser: uma cor que dá 4,5:1 com o
+   branco por cima nunca dá 4,5:1 como texto sobre a folha escura (é
+   aritmética de luminância, não gosto). Sem os dois tokens, ou o botão some
+   ou o item ativo do menu some. */
 html, html[data-marca="ameixa"] { --marca:#7A2E52; --marca-2:#9A3E6E; --marca-tinta:#F6E8F0; }
 html[data-marca="roxo"]         { --marca:#6B3FA0; --marca-2:#8557C4; --marca-tinta:#EFE8F8; }
 html[data-marca="grafite"]      { --marca:#2E3440; --marca-2:#41485A; --marca-tinta:#E7E9EE; }
+html { --marca-fundo: var(--marca); --marca-fundo-2: var(--marca-2); }
+
+/* ═══════════════════════════════════════════════════════════════
+   O TEMA ESCURO (rodada 9, frente D)
+
+   A rodada 1 da v2 tinha matado o tema escuro; a usuária REVOGOU essa
+   decisão. Ele voltou como REDEFINIÇÃO DE TOKEN, não como regra nova:
+   tudo que a pele precisa está em `:root`, e um segundo tema é escrever
+   o mesmo conjunto de nomes com outros valores. Se alguma regra do
+   arquivo precisar de um ajuste extra aqui embaixo, é ela que está
+   errada — está usando cor literal onde devia usar token.
+
+   `data-tema` no <html> é SEMPRE `claro` ou `escuro`, já resolvido: quem
+   guarda a preferência (auto · claro · escuro) é
+   `localStorage.fluxo_tema`, e quem resolve "auto" contra
+   `prefers-color-scheme` é `aplicarTema()` em js/utils.js. Resolver no JS
+   evita duplicar este bloco inteiro dentro de um `@media`.
+
+   Contraste conferido nos DOIS temas por
+   redesign-v2/direcoes/contraste-hibrido.mjs. Nada de azul aqui também:
+   os cinzas são neutros e a série categórica é a mesma família do claro,
+   clareada.
+════════════════════════════════════════════════════════════════ */
+html[data-tema="escuro"] {
+  --fundo:  #121419;
+  --folha:  #1B1E24;
+  --folha-2:#23272E;
+  --folha-3:#2C313A;
+  --borda:      #2B3038;
+  --borda-media:#454C56;
+  --borda-forte:#8C949F;
+
+  --ink:   #F1F2F4;
+  --ink-2: #C6CAD1;
+  --ink-3: #A2A9B3;
+
+  --entrou:   #5FCB99;
+  --saiu:     #FF9184;
+  --deduzido: #DDAE55;
+  /* As "tintas" são o fundo da pastilha: no escuro elas escurecem em vez
+     de clarear, senão a pastilha vira o ponto mais claro da tela. */
+  --entrou-tinta:  #1A2E25;
+  --saiu-tinta:    #33211F;
+  --deduzido-tinta:#2F2718;
+  --deduzido-fundo:#23200F;
+
+  --s1:#E48CB4; --s2:#5FCB99; --s3:#F59480; --s4:#D9A64A; --s5:#AC93EC; --s6:#A3ACB7;
+  --s1-chip:#372D38; --s2-chip:#253634; --s3-chip:#3A2F31;
+  --s4-chip:#363129; --s5-chip:#2F2E40; --s6-chip:#2E3239;
+
+  /* Sombra no escuro não é cinza sobre branco: é preto, mais forte e mais
+     curta, senão o cartão flutua num borrão. */
+  --sombra: 0 1px 2px rgba(0, 0, 0, 0.35), 0 6px 20px rgba(0, 0, 0, 0.30);
+
+  --accent-fg: #FFFFFF;
+  --accent-glow: rgba(217, 140, 180, 0.22);
+  --text-inverse: #12151A;
+}
+/* A marca no escuro: tinta clara para ler sobre a folha, superfície funda
+   para o branco continuar lendo por cima dela. */
+html[data-tema="escuro"],
+html[data-tema="escuro"][data-marca="ameixa"] {
+  --marca:#D98CB4; --marca-2:#E7A9C8; --marca-tinta:#33222C;
+  --marca-fundo:#6E2A4B; --marca-fundo-2:#8C3C66;
+}
+html[data-tema="escuro"][data-marca="roxo"] {
+  --marca:#BFA3F0; --marca-2:#D2BCF7; --marca-tinta:#2A2440;
+  --marca-fundo:#5A3690; --marca-fundo-2:#7149B0;
+}
+html[data-tema="escuro"][data-marca="grafite"] {
+  --marca:#C7CACE; --marca-2:#DCDEE1; --marca-tinta:#2B2D31;
+  --marca-fundo:#3D434E; --marca-fundo-2:#545B69;
+}
+
+/* Quem pinta SUPERFÍCIE de marca com branco por cima usa `--marca-fundo` na
+   própria regra, não numa camada de correção aqui embaixo: o losango do logo,
+   a faixa do herói, o botão primário, o de login e o `.btn-atencao`. As barras
+   de progresso NÃO entram — não têm texto em cima, e no escuro é a tinta clara
+   que as faz aparecer. */
 
 /* Todo algarismo da interface alinha em coluna sem virar terminal. */
 *, *::before, *::after { font-variant-numeric: lining-nums tabular-nums; }
@@ -137,7 +246,11 @@ html[data-marca="grafite"]      { --marca:#2E3440; --marca-2:#41485A; --marca-ti
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 html {
-  font-size: 15px;
+  /* O passo tipográfico acompanha a tela, mas de leve: 14px no celular,
+     15px no notebook de 1400px (o valor de sempre) e 16,5px no monitor
+     grande. Sem isto, texto dimensionado em rem fica minúsculo a 2560px —
+     e a tela "se ajustar à resolução" é tamanho, não só largura de bloco. */
+  font-size: clamp(14px, 0.13vw + 13.15px, 16.5px);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   scroll-behavior: smooth;
@@ -194,7 +307,7 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 0.65rem;
-  background: var(--accent-primary);
+  background: var(--marca-fundo);
   border: none;
   border-radius: var(--radius-md);
   color: var(--accent-fg);
@@ -207,7 +320,7 @@ body {
   width: 100%;
   justify-content: center;
 }
-.btn-login-google:hover { background: var(--accent-bright); transform: translateY(-1px); box-shadow: 0 6px 20px var(--accent-glow); }
+.btn-login-google:hover { background: var(--marca-fundo-2); transform: translateY(-1px); box-shadow: 0 6px 20px var(--accent-glow); }
 .btn-login-google:active { transform: translateY(0); }
 
 .login-footer { font-size: 0.74rem; color: var(--text-muted); margin-top: 1.5rem; line-height: 1.5; }
@@ -253,7 +366,7 @@ body {
 /* O losango é o único lugar do chrome em que a marca aparece cheia. */
 .sidebar-logo-icon {
   width: 28px; height: 28px; border-radius: 9px;
-  background: var(--marca); color: #fff;
+  background: var(--marca-fundo); color: #fff;
   display: grid; place-items: center;
   font-size: 14px; font-weight: 700; flex: none;
 }
@@ -758,13 +871,26 @@ body { overflow-x: hidden; overflow-y: auto; }
    seguintes encostam, e o `.page-header` de cada uma faz a divisão. */
 .tab-content {
   max-width: var(--coluna); padding: var(--ar-secao) var(--margem);
+  /* Centrada: acima do teto da coluna a sobra se divide pelos dois lados.
+     Sem isto ela ficava colada na navegação e todo o cinza sobrava no fim.
+     O `width: 100%` é obrigatório junto do `margin-inline: auto`: a
+     `.main-content` é flex em coluna, e margem automática no eixo cruzado
+     DESLIGA o stretch — sem a largura declarada o bloco encolhia para o
+     tamanho do conteúdo (medido: 1448px onde cabiam 1560px). */
+  width: 100%; margin-inline: auto;
   /* A topbar é sticky e cobriria o começo da seção: `data-goto` entre telas
      empilhadas tem que parar ABAIXO dela, não atrás. */
   scroll-margin-top: calc(var(--topbar-h) + 24px);
 }
 .tab-content:not(.hidden) ~ .tab-content:not(.hidden) { padding-top: 0; }
+/* Os 80px de rodapé existem para a barra fixa do celular não cobrir a última
+   linha. No desktop não há barra embaixo, e 80px de cinza no fim eram parte
+   do "espaço branco demais no fim" — lá basta o respiro da seção. */
 .main-content > .tab-content:last-of-type { padding-bottom: 80px; }
-.topbar { max-width: var(--coluna); width: 100%; }
+@media (min-width: 901px) {
+  .main-content > .tab-content:last-of-type { padding-bottom: var(--ar-secao); }
+}
+.topbar { max-width: var(--coluna); width: 100%; margin-inline: auto; }
 
 /* O CABEÇALHO DE TABELA AINDA NÃO GRUDA, e a regra foi tirada em vez de
    ficar aqui sem efeito: `position: sticky` num <th> só funciona contra o
@@ -826,6 +952,15 @@ body { overflow-x: hidden; overflow-y: auto; }
    antigas, que ainda estão no ar.
 ════════════════════════════════════════════════════════════════ */
 
+/* Dois blocos de topo de uma tela nunca se encostam. Só os filhos diretos
+   da seção e do painel de aba: `.folha` dentro de `.faixa` é coluna de uma
+   linha só, e margem ali desalinharia as duas colunas. A margem de baixo da
+   `.faixa` colapsa com esta — fica a maior das duas, que é o que se quer.
+   `.adiante-kpis` entra na lista porque é bloco de topo de Adiante como
+   qualquer outro — é grid de três KPIs, não folha, e nascia colado. */
+.tab-content  > :is(.folha, .faixa, .adiante-kpis) + :is(.folha, .faixa, .adiante-kpis),
+.painel-aba   > :is(.folha, .faixa, .adiante-kpis) + :is(.folha, .faixa, .adiante-kpis) { margin-top: var(--ar-bloco); }
+
 /* ── a folha: o cartão, mas lido como papel ─────────────────── */
 .folha {
   background: var(--folha); border: 1px solid var(--borda); border-radius: var(--raio);
@@ -849,12 +984,18 @@ body { overflow-x: hidden; overflow-y: auto; }
 }
 
 /* ── a faixa de duas colunas; empilha quando espremeria número ── */
-.faixa { display: grid; grid-template-columns: 1.05fr 1.45fr; gap: var(--goteira); margin-bottom: var(--goteira); }
+/* `align-items: start` (rodada 9, frente A): sem ele o grid estica os dois
+   blocos até a altura do mais alto, e o herói de Mês — que tem 214px de
+   conteúdo — virava uma faixa de ameixa de 370px com 156px de vazio no meio,
+   porque `.dica` tem `margin-top: auto`. Medido. Bloco que estica por causa
+   do vizinho não deve esticar por dentro: sobra de grade lê-se como grade,
+   vazio dentro do bloco lê-se como bloco quebrado. */
+.faixa { display: grid; grid-template-columns: 1.05fr 1.45fr; gap: var(--goteira); margin-bottom: var(--goteira); align-items: start; }
 .faixa > * { min-width: 0; }
 
 /* ── herói: a frase do jornal dentro da faixa de marca ──────── */
 .heroi {
-  background: linear-gradient(152deg, var(--marca) 0%, var(--marca-2) 100%);
+  background: linear-gradient(152deg, var(--marca-fundo) 0%, var(--marca-fundo-2) 100%);
   color: #fff; border-radius: var(--raio); padding: 24px 26px 22px;
   display: flex; flex-direction: column;
 }
@@ -1132,6 +1273,8 @@ body { overflow-x: hidden; overflow-y: auto; }
 }
 
 @media (max-width: 900px) {
+  /* Fixa o piso do clamp abaixo de 900px: aqui a largura é toda do conteúdo,
+     e 4px a mais de margem custam uma quebra de linha na descrição. */
   :root { --margem: 16px; --goteira: 14px; }
   .dist { grid-template-columns: 1fr; justify-items: center; }
   .apoio { flex-wrap: wrap; gap: 14px 0; }
@@ -1313,21 +1456,10 @@ body { overflow-x: hidden; overflow-y: auto; }
    e continua sendo o mesmo dos dois modais. Reusar, não reinventar.
 ════════════════════════════════════════════════════════════════ */
 
-/* A aba escolhida se marca por TRÊS canais, não só cor: peso da fonte,
-   tinta e o fio de 2px embaixo. `aria-selected` diz o mesmo ao leitor. */
-.imp-abas {
-  display: flex; gap: 4px; margin-bottom: var(--goteira);
-  border-bottom: 1px solid var(--borda);
-}
-.imp-aba {
-  appearance: none; background: none; border: 0; cursor: pointer;
-  font: 500 14px var(--fonte); color: var(--ink-3);
-  padding: 10px 16px; margin-bottom: -1px;
-  border-bottom: 2px solid transparent; border-radius: var(--raio-sm) var(--raio-sm) 0 0;
-}
-.imp-aba:hover { color: var(--ink); background: var(--folha-2); }
-.imp-aba.ativa { color: var(--ink); font-weight: 600; border-bottom-color: var(--marca); }
-.imp-aba:focus-visible { outline: 2px solid var(--marca); outline-offset: -2px; }
+/* As abas de Importar viraram `.abas`/`.aba` — ver o bloco ABA DENTRO DA
+   TELA, no fim deste arquivo. O nome deixou de ser de uma tela só quando a
+   usuária pediu aba em Ajustes, Cartão, Conferir, Mês, Adiante e Guardado.
+   Mesmo caminho de `.adiante-tabela-rolagem` → `.tabela-folha`. */
 
 /* A drop zone é a única coisa grande da tela: é o que se faz aqui. */
 .imp-zona {
@@ -1502,11 +1634,12 @@ body { overflow-x: hidden; overflow-y: auto; }
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   AJUSTES — rodada 8 (a última do redesign v2)
-   Cinco folhas empilhadas, sem sub-aba: as `.config-tabs` eram
-   vocabulário anterior ao híbrido, e um terceiro jeito de fazer aba
-   (depois de `.imp-abas`) não se justifica numa tela que rola e que
-   se visita uma vez.
+   AJUSTES — rodada 8, com abas desde a rodada 9
+   A rodada 8 empilhou cinco folhas sem sub-aba ("a página rola").
+   A usuária REVOGOU: "rolar tudo pra encontrar o que quer é muito
+   paia". Hoje são quatro abas, com o vocabulário ÚNICO `.abas`/
+   `.aba` (fim deste arquivo) — não um terceiro jeito de fazer aba,
+   que continua sendo o argumento contra ressuscitar `.config-tabs`.
    Sem tabela nenhuma aqui — listas. Por isso esta tela não tem
    `<thead>` sticky, largura de coluna nem `esconde-sm`.
    ═══════════════════════════════════════════════════════════════ */
@@ -1561,7 +1694,10 @@ body { overflow-x: hidden; overflow-y: auto; }
   color: var(--saiu); font-weight: 700; margin: 0 0 6px;
 }
 .aj-btn-risco { color: var(--saiu); border-color: var(--saiu); background: var(--folha); }
-.aj-btn-risco:hover { background: var(--saiu); border-color: var(--saiu); color: #fff; }
+/* `--text-inverse`, não `#fff`: no escuro `--saiu` é um salmão claro, e branco
+   por cima dá 2,18:1. A tinta que contrasta com a cor do dinheiro muda com o
+   tema — a cor literal, não. */
+.aj-btn-risco:hover { background: var(--saiu); border-color: var(--saiu); color: var(--text-inverse); }
 .aj-btn-risco[disabled] { opacity: 0.6; cursor: default; }
 
 /* ── conta ─────────────────────────────────────────────────────── */
@@ -1574,6 +1710,23 @@ body { overflow-x: hidden; overflow-y: auto; }
 .aj-conta-quem { display: flex; flex-direction: column; flex: 1; min-width: 0; }
 .aj-conta-quem b { font-size: 14px; font-weight: 600; color: var(--ink); }
 .aj-conta-quem i { font-style: normal; font-size: 12.5px; color: var(--ink-3); overflow-wrap: anywhere; }
+
+/* ── a escolha do tema (rodada 9, frente D) ─────────────────────
+   Três botões, não um interruptor: "auto" é uma escolha de verdade e não
+   cabe num liga-desliga. A escolhida se marca por CONTORNO e peso, não só
+   por cor — segundo canal, como em toda tela. */
+.aj-tema { display: flex; gap: 8px; flex-wrap: wrap; }
+.aj-tema-op {
+  font: 500 13px var(--fonte); cursor: pointer;
+  padding: 8px 14px; border-radius: var(--raio-sm);
+  border: 1px solid var(--borda-forte); background: var(--folha); color: var(--ink-2);
+}
+.aj-tema-op:hover { color: var(--ink); background: var(--folha-2); }
+.aj-tema-op.escolhida {
+  border-color: var(--marca); box-shadow: inset 0 0 0 1px var(--marca);
+  background: var(--marca-tinta); color: var(--marca); font-weight: 600;
+}
+.aj-tema-op:focus-visible { outline: 2px solid var(--marca); outline-offset: 2px; }
 
 /* ── rodapé: os ajustes que mudaram de casa ────────────────────── */
 .aj-mudou { display: grid; grid-template-columns: 1fr 1fr; gap: var(--goteira); }
@@ -1598,3 +1751,57 @@ body { overflow-x: hidden; overflow-y: auto; }
   .aj-item { flex-wrap: wrap; }
   .aj-item-acoes { margin-left: auto; }
 }
+
+
+/* ═══════════════════════════════════════════════════════════════
+   ABA DENTRO DA TELA — `.abas` / `.aba` / `.painel-aba`
+   O vocabulário ÚNICO de aba do app. Nasceu em Importar (rodada 6)
+   como `.imp-abas`, e foi renomeado quando a usuária pediu aba em
+   todas as telas: "rolar tudo pra encontrar o que quer é muito
+   paia". Um TERCEIRO jeito de fazer aba foi o argumento que matou
+   as `.config-tabs` — ele continua valendo contra quem inventar.
+
+   A aba escolhida se marca por TRÊS canais, não só cor: peso da
+   fonte, tinta e o fio de 2px embaixo. `aria-selected` diz o mesmo
+   ao leitor de tela.
+════════════════════════════════════════════════════════════════ */
+.abas {
+  display: flex; gap: 4px; flex-wrap: wrap;
+  margin-bottom: var(--goteira);
+  border-bottom: 1px solid var(--borda);
+}
+.aba {
+  appearance: none; background: none; border: 0; cursor: pointer;
+  font: 500 14px var(--fonte); color: var(--ink-3);
+  padding: 10px 16px; margin-bottom: -1px;
+  display: inline-flex; align-items: center; gap: 7px;
+  border-bottom: 2px solid transparent; border-radius: var(--raio-sm) var(--raio-sm) 0 0;
+}
+.aba:hover { color: var(--ink); background: var(--folha-2); }
+.aba.ativa { color: var(--ink); font-weight: 600; border-bottom-color: var(--marca); }
+.aba:focus-visible { outline: 2px solid var(--marca); outline-offset: -2px; }
+
+/* O contador na aba. NEUTRO por padrão — "3 contratos" é informação,
+   não pendência, e âmbar num número que não pede nada de ninguém é
+   alarme de nada. Só `.alerta` (usado por Conferir, onde o número É
+   pendência) leva a tinta âmbar de `.marca-d`. Zero não chega aqui:
+   a aba nem o desenha (ver `abas()` em js/utils.js). */
+.aba-conta {
+  font-size: 11.5px; font-weight: 600; line-height: 1;
+  padding: 3px 7px; border-radius: 20px;
+  background: var(--folha-3); color: var(--ink-3);
+}
+.aba.ativa .aba-conta { background: var(--marca-tinta); color: var(--marca); }
+.aba-conta.alerta { background: var(--deduzido-tinta); color: var(--deduzido); }
+.aba.ativa .aba-conta.alerta { background: var(--deduzido-tinta); color: var(--deduzido); }
+
+/* Aba de TELA (não de bloco): ela é o cabeçalho do destino, e o ar
+   abaixo dela é o que separa a navegação do conteúdo. */
+.abas-tela { margin-bottom: 20px; }
+
+/* O painel é transparente de propósito: quem desenha a folha branca
+   é o bloco lá dentro. Uma folha em volta das folhas viraria moldura
+   dentro de moldura. `flow-root` para a margem do primeiro filho não
+   escapar por cima da fileira de abas. */
+.painel-aba { display: flow-root; }
+.painel-aba:focus { outline: none; }

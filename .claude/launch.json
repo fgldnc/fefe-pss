@@ -72,6 +72,30 @@
         "."
       ],
       "port": 4326
+    },
+    {
+      "name": "radar-r9-4327",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "-y",
+        "serve",
+        "-l",
+        "4327",
+        "."
+      ],
+      "port": 4327
+    },
+    {
+      "name": "radar-r9-4328",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "-y",
+        "serve",
+        "-l",
+        "4328",
+        "."
+      ],
+      "port": 4328
     }
   ]
 }

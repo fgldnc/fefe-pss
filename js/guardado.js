@@ -7,11 +7,16 @@
  * `metas.js` / `patrimonio.js` viraram camada de formulário + gravação,
  * exatamente como `gastos.js` / `receitas.js` na rodada 3.
  *
- * Quatro blocos, na ordem da pergunta que cada um responde:
- *   total        — "quanto eu tenho, e de que é feito?"
- *   metas        — "para onde esse dinheiro está indo?"
- *   ativos       — "onde ele está guardado?"
- *   aportes/mês  — "eu tenho guardado com constância?"
+ * DUAS ABAS desde a rodada 9. A usuária disse que a tela estava "MUITO feia,
+ * sem a separação entre os blocos e muito bloco sem mostrar nada" — quatro
+ * folhas empilhadas, três delas baixas, e cada uma competindo com a de cima.
+ * O arranjo é o que ela descreveu:
+ *
+ *   "Guardado" — total e aportes por mês LADO A LADO (a `.faixa` de duas
+ *                colunas, a mesma de Mês), e as metas embaixo. O total é um
+ *                número curto e o gráfico é largo: juntos preenchem uma linha
+ *                que nenhum dos dois preenchia sozinho.
+ *   "Onde está" — a tabela de ativos, que é alta e não divide bem com nada.
  *
  * O VÍNCULO ATIVO → META é o assunto, não um detalhe: aportar num ativo de
  * investimento credita a meta ligada a ele (`db.js:addAporteToAsset`), e até
@@ -26,7 +31,10 @@
  * preciso gravar snapshot mensal: mudança de modelo, não de tela.
  */
 
-import { state, fmt, esc, monthLabel, offsetMonth } from './utils.js';
+import {
+  state, fmt, esc, monthLabel, offsetMonth,
+  abas, painelAba, ligarAbas, focarAba, pegarAbaPedida,
+} from './utils.js';
 import {
   initMetas, openMetaModal, openAporteMetaModal, excluirMeta, TIPO_META,
 } from './metas.js';
@@ -36,6 +44,10 @@ import {
 } from './patrimonio.js';
 
 let _init = false;
+
+/** Aba aberta. Mora no módulo, não no DOM: gravar um aporte remonta a tela, e
+ *  voltar para a primeira aba a cada gravação faz perder o lugar. */
+let _aba = 'guardado';
 
 /** Número sem "R$": na coluna de valor o símbolo se repete em toda linha.
  *  Centavos SEMPRE — é a regra do desenho. */
@@ -417,17 +429,28 @@ export function renderGuardado() {
   initPatrimonio(renderGuardado);
   if (!_init) { _ligarTela(sec); _init = true; }
 
+  // `data-goto="metas"` e `data-goto="patrimonio"` caem em abas diferentes:
+  // abrir a certa antes de rolar, senão o atalho leva a um bloco escondido.
+  _aba = pegarAbaPedida('guardado') || _aba;
+
   const d = _dados();
+  const naVisao = _aba === 'guardado';
 
   sec.innerHTML = `
     <p class="page-intro">O que você já tem e para onde está indo. <b>Atualize o valor atual
       de vez em quando</b> — é o que mantém o total honesto.</p>
-    ${_total(d)}
-    ${_metas(d)}
-    ${_ativos(d)}
-    ${_aportesBloco()}`;
+    ${abas('guardado', [
+      { id: 'guardado', nome: 'O que você tem guardado' },
+      { id: 'onde',     nome: 'Onde está guardado', conta: d.ativos?.length },
+    ], _aba, 'O que ver de Guardado')}
+    ${painelAba('guardado', _aba, naVisao
+      ? `<div class="faixa">${_total(d)}${_aportesBloco()}</div>${_metas(d)}`
+      : _ativos(d))}`;
 
-  _renderAportes();
+  // O gráfico só é montado com o painel dele no DOM: Chart.js mede o canvas na
+  // hora, e canvas dentro de aba fechada mede zero — e fica zero.
+  if (naVisao) _renderAportes();
+  else if (_chartAportes) { _chartAportes.destroy(); _chartAportes = null; }
 }
 
 /**
@@ -435,6 +458,8 @@ export function renderGuardado() {
  * gravação: listener no elemento morre junto com o elemento.
  */
 function _ligarTela(sec) {
+  ligarAbas(sec, 'guardado', (id) => { _aba = id; renderGuardado(); focarAba('guardado', id); });
+
   sec.addEventListener('click', async (e) => {
     const btn = e.target.closest('[data-guardado]');
     if (!btn) return;

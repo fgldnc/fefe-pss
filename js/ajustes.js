@@ -5,19 +5,28 @@
  * configurações e relatórios — numa tela só, e encerra a lista de destinos
  * empilhados. Relatórios não foi absorvido: foi apagado (ver abaixo).
  *
- * Seis blocos, na ordem de quanto se mexe em cada um, cada um com id próprio
- * (as âncoras de `data-goto`):
- *   ajustes-categorias — as categorias e suas cores
- *   ajustes-regras     — as regras de classificação automática
- *   ajustes-orcamento  — o teto por categoria (o editor continua em orcamento.js)
- *   ajustes-backup     — exportar, restaurar, o que está guardado e o apagar tudo
- *   ajustes-conta      — quem está logado, e o sair
- *   ajustes-mudou      — para onde foram os ajustes que mudaram de casa
+ * COM ABAS, desde a rodada 9. A rodada 8 tinha decidido o contrário — cinco
+ * folhas empilhadas, porque "a página rola". A usuária olhou e REVOGOU, com
+ * estas palavras: "deve tb separar por abas tudo da ajustes. rolar tudo pra
+ * encontrar o que quer é muito paia". Os seis blocos viraram QUATRO abas:
  *
- * SEM SUB-ABAS. As `.config-tabs` eram vocabulário anterior ao híbrido, e um
- * terceiro jeito de fazer aba (depois de `.imp-abas`) não se justifica: desde a
- * rodada 1 A PÁGINA ROLA, e Ajustes é a tela que menos se visita — cinco folhas
- * empilhadas se leem de uma vez, cinco abas escondem quatro delas.
+ *   classificar — categorias + regras. São a mesma pergunta ("em que caixa cai
+ *                 este gasto?") respondida de dois jeitos, e a regra aponta
+ *                 para a categoria: separá-las obrigaria a trocar de aba no
+ *                 meio de uma tarefa só.
+ *   orcamento   — o teto por categoria (o editor continua em orcamento.js)
+ *   backup      — exportar, restaurar, o que está guardado e o apagar tudo
+ *   conta       — quem está logado, o sair, e — como RODAPÉ dela — para onde
+ *                 foram os ajustes que mudaram de casa. Esse bloco não merece
+ *                 aba própria: ninguém vem a Ajustes procurar por ele, ele
+ *                 existe para ser encontrado por quem procurava outra coisa.
+ *
+ * NÃO é um terceiro jeito de fazer aba: é o MESMO vocabulário de Importar,
+ * renomeado de `.imp-abas` para `.abas` quando deixou de ser de uma tela só.
+ * O argumento que matou as `.config-tabs` continua valendo.
+ *
+ * "A PÁGINA ROLA" segue valendo DENTRO de cada aba — a revogação da v1 era
+ * contra espremer a linha da tabela para caber numa dobra.
  *
  * RELATÓRIOS MORREU (decisão da usuária, perguntada no fim da rodada 7). Eram
  * seis relatórios fixos para uma pessoa só, e cada tabela do app já exporta o
@@ -33,13 +42,21 @@
  * vale na tela, que é reinjetada por innerHTML a cada gravação.
  */
 
-import { state, toast, esc } from './utils.js';
+import {
+  state, toast, esc,
+  abas, painelAba, ligarAbas, focarAba, pegarAbaPedida,
+  temaPreferido, definirTema,
+} from './utils.js';
 import {
   saveCategory, deleteCategory, exportBackup, importBackup, saveDoc, removeDoc,
 } from './db.js';
 import { renderOrcamento, salvarOrcamento } from './orcamento.js';
 
 let _init = false;
+
+/** Aba aberta. Mora no módulo, não no DOM: gravar uma categoria remonta a tela,
+ *  e voltar para a primeira aba a cada gravação faz perder o lugar. */
+let _aba = 'classificar';
 
 /** Cor de uma categoria nova. Era `#3982f7` — azul, que não entra em papel
  *  nenhum nesta pele. A primeira da série categórica é o default agora. */
@@ -217,9 +234,20 @@ function _backup() {
     </div>`;
 }
 
+// A aparência mora em "Conta" e não numa aba própria pela mesma razão que "o
+// que mudou de casa": ninguém vem a Ajustes procurar por ela, e uma aba só
+// para três botões seria a quinta aba de uma tela que já tem quatro.
+// `auto` é o padrão — o app abre no tema que o sistema já está usando.
+const TEMAS = [['auto', 'Como o sistema'], ['claro', 'Claro'], ['escuro', 'Escuro']];
+
 function _conta() {
   const u = state.user || {};
   const inicial = (u.displayName?.[0] || '?').toUpperCase();
+  const tema = temaPreferido();
+  const opcoes = TEMAS.map(([v, rot]) =>
+    `<button class="aj-tema-op${tema === v ? ' escolhida' : ''}" role="radio"
+             aria-checked="${tema === v}" data-aj="tema" data-tema="${esc(v)}">${esc(rot)}</button>`
+  ).join('');
   return `
     <div class="folha" id="ajustes-conta">
       <div class="linha-topo">
@@ -238,6 +266,9 @@ function _conta() {
         </span>
         <button class="btn-2 aj-btn-risco" data-aj="sair">Sair da conta</button>
       </div>
+      <p class="rot" style="margin:20px 0 5px">Aparência</p>
+      <p class="rot-sub">Claro, escuro, ou o que o seu sistema estiver usando.</p>
+      <div class="aj-tema" role="radiogroup" aria-label="Tema">${opcoes}</div>
       <p class="nota" style="margin:12px 0 0">Radar v1.0</p>
     </div>`;
 }
@@ -278,20 +309,34 @@ export function renderAjustes() {
   if (!sec) return;
   if (!_init) { _ligarTela(sec); _ligarModais(); _init = true; }
 
+  // `data-goto="orcamento"` e `data-goto="configuracoes"` caem em abas
+  // diferentes: abrir a certa antes de rolar, senão o atalho leva a um bloco
+  // escondido.
+  _aba = pegarAbaPedida('ajustes') || _aba;
+
+  const painel = _aba === 'classificar' ? _categorias() + _regras()
+               : _aba === 'orcamento'   ? _orcamento()
+               : _aba === 'backup'      ? _backup()
+               :                          _conta() + _mudouDeCasa();
+
   sec.innerHTML = `
     <p class="page-intro">Onde se ajusta o que as outras telas usam. <b>A que mais muda resultado são as
       regras</b>, que classificam a importação sozinhas.</p>
-    ${_categorias()}
-    ${_regras()}
-    ${_orcamento()}
-    ${_backup()}
-    ${_conta()}
-    ${_mudouDeCasa()}`;
+    ${abas('ajustes', [
+      { id: 'classificar', nome: 'Categorias e regras' },
+      { id: 'orcamento',   nome: 'Orçamento' },
+      { id: 'backup',      nome: 'Backup' },
+      { id: 'conta',       nome: 'Conta' },
+    ], _aba, 'O que ajustar')}
+    ${painelAba('ajustes', _aba, painel)}`;
 
   // O editor do orçamento é de `orcamento.js` — ele preenche o `#orcamento-editor`
-  // que o bloco acabou de criar. Falha dele não pode derrubar o resto da tela.
-  try { renderOrcamento(); }
-  catch (err) { console.error('Erro no editor de orçamento:', err); }
+  // que o bloco acabou de criar, e só existe quando a aba dele está aberta.
+  // Falha dele não pode derrubar o resto da tela.
+  if (_aba === 'orcamento') {
+    try { renderOrcamento(); }
+    catch (err) { console.error('Erro no editor de orçamento:', err); }
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -301,6 +346,8 @@ export function renderAjustes() {
 /** Um listener só, delegado na seção: ela é reinjetada por innerHTML a cada
  *  gravação, e listener preso ao elemento morre junto com o elemento. */
 function _ligarTela(sec) {
+  ligarAbas(sec, 'ajustes', (id) => { _aba = id; renderAjustes(); focarAba('ajustes', id); });
+
   sec.addEventListener('click', async (e) => {
     const el = e.target.closest('[data-aj]');
     if (!el) return;
@@ -349,6 +396,23 @@ function _ligarTela(sec) {
         return;
       }
 
+      // `definirTema` dispara `tema-mudou`, e quem ouve é `app.js`: ele
+      // rerenderiza a tela — inclusive ESTA, que por isso não precisa se
+      // redesenhar aqui. É pelo render que o gráfico repinta; canvas não
+      // acompanha `var(--…)`.
+      case 'tema': {
+        definirTema(el.dataset.tema);
+        // A marcação é atualizada aqui na mão porque o evento `tema-mudou` só
+        // sai quando o tema RESOLVIDO muda: trocar de "auto" para "claro" com
+        // o sistema já claro não muda pixel nenhum, mas muda a escolha — e
+        // escolha que não fica marcada parece botão quebrado.
+        sec.querySelectorAll('[data-aj="tema"]').forEach(b => {
+          const marcado = b.dataset.tema === el.dataset.tema;
+          b.classList.toggle('escolhida', marcado);
+          b.setAttribute('aria-checked', String(marcado));
+        });
+        return;
+      }
       case 'wipe':  return _wipe(el);
       case 'sair':  return window._FB?.signOut(window._FB.auth);
     }

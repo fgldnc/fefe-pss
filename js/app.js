@@ -8,12 +8,20 @@ import { initAuth }    from './auth.js';
 import { loadAllData } from './db.js';
 import {
   state, thisMonth, monthLabel, offsetMonth,
-  showKpiSkeleton, toast, esc,
+  showKpiSkeleton, toast, esc, abaPedida,
+  aplicarTema, ligarTemaDoSistema,
 } from './utils.js';
 
 // Re-exporta utils para quem ainda importa de app.js (compatibilidade)
 export { state, thisMonth, monthLabel, offsetMonth, toast } from './utils.js';
 export { esc, fmt, showKpiSkeleton, showTableSkeleton, renderInsights } from './utils.js';
+
+// O TEMA É A PRIMEIRA COISA (rodada 9, frente D). Fora do DOMContentLoaded de
+// propósito: módulo executa antes dele, e o <html> precisa já estar com
+// `data-tema` quando a folha de estilo pintar a primeira tela — senão o app
+// abre claro e pisca para escuro. Também precisa estar resolvido antes de
+// qualquer gráfico montar: o Chart.js lê a cor por getComputedStyle uma vez.
+aplicarTema();
 
 // ─── NAVEGAÇÃO COM DYNAMIC IMPORT ──────────────────────────────
 /**
@@ -112,6 +120,31 @@ const ANCORAS = {
   metas: 'guardado-metas', patrimonio: 'guardado-ativos',
 };
 
+/**
+ * ABA INTERNA de cada âncora (rodada 9).
+ *
+ * Desde a rodada 9 seis das sete telas têm abas dentro delas, e um bloco pode
+ * estar num painel fechado. Sem isto, `data-goto="gastos"` chegava a Mês e
+ * rolava até uma tabela que não estava no DOM: o atalho levava a lugar nenhum.
+ *
+ * O mapa mora aqui, ao lado de `ANCORAS`, e não dentro de cada tela, porque é
+ * `app.js` que sabe traduzir um endereço antigo em destino — e ele não pode
+ * importar módulo de tela sem fechar o ciclo que o import() dinâmico evita.
+ * A entrega é por `abaPedida` em utils.js: aqui se escreve, a tela lê e apaga.
+ */
+const ABAS_DE_ANCORA = {
+  'mes-heroi':          ['mes', 'visao'],
+  'mes-tabela':         ['mes', 'tabela'],
+  'adiante-curva':      ['adiante', 'mes'],
+  'adiante-tabela':     ['adiante', 'movimentos'],
+  'cartao-contratos':   ['cartao', 'aberto'],
+  'cartao-pagas':       ['cartao', 'pagas'],
+  'guardado-metas':     ['guardado', 'guardado'],
+  'guardado-ativos':    ['guardado', 'onde'],
+  'ajustes-categorias': ['ajustes', 'classificar'],
+  'ajustes-orcamento':  ['ajustes', 'orcamento'],
+};
+
 /** Destino de `name`, seja ele um destino ou um id de aba antigo. */
 function destinoDe(name) {
   return DESTINOS[name] ? name : APELIDOS[name] || null;
@@ -164,6 +197,14 @@ export async function switchTab(name) {
 async function _goto(el) {
   const tab = el.dataset.goto;
   if (!tab) return;
+
+  // A aba tem de ser pedida ANTES do switchTab: quem monta o painel é o render
+  // da tela, e depois dele já é tarde — o bloco não existe no DOM para rolar
+  // até ele.
+  const ancora = ANCORAS[tab];
+  const abaAlvo = ancora && ABAS_DE_ANCORA[ancora];
+  if (abaAlvo) abaPedida[abaAlvo[0]] = abaAlvo[1];
+
   await switchTab(tab);
 
   // O destino empilha várias telas antigas: chegar nele não é chegar na tela
@@ -277,6 +318,10 @@ export async function reloadAndRerender() {
 
 // ─── INIT ──────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
+  ligarTemaDoSistema();
+  // Trocar de tema repinta a tela INTEIRA — canvas não se repinta sozinho.
+  document.addEventListener('tema-mudou', () => { rerenderCurrentTab(); });
+
   state.currentMonth = thisMonth();
   updateMonthLabel();
 

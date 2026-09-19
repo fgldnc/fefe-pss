@@ -7,15 +7,20 @@
  * parcelas não faziam sentido lá. Saíram de `js/adiante.js` inteiras:
  * `_contratos()` e `_parcelas()` estão aqui com a mesma lógica.
  *
- * Quatro blocos, na ordem da pergunta que cada um responde:
- *   resumo               — "quanto disso é compromisso já assumido?"
- *   contratos em aberto  — "quanto eu ainda devo, por compra?"
- *   parcelas previstas   — "o que sai nos próximos meses?"
- *   parcelas já pagas    — "o que já saiu?"
+ * DUAS ABAS desde a rodada 9 — a usuária disse que a tela estava "super
+ * confusa" com quatro blocos empilhados:
+ *   em aberto  — resumo + os contratos que ainda não terminaram
+ *   já pagas   — o que já saiu, parcela a parcela
  *
- * O último é a parte nova de verdade: até aqui as parcelas pagas só apareciam
- * diluídas entre as outras linhas da tabela de Mês, sem nada dizendo que
- * aquela linha era a 3/10 de alguma coisa.
+ * O BLOCO "PARCELAS PREVISTAS" FOI APAGADO, também por decisão dela: "a
+ * contratos em aberto já mostra isso". Ele listava parcela a parcela dos
+ * próximos 3 meses o que o contrato já resume em uma linha ("3 de 10 pagas ·
+ * falta X · termina em nov/26"). O número dos próximos 3 meses sobreviveu
+ * onde ele é resumo, no bloco de cima.
+ *
+ * "Parcelas já pagas" continua sendo a parte nova de verdade: até a rodada do
+ * Cartão elas só apareciam diluídas entre as outras linhas da tabela de Mês,
+ * sem nada dizendo que aquela linha era a 3/10 de alguma coisa.
  *
  * REGRA DE MODELO QUE NÃO MUDA: contrato de parcelamento NÃO TEM ID. Cada
  * parcela é uma transação independente, e o agrupamento é descrição
@@ -24,7 +29,15 @@
  * contrato é mudança de modelo de dado, não de tela.
  */
 
-import { state, esc, monthLabel, offsetMonth } from './utils.js';
+import {
+  state, esc, monthLabel, offsetMonth,
+  abas, painelAba, ligarAbas, focarAba, pegarAbaPedida,
+} from './utils.js';
+
+/** Aba aberta. Mora no módulo, não no DOM: a tela é remontada por innerHTML a
+ *  cada navegação de mês, e aba que se fecha sozinha faz perder o lugar. */
+let _aba = 'aberto';
+let _init = false;
 
 /** Número sem "R$" para coluna de valor — mesma regra das outras tabelas. */
 const num = (v) => new Intl.NumberFormat('pt-BR',
@@ -34,9 +47,6 @@ const MENOS = '−';
 /** Quantas parcelas pagas a tabela mostra antes de cortar. O histórico inteiro
  *  numa folha só vira rolagem sem fim; o rodapé diz que foi cortado. */
 const MAX_PAGAS = 24;
-
-/** Quantas parcelas previstas a lista mostra — herdado de `previsoes.js`. */
-const MAX_PREVISTAS = 10;
 
 /** Competência da parcela, com a mesma queda que o resto do app usa. */
 const compet = (t) => t.competenceMonth || String(t.date || '').slice(0, 7);
@@ -127,15 +137,13 @@ function _contratos(d) {
   // Silêncio quando não há nada: bloco vazio é ruído.
   if (!d.contratos.length) return '';
 
+  // Sem `.rot` aqui: a aba aberta já diz "Em aberto", e repetir o nome 20px
+  // abaixo dele é a mesma palavra duas vezes — a regra que já tirou o selo do
+  // tipo da meta em Guardado. Sobra a linha de apoio.
   return `
     <div class="folha" id="cartao-contratos">
-      <div class="linha-topo">
-        <div>
-          <p class="rot">Contratos em aberto</p>
-          <p class="rot-sub" style="margin:0">As compras parceladas que ainda não terminaram,
-            agrupadas por contrato em vez de repetidas mês a mês.</p>
-        </div>
-      </div>
+      <p class="rot-sub" style="margin:0 0 16px">As compras parceladas que ainda não terminaram,
+        agrupadas por contrato em vez de repetidas mês a mês.</p>
       <div class="tabela-folha">
         <table>
           <thead><tr>
@@ -163,57 +171,7 @@ function _contratos(d) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════
-// 3. PARCELAS PREVISTAS — veio de js/adiante.js
-// ═══════════════════════════════════════════════════════════════════════
-
-function _previstas(d) {
-  if (!d.previstas.length) return '';
-
-  const porMes = d.next3.map(m => ({
-    mes: m,
-    total: d.previstas.filter(p => p.competenceMonth === m).reduce((s, p) => s + (p.amount || 0), 0),
-  })).filter(x => x.total > 0);
-
-  return `
-    <div class="folha" id="cartao-previstas">
-      <div class="linha-topo">
-        <div>
-          <p class="rot">Parcelas previstas — próximos 3 meses</p>
-          <p class="rot-sub" style="margin:0">Dinheiro que sai mesmo sem ninguém decidir nada.</p>
-        </div>
-        <button type="button" class="ir" data-goto="gastos" data-filtro-proj="1"
-          title="Ver as parcelas previstas na tabela de Mês">↗</button>
-      </div>
-      <dl class="apoio">
-        ${porMes.map(x => `
-          <div><dt>${esc(monthLabel(x.mes).split(' ')[0])}</dt><dd>${num(x.total)}</dd></div>`).join('')}
-      </dl>
-      <div class="tabela-folha" style="margin-top:14px">
-        <table>
-          <thead><tr>
-            <th>Compra</th>
-            <th class="esconde-sm">Parcela</th>
-            <th class="v">Valor</th>
-            <th>Mês</th>
-          </tr></thead>
-          <tbody>
-            ${d.previstas.slice(0, MAX_PREVISTAS).map(p => `
-              <tr>
-                <td>${esc(p.description)}</td>
-                <td class="esconde-sm">${p.installmentCurrent}/${p.installmentTotal}</td>
-                <td class="v menos">${MENOS}${num(p.amount)}</td>
-                <td>${esc(_mesCurto(p.competenceMonth))}</td>
-              </tr>`).join('')}
-          </tbody>
-        </table>
-      </div>
-      ${d.previstas.length > MAX_PREVISTAS
-        ? `<div class="rodape"><span>${MAX_PREVISTAS} de ${d.previstas.length} parcelas</span></div>` : ''}
-    </div>`;
-}
-
-// ═══════════════════════════════════════════════════════════════════════
-// 4. PARCELAS JÁ PAGAS — o bloco novo
+// 3. PARCELAS JÁ PAGAS — o bloco novo
 //
 // Até aqui isto não existia em tela nenhuma: a parcela paga virava uma linha
 // como outra qualquer na tabela de Mês, sem dizer de que contrato era nem em
@@ -229,7 +187,7 @@ function _pagas(d) {
     <div class="folha" id="cartao-pagas">
       <div class="linha-topo">
         <div>
-          <p class="rot">Parcelas já pagas</p>
+          <p class="rot">O que já saiu</p>
           <p class="rot-sub" style="margin:0">Da mais recente para a mais antiga.
             São as mesmas linhas da tabela de Mês — aqui dá para ver de que contrato cada uma é.</p>
         </div>
@@ -270,14 +228,23 @@ export function renderCartao() {
   const sec = document.getElementById('tab-cartao');
   if (!sec) return;
 
+  // Uma vez só: a `<section>` sobrevive ao innerHTML, os botões de aba não.
+  if (!_init) {
+    ligarAbas(sec, 'cartao', (id) => { _aba = id; renderCartao(); focarAba('cartao', id); });
+    _init = true;
+  }
+
+  // `data-goto="timeline"` (e qualquer âncora que caia aqui dentro) precisa
+  // abrir a aba certa ANTES de rolar, senão o atalho leva a um bloco escondido.
+  _aba = pegarAbaPedida('cartao') || _aba;
+
   const d = _dados();
 
   // Sem nenhuma compra parcelada a tela inteira é silêncio — e aí ela precisa
   // dizer o que é, senão parece quebrada.
-  if (!d.contratos.length && !d.previstas.length && !d.pagas.length) {
+  if (!d.contratos.length && !d.pagas.length) {
     sec.innerHTML = `
-      <p class="page-intro">As compras parceladas: o que ainda falta pagar, o que sai nos
-        próximos meses e o que já saiu.</p>
+      <p class="page-intro">As compras parceladas: o que ainda falta pagar e o que já saiu.</p>
       <div class="folha">
         <p class="rot">Nenhuma compra parcelada</p>
         <p class="rot-sub" style="margin:0">Quando um gasto for lançado em mais de uma parcela —
@@ -286,11 +253,21 @@ export function renderCartao() {
     return;
   }
 
+  // Aba sem nada dentro não se abre: com só uma das duas com conteúdo, a que
+  // tem é a que vale, venha o `_aba` de onde vier.
+  if (_aba === 'aberto' && !d.contratos.length) _aba = 'pagas';
+  if (_aba === 'pagas'  && !d.pagas.length)     _aba = 'aberto';
+
+  const painel = _aba === 'aberto'
+    ? _resumo(d) + _contratos(d)
+    : _pagas(d);
+
   sec.innerHTML = `
     <p class="page-intro">As compras parceladas. <b>Olhe o “falta pagar”:</b> é o compromisso
       que já está assumido, independente do que você decidir gastar daqui para frente.</p>
-    ${_resumo(d)}
-    ${_contratos(d)}
-    ${_previstas(d)}
-    ${_pagas(d)}`;
+    ${abas('cartao', [
+      { id: 'aberto', nome: 'Em aberto', conta: d.contratos.length },
+      { id: 'pagas',  nome: 'Já pagas',  conta: d.pagas.length },
+    ], _aba, 'O que ver do cartão')}
+    ${painelAba('cartao', _aba, painel)}`;
 }

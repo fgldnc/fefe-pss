@@ -8,10 +8,16 @@
  * — depois de salva, ninguém mais olhava. Aqui as três viram lista, e cada uma
  * se corrige NA PRÓPRIA LINHA.
  *
- * Três blocos, cada um com id próprio (as âncoras de `data-goto`):
+ * TRÊS ABAS desde a rodada 9 — a usuária disse que a tela era "ok, mas um
+ * pouco informação demais" com as três listas empilhadas. Cada aba diz quantas
+ * tem, senão não se sabe onde olhar:
  *   conferir-sem-categoria — "o Radar não soube classificar"
  *   conferir-projetadas    — "o app previu; já venceu, aconteceu mesmo?"
  *   conferir-duplicatas    — "isto parece estar lançado duas vezes"
+ *
+ * O SELO DA BARRA CONTINUA SENDO A SOMA DAS TRÊS. `contarPendencias()` não
+ * mudou e continua vindo da MESMA travessia que desenha as listas: quando a
+ * conta vive em dois lugares é só questão de tempo até divergir.
  *
  * TUDO É DERIVADO DO `state`. Nenhum campo novo no Firestore, nenhuma coleção
  * nova: as três listas são três travessias sobre o que já está lá. É o que
@@ -30,6 +36,7 @@
 
 import {
   state, esc, fmt, toast, monthLabel, thisMonth, competenceOf, resolveCategoryId,
+  abas, painelAba, ligarAbas, focarAba,
 } from './utils.js';
 import { saveTx, deleteTx, updateFields } from './db.js';
 import { normalizeDesc, dedupKey } from './parsers/base-parser.js';
@@ -37,6 +44,11 @@ import { confirmarProjecao } from './gastos.js';
 
 let _init = false;
 let _aoMudar = null;
+
+/** Aba aberta. Mora no módulo, não no DOM: a tela é reinjetada por innerHTML a
+ *  cada correção, e aba que se fecha sozinha faz perder o lugar — logo depois
+ *  de classificar uma linha é exatamente quando se quer classificar a próxima. */
+let _aba = 'cat';
 
 /**
  * Teto por lista. A base inteira pode trazer centenas de linhas sem categoria
@@ -199,15 +211,12 @@ function _semCategoria(d) {
       <td class="v menos esconde-sm">−${fmt(t.amount)}</td>
     </tr>`).join('');
 
+  // Sem `.rot` e sem o selo do número: a aba aberta já diz as duas coisas, e
+  // repeti-las 20px abaixo é a mesma palavra duas vezes.
   return `
     <div class="folha" id="conferir-sem-categoria">
-      <div class="linha-topo">
-        <div>
-          <p class="rot">Sem categoria <span class="selo">${d.semCategoria.length}</span></p>
-          <p class="rot-sub" style="margin:0">O Radar não reconheceu estes. Sem categoria eles
-            entram no total do mês mas somem da distribuição — escolher aqui já grava.</p>
-        </div>
-      </div>
+      <p class="rot-sub" style="margin:0 0 16px">O Radar não reconheceu estes. Sem categoria eles
+        entram no total do mês mas somem da distribuição — escolher aqui já grava.</p>
       <div class="tabela-folha conferir-tabela" id="conferir-tab-cat">
         <table>
           <thead><tr>
@@ -242,16 +251,13 @@ function _projetadas(d) {
     </tr>`;
   }).join('');
 
+  // Sem `.rot` e sem o selo do número: a aba aberta já diz as duas coisas, e
+  // repeti-las 20px abaixo é a mesma palavra duas vezes.
   return `
     <div class="folha" id="conferir-projetadas">
-      <div class="linha-topo">
-        <div>
-          <p class="rot">Parcelas previstas que já venceram <span class="selo">${d.projetadas.length}</span></p>
-          <p class="rot-sub" style="margin:0">O app projetou estas parcelas quando a compra foi
-            lançada. A competência delas já passou e elas continuam como <span class="marca-d">previsão</span>.
-            Importar a fatura confirma sozinho; sem ela, responda aqui.</p>
-        </div>
-      </div>
+      <p class="rot-sub" style="margin:0 0 16px">O app projetou estas parcelas quando a compra foi
+        lançada. A competência delas já passou e elas continuam como <span class="marca-d">previsão</span>.
+        Importar a fatura confirma sozinho; sem ela, responda aqui.</p>
       <div class="tabela-folha conferir-tabela" id="conferir-tab-proj">
         <table>
           <thead><tr>
@@ -292,16 +298,13 @@ function _duplicatas(d) {
       </div>`;
   }).join('');
 
+  // Sem `.rot` e sem o selo do número: a aba aberta já diz as duas coisas, e
+  // repeti-las 20px abaixo é a mesma palavra duas vezes.
   return `
     <div class="folha" id="conferir-duplicatas">
-      <div class="linha-topo">
-        <div>
-          <p class="rot">Parece lançado duas vezes <span class="selo">${d.duplicatas.length}</span></p>
-          <p class="rot-sub" style="margin:0">Mesma data, mesma descrição e o mesmo valor até o
-            centavo. Às vezes são dois gastos iguais de verdade — nesse caso diga que são dois
-            e o par sai da lista.</p>
-        </div>
-      </div>
+      <p class="rot-sub" style="margin:0 0 16px">Mesma data, mesma descrição e o mesmo valor até o
+        centavo. Às vezes são dois gastos iguais de verdade — nesse caso diga que são dois
+        e o par sai da lista.</p>
       ${grupos}
       ${_rodapeCorte(d.duplicatas.length)}
     </div>`;
@@ -334,12 +337,25 @@ export function renderConferir() {
     return;
   }
 
+  // Aba vazia não se abre: corrigir a última linha de uma lista esvazia a aba
+  // em que se está, e ficar olhando um painel em branco não diz o que fazer a
+  // seguir. Cai para a primeira que ainda tem algo.
+  const disponiveis = [
+    { id: 'cat',  nome: 'Sem categoria',      conta: d.semCategoria.length, alerta: true },
+    { id: 'proj', nome: 'Parcela prevista',   conta: d.projetadas.length,   alerta: true },
+    { id: 'dup',  nome: 'Parece repetido',    conta: d.duplicatas.length,   alerta: true },
+  ].filter(a => a.conta > 0);
+  if (!disponiveis.some(a => a.id === _aba)) _aba = disponiveis[0].id;
+
+  const painel = _aba === 'cat'  ? _semCategoria(d)
+               : _aba === 'proj' ? _projetadas(d)
+               :                   _duplicatas(d);
+
   sec.innerHTML = `
     <p class="page-intro">O que ficou pela metade. <b>Esta tela olha a base inteira</b>,
       não o mês do topo — pendência escondida atrás da navegação de mês é pendência que não se acha.</p>
-    ${_semCategoria(d)}
-    ${_projetadas(d)}
-    ${_duplicatas(d)}`;
+    ${abas('conferir', disponiveis, _aba, 'O que conferir')}
+    ${painelAba('conferir', _aba, painel)}`;
 }
 
 /** Quem redesenha a barra e a tela depois de cada correção. Ligado por app.js. */
@@ -357,6 +373,8 @@ function _refazer() {
  * correção, e listener preso ao elemento morre junto com o elemento.
  */
 function _ligarTela(sec) {
+  ligarAbas(sec, 'conferir', (id) => { _aba = id; renderConferir(); focarAba('conferir', id); });
+
   // `change` e não `click` para o <select>: escolher com o teclado precisa
   // gravar igual a escolher com o mouse.
   sec.addEventListener('change', async (e) => {

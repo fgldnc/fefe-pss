@@ -31,7 +31,7 @@
  * antes, não um a mais.
  */
 
-import { state, esc, fmt, toast } from './utils.js';
+import { state, esc, fmt, toast, abas, painelAba, ligarAbas, focarAba } from './utils.js';
 import { getAll } from './db.js';
 import {
   BANK_NAMES, lotesDeExtrato, excluirLoteExtrato, importarExtratoDeArquivo,
@@ -99,29 +99,17 @@ function _portas() {
         </div>
       </div>
 
-      <div class="imp-abas" role="tablist" aria-label="O que você vai trazer">
-        <button class="imp-aba${ehFatura ? ' ativa' : ''}" role="tab" id="imp-aba-fatura"
-          aria-selected="${ehFatura}" aria-controls="imp-painel-fatura" data-imp="aba" data-aba="fatura">
-          Fatura de cartão
-        </button>
-        <button class="imp-aba${ehFatura ? '' : ' ativa'}" role="tab" id="imp-aba-extrato"
-          aria-selected="${!ehFatura}" aria-controls="imp-painel-extrato" data-imp="aba" data-aba="extrato">
-          Extrato bancário
-        </button>
-      </div>
+      ${abas('imp', [
+        { id: 'fatura',  nome: 'Fatura de cartão' },
+        { id: 'extrato', nome: 'Extrato bancário' },
+      ], _aba, 'O que você vai trazer')}
 
-      <div class="imp-painel${ehFatura ? '' : ' hidden'}" id="imp-painel-fatura"
-        role="tabpanel" aria-labelledby="imp-aba-fatura">
-        ${_zona('fatura', 'Arraste a fatura em PDF', 'PDF de Itaú, Nubank, Santander e outros · máx. 20 MB', '.pdf')}
-        ${_ajusteFatura()}
-      </div>
-
-      <div class="imp-painel${ehFatura ? ' hidden' : ''}" id="imp-painel-extrato"
-        role="tabpanel" aria-labelledby="imp-aba-extrato">
-        ${_escolhaExtrato()}
-        ${_zona('extrato', 'Arraste o arquivo do extrato',
-                'OFX, CSV ou PDF · máx. 20 MB', ACEITA[_formato] || '.ofx,.csv,.pdf')}
-      </div>
+      ${ehFatura
+        ? painelAba('imp', 'fatura', _zona('fatura', 'Arraste a fatura em PDF',
+            'PDF de Itaú, Nubank, Santander e outros · máx. 20 MB', '.pdf') + _ajusteFatura())
+        : painelAba('imp', 'extrato', _escolhaExtrato() + _zona('extrato',
+            'Arraste o arquivo do extrato', 'OFX, CSV ou PDF · máx. 20 MB',
+            ACEITA[_formato] || '.ofx,.csv,.pdf'))}
 
       <p class="nota imp-privacidade">
         O arquivo é lido <b>aqui, no seu navegador</b>. Ele não é enviado para nenhum servidor —
@@ -346,17 +334,16 @@ function _repintarHistorico() {
  * importação, e listener preso ao elemento morre junto com o elemento.
  */
 function _ligarTela(sec) {
+  // As abas passaram a usar o vocabulário compartilhado (`.abas`/`.aba`), e o
+  // clique delas vem de `ligarAbas` em utils.js — a mesma travessia das outras
+  // seis telas. O `case 'aba'` daqui saiu junto.
+  ligarAbas(sec, 'imp', (id) => { _aba = id; renderImportar(); focarAba('imp', id); });
+
   sec.addEventListener('click', async (e) => {
     const el = e.target.closest('[data-imp]');
     if (!el) return;
 
     switch (el.dataset.imp) {
-      case 'aba':
-        _aba = el.dataset.aba;
-        renderImportar();
-        document.getElementById(`imp-aba-${_aba}`)?.focus();
-        return;
-
       case 'banco':
         // Clicar de novo no banco escolhido desmarca: "não sei" é resposta
         // válida aqui, e o parser reconhece pelo nome do arquivo.

@@ -32,9 +32,9 @@
 .btn:active { transform: scale(0.98); }
 
 .btn-primary {
-  background: var(--accent-primary); border-color: var(--accent-primary); color: var(--accent-fg);
+  background: var(--marca-fundo); border-color: var(--marca-fundo); color: var(--accent-fg);
 }
-.btn-primary:hover { background: var(--accent-bright); border-color: var(--accent-bright); box-shadow: 0 4px 16px var(--accent-glow); transform: translateY(-1px); }
+.btn-primary:hover { background: var(--marca-fundo-2); border-color: var(--marca-fundo-2); box-shadow: 0 4px 16px var(--accent-glow); transform: translateY(-1px); }
 
 .btn-secondary {
   background: var(--bg-card-raised); border-color: var(--border-md); color: var(--text-secondary);
@@ -388,7 +388,7 @@
    botão pintado de âmbar faz a ação primária parecer o próprio alerta. O botão
    é a ação primária (contraste puro); o âmbar fica no contador ao lado, que é
    o que de fato é pendência. */
-.btn-atencao { background: var(--accent-primary) !important; border-color: var(--accent-primary) !important; color: var(--accent-fg) !important; }
+.btn-atencao { background: var(--marca-fundo) !important; border-color: var(--marca-fundo) !important; color: var(--accent-fg) !important; }
 
 /* ── REVISÃO DE IMPORTAÇÃO EM TELA ESTREITA ───────────────────── */
 /* Abaixo de 480px a tabela vira cartão por lançamento: com 6–7 colunas não há
@@ -472,7 +472,8 @@
 .cal-cell.selected      { background: var(--accent-dim); }
 .cal-cell-empty         { background: var(--bg-card-raised); }
 .cal-cell-today .cal-day-num {
-  background: var(--accent-primary);
+  /* branco por cima: superfície de marca, não tinta de marca */
+  background: var(--marca-fundo);
   color: var(--accent-fg);
   border-radius: 50%;
   width: 22px; height: 22px;

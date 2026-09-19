@@ -41,7 +41,7 @@ App de **controle financeiro pessoal** (nome exibido: "Radar", `index.html:6` = 
 | `metas.js` | **Formulário e gravação** de meta e de aporte na meta. Não desenha tela. |
 | `patrimonio.js` | **Formulário e gravação** de ativo e de aporte no ativo, mais `valorDepreciado()`. Não desenha tela. |
 | `adiante.js` | **A tela "Adiante"** (rodada 4): saldo inicial + dia de vencimento, 3 KPIs, curva diária, tabela dos dias com movimento. |
-| `cartao.js` | **A tela "Cartão"**: resumo, contratos em aberto, parcelas previstas e parcelas já pagas. Os dois do meio vieram de `adiante.js`; o das pagas é novo. |
+| `cartao.js` | **A tela "Cartão"**: duas abas — *em aberto* (resumo + contratos) e *já pagas*. O bloco "parcelas previstas" foi apagado na rodada 9. |
 | `saldos.js` | **Só cálculo**, sem DOM e sem `state`: `buildMovimentos`/`buildSerie`/`acharMinimo`/`contextoDoMinimo`, fixadas por `test/saldos.test.mjs`. |
 | `pdf-import.js` | Importação de **fatura de cartão** em PDF: extração, parse por banco, preview editável, projeção de parcelas. O arquivo entra por `importarFaturaDeArquivo` (a tela) desde a rodada 6. Não desenha tela. |
 | `parsers/base-parser.js` | Utilitários compartilhados dos parsers de extrato: `parseMoney`, `parseDate`, `normalizeDesc`, `autoClassify`, `dedupKey`/`detectDuplicates`, `genId`. |
@@ -108,6 +108,11 @@ Classes `.adiante-*` no fim de `css/style.css`, sobre `.folha`. As antigas
 
 ### A tela "Adiante" (rodada 4)
 
+**DUAS ABAS desde a rodada 9:** *O mês* (ajustes do mês · 3 KPIs · curva
+diária) e *Movimentos* (a tabela dos dias). Mesma razão da tabela de Mês: ela
+empurrava a curva — o assunto de Adiante — para longe do topo. O estado vazio
+("nenhum movimento em X") é o MESMO nas duas abas, numa função só.
+
 Quatro blocos em `js/adiante.js`: **ajustes do mês · 3 KPIs · curva diária ·
 tabela dos dias com movimento**. Contratos em aberto e parcelas previstas
 estiveram aqui na rodada 4 e foram para `js/cartao.js`.
@@ -167,8 +172,7 @@ Cada item abaixo é uma regra de negócio real codificada como literal, sem cons
 - `js/mes.js` (`_resultado`) — variação `< 0,5%` é exibida como "= mês anterior".
 - `js/mes.js` (`_serie6m`) — gráfico de evolução usa **6** meses.
 - `js/mes.js` (`_renderEvolucao`) — eixo Y muda para formato "k" quando o máximo é `≥ 1000`.
-- `js/cartao.js` (`_previstas`) — parcelas previstas cobrem os **3** meses seguintes.
-- `js/cartao.js` (`MAX_PREVISTAS`) — lista no máx. **10** parcelas previstas.
+- `js/cartao.js` (`_dados`) — `previstas` cobre os **3** meses seguintes. Depois da rodada 9 ela só alimenta o KPI "Próximos 3 meses" do resumo: a LISTA das previstas e o `MAX_PREVISTAS` foram apagados.
 - `js/cartao.js` (`MAX_PAGAS`) — a tabela de parcelas já pagas mostra no máx. **24**; o rodapé diz "24 de N", a omissão nunca é silenciosa.
 
 **Importação de fatura — `js/pdf-import.js`**
@@ -242,11 +246,43 @@ Aplicado até aqui: **rodada 1 (fundação)** — a pele —, **rodada 2
 nenhuma `<section class="tab-content">` com markup no `index.html`: todas as
 sete são vazias de propósito e montadas pelo módulo da tela.
 
-- **Material de papel, um tema só.** Fundo cinza-claro (`--fundo`), folha branca
-  (`--folha`) com raio 16 e sombra quase invisível. **O tema escuro acabou** — a
-  direção escolhida tem um tema só, o seletor `[data-theme="light"]` sumiu do
-  CSS e o botão `#btn-tema` saiu da topbar. `aplicarTema` ainda existe em
-  `js/app.js` escrevendo um atributo que ninguém lê; sai na rodada 2.
+- **Material de papel, DOIS TEMAS.** No claro: fundo cinza-claro (`--fundo`),
+  folha branca (`--folha`), raio 16, sombra quase invisível. No escuro o mesmo
+  material com os mesmos nomes de token e outros valores. *A regra "o tema
+  escuro acabou" (rodada 1 da v2) foi REVOGADA pela usuária e o escuro voltou
+  na rodada 9, frente D.*
+  - **Um tema é REDEFINIÇÃO DE TOKEN, não regra nova.** Todo o conjunto
+    (`--fundo`, `--folha*`, `--borda*`, `--ink*`, `--entrou`/`--saiu`/
+    `--deduzido` e as tintas, `--s1…--s6` e os `-chip`, `--sombra`) é reescrito
+    sob `html[data-tema="escuro"]`. **Regra que precisa de conserto extra no
+    bloco escuro é regra errada** — está usando cor literal onde devia usar
+    token. Foi assim que `.aj-btn-risco:hover` apareceu: tinha `color: #fff`
+    sobre `--saiu`, que no escuro é salmão claro (2,18:1). Virou
+    `--text-inverse`.
+  - **`data-tema` no `<html>` é SEMPRE `claro` ou `escuro`, já resolvido.** A
+    preferência tem três valores (`auto` · `claro` · `escuro`) e mora em
+    `localStorage.fluxo_tema`; quem resolve `auto` contra `prefers-color-scheme`
+    é `aplicarTema()` em `js/utils.js`, chamado no TOPO de `js/app.js` (fora do
+    `DOMContentLoaded`: módulo executa antes dele, e o atributo precisa existir
+    quando a folha de estilo pintar a primeira tela). Resolver no JS existe para
+    o CSS ter **um seletor só** em vez do bloco duplicado dentro de um `@media`.
+  - **A escolha fica em Ajustes → Conta**, três botões (`.aj-tema`), não um
+    interruptor: `auto` é escolha de verdade. A marcação da escolhida é
+    atualizada na mão porque o evento só sai quando o tema RESOLVIDO muda.
+  - **TROCAR DE TEMA REPINTA A TELA INTEIRA.** Chart.js pinta em canvas e não
+    resolve `var(--…)`: a cor foi lida por `getComputedStyle` na montagem, e
+    trocar de tema não repinta um pixel. `aplicarTema()` dispara `tema-mudou`,
+    `app.js` ouve e chama `rerenderCurrentTab()`. **Tem de ser o `render*` da
+    tela, nunca um `chart.update()`:** cada tela monta só o gráfico do painel
+    ABERTO e destrói a instância quando a aba dele fecha.
+  - **`--marca` tem DOIS papéis e, no escuro, duas cores.** `--marca` é a marca
+    como TINTA (item ativo, foco, a curva do saldo); `--marca-fundo` é a marca
+    como SUPERFÍCIE, com branco por cima (botão primário, botão de login,
+    losango do logo, faixa do herói, `.btn-atencao`, dia de hoje do calendário).
+    No claro são a mesma cor. **No escuro não podem ser:** uma cor que dá 4,5:1
+    com o branco por cima nunca dá 4,5:1 como texto sobre a folha escura — é
+    aritmética de luminância. Barra de progresso NÃO entra em `--marca-fundo`:
+    não tem texto em cima, e no escuro é a tinta clara que a faz aparecer.
 - **A marca tem endereço.** Ameixa (`--marca` `#7A2E52`) pinta navegação, botão,
   foco e a curva do saldo — e **NUNCA um valor em R$**. Todo número de dinheiro
   é `--ink`, `--entrou` ou `--saiu`. Foi por isso que `.val-accent` deixou de ser
@@ -269,8 +305,38 @@ sete são vazias de propósito e montadas pelo módulo da tela.
   existe para ler. Agora só a `.topbar` é `sticky`, e o `<thead>` de
   `.data-table` fica preso enquanto o corpo desce. As classes `.fit` e `.grow`
   continuam no HTML e **não fazem mais nada** — somem com o markup de cada aba.
+- **A MALHA RESPONDE À VIEWPORT (rodada 9, frente C).** `--coluna`,
+  `--margem`, `--goteira`, `--ar-secao` e `html { font-size }` são `clamp()`
+  sobre `vw`, não número fixo. **A coluna tem teto de 1560px e é centrada**
+  (`width: 100%` + `margin-inline: auto` em `.tab-content`/`.topbar`): linha de
+  tabela mais larga não se lê, e o que sobra do teto se divide pelos dois
+  lados. Antes eram 1180px fixos e **1148px de cinza morto à direita a 2560px**.
+  - **O `width: 100%` não é enfeite:** `.main-content` é flex em coluna, e
+    margem automática no eixo cruzado DESLIGA o stretch — sem ela o bloco
+    encolhia para o conteúdo (medido: 1448px onde cabiam 1560px).
+  - Abaixo de 900px `--margem`/`--goteira` são fixados no piso (16/14px): ali
+    a largura é toda do conteúdo.
+  - Tamanho novo entra como token no `:root`, junto dos outros. **Não abrir um
+    segundo sistema tipográfico** espalhado em `13.5px`/`30px` pelo arquivo.
+- **BLOCO NÃO ESTICA POR DENTRO (rodada 9, frente A).** `.faixa` é
+  `align-items: start`. Sem isso o grid esticava os dois blocos até a altura do
+  mais alto e o herói de Mês sem receita virava 370px para 214px de conteúdo,
+  com 156px de ameixa vazia no meio (`.dica` tem `margin-top: auto`). Sobra de
+  grade lê-se como grade; vazio DENTRO do bloco lê-se como bloco quebrado.
+  **Espaço vazio que carrega significado fica** — o que sai é o de esticar.
+- **`--ar-bloco` é o ar ENTRE blocos de topo de uma tela**
+  (`clamp(20px, 2vw, 32px)`), maior que a goteira de propósito: goteira separa
+  colunas de uma mesma linha, isto separa dois assuntos. Vale só para filho
+  direto de `.tab-content`/`.painel-aba` — `.folha` dentro de `.faixa` é coluna,
+  e margem ali desalinha as duas. Antes blocos empilhados nasciam **colados**
+  (medido: 0px entre `importar-portas` e `importar-historico`), e duas folhas
+  brancas encostadas leem-se como uma folha só interrompida. **Ar, régua ou
+  rótulo — nunca borda nova inventada.**
 - **Contraste se roda, não se supõe:** `node redesign-v2/direcoes/contraste-hibrido.mjs`
-  (texto 4,5:1 · gráfico, borda e glifo 3:1). Borda de campo de formulário usa
+  (texto 4,5:1 · gráfico, borda e glifo 3:1), **nos DOIS temas** — o script
+  varre claro e escuro, inclusive os dois papéis da marca em cada um. Mexeu em
+  token de cor no CSS, mexa na tabela do script e rode: "tem modo escuro" sem
+  rodar isto é chute. Borda de campo de formulário usa
   `--borda-forte`, não `--borda`: `--borda` é 1,3:1 no branco e reprova em
   WCAG 1.4.11.
 - **Chart.js pinta em canvas e não resolve `var(--…)`.** As cores vêm de
@@ -284,6 +350,38 @@ sete são vazias de propósito e montadas pelo módulo da tela.
   ordenada com nome, percentual e valor (`.dist` / `.cat`).
 - **Silêncio quando está tudo certo.** Contador zerado não aparece como "0" —
   some, como `atualizarBadgeExtratos` (`js/app.js:118`) já faz.
+- **ABA DENTRO DA TELA é `.abas` / `.aba` / `.painel-aba`, e só.** Nasceu como
+  `.imp-abas` em Importar (rodada 6) e foi RENOMEADA na rodada 9, quando
+  deixou de ser de uma tela só — o mesmo caminho de `.adiante-tabela-rolagem`
+  → `.tabela-folha`. **Não invente um terceiro jeito de fazer aba:** foi o
+  argumento que matou as `.config-tabs`, e ele vale contra qualquer um.
+  - Os helpers são `abas()`, `painelAba()`, `ligarAbas()`, `focarAba()` e
+    `pegarAbaPedida()`, no fim de `js/utils.js` — o único módulo comum às
+    telas que não fecha ciclo de import, como os helpers da revisão de
+    importação logo acima deles.
+  - **A tela monta SÓ O PAINEL ABERTO.** Não é economia: Chart.js mede o
+    `<canvas>` na hora, e canvas dentro de `display:none` mede zero — e fica
+    zero. Renderizar só o painel visível resolve na raiz, e cada tela **destrói
+    a instância do gráfico** quando a aba dele fecha (o listener de resize
+    ficaria vivo sobre um canvas já removido).
+  - **A ABA ABERTA MORA NO MÓDULO** (`let _aba = '…'`), nunca no DOM: a tela é
+    reinjetada por `innerHTML` a cada gravação, e aba que se fecha sozinha faz
+    perder o lugar logo depois de uma edição — que é quando se quer fazer a
+    próxima. Mesma razão dos `_filtros` de Mês.
+  - **O clique vai pelo listener delegado da seção** (`ligarAbas(sec, grupo, …)`,
+    chamado UMA vez no init), nunca no elemento. As setas ← → andam entre as
+    abas.
+  - **O contador da aba é NEUTRO** (`.aba-conta`). Âmbar (`.alerta`) só em
+    Conferir, onde o número É pendência: "3 contratos" é informação, e âmbar
+    num número que não pede nada de ninguém é alarme de nada. Zero não aparece.
+  - **O bloco não repete o nome da aba.** `.rot` que diga a mesma coisa que a
+    aba aberta sai; sobra a `.rot-sub`. Paga em Cartão e nas três de Conferir.
+- **TODA ÂNCORA DE `data-goto` QUE CAIA DENTRO DE UMA ABA ABRE A ABA ANTES DE
+  ROLAR.** O mapa é `ABAS_DE_ANCORA` em `js/app.js`, ao lado de `ANCORAS`, e a
+  entrega é `abaPedida` em `utils.js`: `app.js` escreve ANTES do `switchTab`,
+  a tela lê no começo do render e apaga. Depois do render já é tarde — o bloco
+  não existe no DOM para rolar até ele. Sem isto, `data-goto="gastos"` chegava
+  a Mês e rolava até uma tabela escondida.
 - **Vocabulário v2 disponível em `css/style.css`** (fim do arquivo): `.folha`,
   `.rot`, `.rot-sub`, `.linha-topo`, `.ir`, `.nota`, `.faixa`, `.heroi`,
   `.dica`, `.apoio`, `.mais`/`.menos`/`.alerta`, `.pilula`, `.dist`, `.cat`,
@@ -356,6 +454,14 @@ sete são vazias de propósito e montadas pelo módulo da tela.
 
 ### A tela "Mês" (rodada 3)
 
+**DUAS ABAS desde a rodada 9:** *O mês* (herói · distribuição · resultado ·
+miniatura do fluxo · evolução de 6 meses) e *Tudo que entrou e saiu* (a tabela
+única). Pedido da usuária: a tabela **não deve ficar à vista** — ela é a coisa
+mais alta da tela e empurrava a evolução para fora de qualquer dobra.
+`data-goto="gastos"` aponta para `mes-tabela` e abre a segunda aba antes de
+rolar; o `data-filtro-proj` continua funcionando porque o `<select>` já existe
+quando os filtros são aplicados.
+
 Cinco blocos em `js/mes.js`, na ordem de leitura do `hibrido.html`: **herói ·
 distribuição · resultado do mês · miniatura do fluxo · tabela única**. Cada um
 tem id próprio (`mes-heroi`, `mes-dist`, `mes-resultado`, `mes-fluxo`,
@@ -413,10 +519,21 @@ sticky é `var(--topbar-h)`, não 0 — com 0 ele grudaria ATRÁS da topbar.
 
 ### A tela "Cartão" (pedida pela usuária depois da rodada 4)
 
-Quatro blocos em `js/cartao.js`, cada um com id próprio (`cartao-resumo`,
-`cartao-contratos`, `cartao-previstas`, `cartao-pagas` — as âncoras de
-`data-goto`): **resumo · contratos em aberto · parcelas previstas · parcelas
-já pagas**.
+**DUAS ABAS desde a rodada 9** (`.abas`/`.aba`, o vocabulário único):
+
+- **em aberto** — `cartao-resumo` + `cartao-contratos`
+- **já pagas** — `cartao-pagas`
+
+- **O bloco "Parcelas previstas" foi APAGADO** (decisão da usuária: *"a
+  contratos em aberto já mostra isso"*). Ele listava parcela a parcela dos
+  próximos 3 meses o que o contrato já resume numa linha. `MAX_PREVISTAS` saiu
+  junto; `d.previstas` sobreviveu só como o KPI "Próximos 3 meses" do resumo.
+- **O `.rot` "Contratos em aberto" saiu:** a aba aberta já diz o nome, e
+  repeti-lo 20px abaixo é a mesma palavra duas vezes — a regra que já tinha
+  tirado o selo do tipo da meta em Guardado. Sobra a `.rot-sub`.
+- **Aba sem nada dentro não se abre:** com só uma das duas com conteúdo, a que
+  tem é a que vale, venha o `_aba` de onde vier. Com as duas vazias, a tela
+  inteira se explica, como antes.
 
 - **Por que existe:** Adiante é sobre o CAIXA do mês. Um parcelamento atravessa
   meses e é assunto do cartão; a usuária disse que não fazia sentido estar lá.
@@ -442,6 +559,19 @@ já pagas**.
   contêiner, `table-layout: fixed`, `<thead>` sticky em `top: var(--topbar-h)`.
 
 ### A tela "Guardado" (rodada 5)
+
+**DUAS ABAS desde a rodada 9**, no arranjo que a usuária descreveu (*"está
+MUITO feia. sem a separação entre os blocos e tá muito bloco sem mostrar
+nada"*):
+
+- **O que você tem guardado** — `guardado-total` e `guardado-aportes-mes`
+  **lado a lado** na `.faixa` de duas colunas (a mesma de Mês), e
+  `guardado-metas` embaixo. O total é um número curto e o gráfico é largo:
+  juntos preenchem uma linha que nenhum dos dois preenchia sozinho.
+- **Onde está guardado** — `guardado-ativos`, a tabela, que é alta e não
+  divide bem com nada.
+
+`APELIDOS.metas` cai na primeira aba, `APELIDOS.patrimonio` na segunda.
 
 Quatro blocos em `js/guardado.js`, cada um com id próprio (`guardado-total`,
 `guardado-metas`, `guardado-ativos`, `guardado-aportes-mes` — as âncoras de
@@ -489,6 +619,14 @@ Quatro blocos em `js/guardado.js`, cada um com id próprio (`guardado-total`,
   "+ Aporte" da linha some para os dois ícones caberem inteiros.
 
 ### A tela "Conferir" (rodada 7)
+
+**TRÊS ABAS desde a rodada 9** — a usuária disse que a tela era *"ok, mas um
+pouco informação demais"*. Cada aba diz **quantas tem** (`.aba-conta.alerta`),
+senão não se sabe onde olhar. **O selo da barra continua sendo a SOMA das
+três:** `contarPendencias()` não mudou e segue vindo da mesma travessia que
+desenha as listas. **Aba vazia não se abre:** corrigir a última linha de uma
+lista esvazia a aba em que se está, e a tela cai para a primeira que ainda tem
+algo — ficar olhando um painel em branco não diz o que fazer a seguir.
 
 Três blocos em `js/conferir.js`, cada um com id próprio (as âncoras de
 `data-goto`): **sem categoria** (`conferir-sem-categoria`) · **parcelas
@@ -618,18 +756,29 @@ dentro) e **histórico** (`importar-historico`).
 
 ### A tela "Ajustes" (rodada 8 — a última)
 
-Seis blocos em `js/ajustes.js`, na ordem de quanto se mexe em cada um, cada um
-com id próprio (as âncoras de `data-goto`): **categorias**
-(`ajustes-categorias`) · **regras de classificação** (`ajustes-regras`) ·
-**orçamento** (`ajustes-orcamento`) · **backup** (`ajustes-backup`) ·
-**conta** (`ajustes-conta`) · **o que mudou de casa** (`ajustes-mudou`).
+**QUATRO ABAS desde a rodada 9** — a rodada 8 tinha decidido o contrário, e a
+usuária REVOGOU: *"deve tb separar por abas tudo da ajustes. rolar tudo pra
+encontrar o que quer é muito paia."* Os seis blocos viraram:
 
-- **SEM SUB-ABAS.** As `.config-tabs`/`.config-section` eram vocabulário
-  anterior ao híbrido e um terceiro jeito de fazer aba (depois de `.imp-abas`)
-  não se justificava: desde a rodada 1 A PÁGINA ROLA, e Ajustes é a tela que
-  menos se visita — cinco folhas empilhadas se leem de uma vez, cinco abas
-  escondem quatro delas. O CSS das `.config-tab*` foi **removido**, não deixado
-  sem uso.
+| aba | blocos |
+|---|---|
+| Categorias e regras | `ajustes-categorias` + `ajustes-regras` |
+| Orçamento | `ajustes-orcamento` |
+| Backup | `ajustes-backup` |
+| Conta | `ajustes-conta` + `ajustes-mudou` (rodapé) |
+
+- **Categorias e regras andam juntas** porque são a mesma pergunta ("em que
+  caixa cai este gasto?") respondida de dois jeitos, e a regra aponta para a
+  categoria: separá-las obrigaria a trocar de aba no meio de uma tarefa só.
+- **"O que mudou de casa" não merece aba própria:** ninguém vem a Ajustes
+  procurar por ele; ele existe para ser encontrado por quem procurava outra
+  coisa. Fica como rodapé de "Conta".
+- **O editor do orçamento (`renderOrcamento`) só é chamado com a aba dele
+  aberta** — o `#orcamento-editor` que ele preenche não existe nas outras.
+- **NÃO é um terceiro jeito de fazer aba.** É o MESMO vocabulário de Importar,
+  renomeado de `.imp-abas` para `.abas`. O argumento que matou as
+  `.config-tabs` continua valendo contra quem inventar um terceiro, e o CSS
+  delas segue **removido**, não sem uso.
 - **`configuracoes.js` morreu**, absorvido inteiro por `ajustes.js` (como
   `dashboard.js` na rodada 3). **`relatorios.js` morreu de vez** — decisão da
   usuária: seis relatórios fixos para uma pessoa só, e cada tabela do app já
@@ -710,6 +859,12 @@ Rodadas: **1 fundação (feita)** · **2 navegação (feita)** · **3 Mês (feit
 **6 Importar (feita)** · **7 Conferir (feita)** · **8 Ajustes (feita)**.
 **As oito estão feitas — o redesign v2 acabou.** O fecho da sequência, com o
 que mudou e o que ficou pendente, está em `FECHO-REDESIGN-v2.md`.
+
+**Rodada 9 (depois do fecho)** — quatro frentes pedidas pela usuária:
+**A densidade · B abas dentro da tela · C a tela se ajustar à resolução ·
+D o modo escuro de volta. AS QUATRO ESTÃO FEITAS.** O plano original está em
+`PROMPT-rodada-9-densidade-abas-escuro.md` e o registro do que cada frente
+mudou, no fim de `FECHO-REDESIGN-v2.md`.
 
 ### Decisões da usuária que mudam o plano original
 

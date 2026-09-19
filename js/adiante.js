@@ -4,9 +4,13 @@
  * Responde, nesta ordem: com quanto o mês abriu · qual o dia mais apertado e
  * por quê · onde o mês fecha · o que acontece dia a dia.
  *
- * Quatro blocos:
- *   ajustes do mês (saldo inicial + dia de vencimento, lado a lado) ·
- *   3 KPIs · curva diária · tabela dos dias com movimento
+ * DUAS ABAS desde a rodada 9:
+ *   "O mês"      — ajustes do mês (saldo inicial + dia de vencimento) ·
+ *                  3 KPIs · curva diária
+ *   "Movimentos" — a tabela dos dias com movimento
+ *
+ * A tabela é a coisa mais alta da tela e empurrava a curva — que é o assunto
+ * de Adiante — para longe do topo. Mesma decisão da tabela de Mês.
  *
  * De onde veio cada coisa:
  *  - o cálculo continua em `js/saldos.js`, que virou só cálculo: as quatro
@@ -33,6 +37,7 @@
 import {
   state, fmt, esc, monthLabel, offsetMonth, toast,
   getInvestCatIds, resolveCategoryId,
+  abas, painelAba, ligarAbas, focarAba, pegarAbaPedida,
 } from './utils.js';
 import { incomesOfMonth, saveFluxoConfig } from './db.js';
 import { buildMovimentos, buildSerie, acharMinimo, contextoDoMinimo } from './saldos.js';
@@ -55,6 +60,10 @@ function coresGrafico() {
 
 let chartSaldo = null;
 let _init = false;
+
+/** Aba aberta. Mora no módulo, não no DOM: gravar o saldo inicial remonta a
+ *  tela, e voltar para a primeira aba a cada gravação faz perder o lugar. */
+let _aba = 'mes';
 
 /** Número sem "R$" para coluna de valor — mesma regra da tabela de Mês. */
 const num = (v) => new Intl.NumberFormat('pt-BR',
@@ -230,14 +239,20 @@ function _kpis(d) {
 // 3 e 4. CURVA E TABELA
 // ═══════════════════════════════════════════════════════════════════════
 
-function _curvaETabela(d) {
-  if (!d.serie.some(p => p.temMovimento)) {
-    return `
+/** O estado vazio é o mesmo para as duas abas: sem movimento não há curva nem
+ *  tabela, e repetir a mesma folha nas duas seria dizer duas vezes. */
+function _semMovimento(d) {
+  return `
       <div class="folha">
         <p class="rot">Nenhum movimento em ${esc(monthLabel(d.month).split(' ')[0].toLowerCase())}</p>
         <p class="rot-sub" style="margin:0">Importe a fatura ou o extrato do mês para ver o fluxo diário.</p>
         <button type="button" class="btn btn-2" data-goto="extratos" style="margin-top:12px">Ir para Importar</button>
       </div>`;
+}
+
+function _curva(d) {
+  if (!d.serie.some(p => p.temMovimento)) {
+    return _semMovimento(d);
   }
 
   return `
@@ -250,8 +265,13 @@ function _curvaETabela(d) {
         </div>
       </div>
       <div class="adiante-chart"><canvas id="fx-chart"></canvas></div>
-    </div>
-    <div class="folha" id="adiante-tabela"></div>`;
+    </div>`;
+}
+
+/** A casca da tabela. `_renderTabela` a preenche depois do innerHTML. */
+function _movimentos(d) {
+  if (!d.serie.some(p => p.temMovimento)) return _semMovimento(d);
+  return '<div class="folha" id="adiante-tabela"></div>';
 }
 
 function _renderTabela(d) {
@@ -429,42 +449,56 @@ export function renderAdiante() {
   const sec = document.getElementById('tab-adiante');
   if (!sec) return;
 
+  if (!_init) {
+    ligarAbas(sec, 'adiante', (id) => { _aba = id; renderAdiante(); focarAba('adiante', id); });
+    _ligarEventos();
+    _init = true;
+  }
+
+  // `data-goto="calendario"` aponta para `adiante-curva`: abrir a aba antes de
+  // rolar, senão o atalho leva a um bloco escondido.
+  _aba = pegarAbaPedida('adiante') || _aba;
+
   const d = _dados();
+  const temMovimento = d.serie.some(p => p.temMovimento);
+  const naVisao = _aba === 'mes';
 
   sec.innerHTML = `
     <p class="page-intro">O que ainda vai acontecer com o dinheiro que você tem.
       <b>Olhe o número do meio:</b> ele diz qual é o dia mais apertado do mês e por quê.</p>
-    ${_ajustes(d)}
-    ${_kpis(d)}
-    ${_curvaETabela(d)}`;
+    ${abas('adiante', [
+      { id: 'mes',         nome: 'O mês' },
+      { id: 'movimentos',  nome: 'Movimentos' },
+    ], _aba, 'O que ver de Adiante')}
+    ${painelAba('adiante', _aba, naVisao
+      ? `${_ajustes(d)}${_kpis(d)}${_curva(d)}`
+      : _movimentos(d))}`;
 
-  // Erro de leitura não pode deixar número velho ao lado de dado novo: os KPIs
-  // acima seguem com o último cálculo válido e só a tabela troca pela mensagem.
-  if (d.serie.some(p => p.temMovimento)) {
+  // O gráfico e a tabela só são montados quando o painel deles está no DOM:
+  // Chart.js mede o canvas na hora, e canvas dentro de aba fechada mede zero —
+  // e fica zero. Renderizar só o painel visível resolve isso na raiz.
+  if (temMovimento) {
     try {
-      _renderTabela(d);
-      _renderChart(d);
+      if (naVisao) _renderChart(d);
+      else         _renderTabela(d);
     } catch (err) {
       console.error('Erro ao montar o fluxo de caixa:', err);
-      const alvo = document.getElementById('adiante-tabela');
+      // Erro de leitura não pode deixar número velho ao lado de dado novo: os
+      // KPIs seguem com o último cálculo válido e só a parte quebrada troca
+      // pela mensagem.
+      const alvo = document.getElementById(naVisao ? 'adiante-curva' : 'adiante-tabela');
       if (alvo) alvo.innerHTML = `
         <p class="rot">Não foi possível montar o dia a dia</p>
         <p class="rot-sub" style="margin:0">Os números acima seguem com o último cálculo válido.</p>
         <button type="button" class="btn btn-2" id="fx-recarregar" style="margin-top:12px">Tentar de novo</button>`;
     }
-  } else if (chartSaldo) {
-    // Sem gráfico nesta tela, a instância do mês anterior ficaria viva sobre um
-    // canvas já removido do DOM — com o listener de resize junto.
-    chartSaldo.destroy(); chartSaldo = null;
   }
 
-  if (!_init) { _ligarEventos(); _init = true; }
+  // Sem gráfico NO DOM — mês sem movimento, ou aba "Movimentos" aberta — a
+  // instância do Chart.js ficaria viva sobre um canvas já removido, com o
+  // listener de resize junto.
+  if ((!temMovimento || !naVisao) && chartSaldo) { chartSaldo.destroy(); chartSaldo = null; }
 }
-
-// ═══════════════════════════════════════════════════════════════════════
-// EVENTOS — delegados em `document`, registrados uma vez: os campos são
-// reinjetados por innerHTML a cada render e a cada troca de mês.
-// ═══════════════════════════════════════════════════════════════════════
 
 function _ligarEventos() {
   document.addEventListener('keydown', e => {
