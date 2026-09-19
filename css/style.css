@@ -37,11 +37,21 @@
      não jogado tudo no fim.
 
      Os pisos são os valores do celular, que já estavam medidos a 375px. */
-  --coluna: clamp(1180px, 76vw, 1560px);
+  /* EM REM, não em px: o teto da coluna existe para limitar o COMPRIMENTO DA
+     LINHA, e comprimento de linha se mede em caracteres, não em pixels. Com o
+     teto em px, o texto crescia no QHD e a coluna não — a linha passava a caber
+     menos palavras e a mesma tabela apertava. Em rem, o número de caracteres
+     por linha é o mesmo em toda tela: 104rem são 1560px a 15px e 1872px a
+     18px. */
+  --coluna: clamp(78.67rem, 76vw, 104rem);
   --margem: clamp(16px, 2.3vw, 36px);
   --goteira: clamp(14px, 1.4vw, 24px);
   --u: 8px;
-  --ar-secao: clamp(26px, 2.8vw, 48px); --linha: 52px; --nav: 232px;
+  --ar-secao: clamp(26px, 2.8vw, 48px);
+  /* Em rem: altura de linha de tabela e largura da navegação são medidas de
+     TEXTO. Em px elas ficavam iguais num QHD e num notebook, com a fonte
+     maior dentro — a linha apertava e o rótulo do menu quebrava. */
+  --linha: 3.4667rem; --nav: 15.4667rem;
   /* O ar ENTRE blocos de uma tela. Maior que a goteira de propósito: a
      goteira separa colunas de uma mesma linha, isto separa dois assuntos.
      Sem ele, blocos empilhados nasciam COLADOS (medido: 0px entre
@@ -141,7 +151,7 @@
   --shadow-glow: none;
 
   --sidebar-w:       var(--nav);
-  --topbar-h:        60px;
+  --topbar-h:        4rem;
   --transition:      0.18s cubic-bezier(0.4, 0, 0.2, 1);
   --transition-slow: 0.35s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -246,11 +256,16 @@ html[data-tema="escuro"][data-marca="grafite"] {
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 html {
-  /* O passo tipográfico acompanha a tela, mas de leve: 14px no celular,
-     15px no notebook de 1400px (o valor de sempre) e 16,5px no monitor
-     grande. Sem isto, texto dimensionado em rem fica minúsculo a 2560px —
-     e a tela "se ajustar à resolução" é tamanho, não só largura de bloco. */
-  font-size: clamp(14px, 0.13vw + 13.15px, 16.5px);
+  /* O PASSO TIPOGRÁFICO MANDA NA INTERFACE INTEIRA — e isso só passou a ser
+     verdade depois que os 86 tamanhos escritos em px literal no vocabulário v2
+     viraram `rem`. Antes, metade do app escalava (o que estava em rem) e a
+     outra metade não: num monitor QHD o resultado era "tudo muito pequeno",
+     com a escala quebrada no meio.
+
+     14px no celular · 15px no notebook de 1400px (o valor de referência do
+     desenho, e de onde saiu a conversão px→rem) · 18px no QHD de 2560px.
+     A curva é linear no meio e travada nas duas pontas. */
+  font-size: clamp(14px, 0.2586vw + 11.38px, 18px);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   scroll-behavior: smooth;
@@ -358,7 +373,7 @@ body {
 }
 
 .sidebar-logo {
-  font-size: 20px;
+  font-size: 1.3333rem;
   font-weight: 600;
   letter-spacing: -0.01em;
   color: var(--ink);
@@ -368,7 +383,7 @@ body {
   width: 28px; height: 28px; border-radius: 9px;
   background: var(--marca-fundo); color: #fff;
   display: grid; place-items: center;
-  font-size: 14px; font-weight: 700; flex: none;
+  font-size: 0.9333rem; font-weight: 700; flex: none;
 }
 
 .sidebar-nav { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 2px; }
@@ -381,7 +396,7 @@ body {
    no filho, sem uma div de espaçamento. */
 .nav-group-fim > .nav-link:first-child { margin-top: auto; }
 .nav-group-label {
-  font: 600 10.5px var(--fonte);
+  font: 600 0.7rem var(--fonte);
   text-transform: uppercase;
   letter-spacing: 0.16em;
   color: var(--ink-3);
@@ -396,7 +411,7 @@ body {
   border-radius: var(--raio-sm);
   color: var(--ink-2);
   text-decoration: none;
-  font-size: 13.5px;
+  font-size: 0.9rem;
   font-weight: 500;
   transition: background var(--transition), color var(--transition);
   cursor: pointer;
@@ -411,7 +426,7 @@ body {
 
 /* Âmbar, não a marca: o contador é pendência ("o app não conseguiu
    classificar"), e pendência é âmbar em toda a interface. Some quando é zero. */
-.nav-badge { margin-left: auto; font-size: 11px; font-weight: 700; border-radius: 20px; padding: 1px 7px;
+.nav-badge { margin-left: auto; font-size: 0.7333rem; font-weight: 700; border-radius: 20px; padding: 1px 7px;
   background: var(--deduzido-tinta); color: var(--deduzido); }
 
 .sidebar-footer { border-top: 1px solid var(--borda); flex-shrink: 0; padding: 0.4rem 0 0; margin-top: 12px; }
@@ -479,7 +494,7 @@ body {
   width: 26px; height: 26px;
   background: transparent; border: 0;
   border-radius: 7px; color: var(--ink-3);
-  cursor: pointer; font-size: 15px;
+  cursor: pointer; font-size: 1rem;
   display: flex; align-items: center; justify-content: center;
   transition: all var(--transition);
 }
@@ -538,7 +553,7 @@ body {
 
 .kpi-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.55rem; }
 .kpi-label { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-muted); }
-.kpi-icon { width: 28px; height: 28px; border-radius: var(--radius-sm); background: var(--accent-dim); display: flex; align-items: center; justify-content: center; font-size: 14px; }
+.kpi-icon { width: 28px; height: 28px; border-radius: var(--radius-sm); background: var(--accent-dim); display: flex; align-items: center; justify-content: center; font-size: 0.9333rem; }
 
 .kpi-value { font-family: var(--font-mono); font-size: 1.45rem; font-weight: 500; letter-spacing: -0.5px; color: var(--text-primary); line-height: 1.1; }
 .kpi-value.positive { color: var(--success); }
@@ -720,7 +735,7 @@ body {
   pointer-events: all; animation: slideInRight 0.25s ease;
 }
 .toast.hiding { animation: slideOutRight 0.22s ease forwards; }
-.toast-icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+.toast-icon { font-size: 1.0667rem; flex-shrink: 0; margin-top: 1px; }
 .toast-body { flex: 1; }
 .toast-title { font-weight: 600; font-size: 0.84rem; margin-bottom: 1px; }
 .toast-msg   { font-size: 0.79rem; color: var(--text-secondary); }
@@ -964,23 +979,25 @@ body { overflow-x: hidden; overflow-y: auto; }
 /* ── a folha: o cartão, mas lido como papel ─────────────────── */
 .folha {
   background: var(--folha); border: 1px solid var(--borda); border-radius: var(--raio);
-  box-shadow: var(--sombra); padding: 22px 24px;
+  box-shadow: var(--sombra);
+  /* Em rem: o respiro da folha é proporcional ao texto que ela guarda. */
+  padding: 1.4667rem 1.6rem;
 }
 .rot {
-  font: 600 10.5px var(--fonte); text-transform: uppercase; letter-spacing: 0.16em;
+  font: 600 0.7rem var(--fonte); text-transform: uppercase; letter-spacing: 0.16em;
   color: var(--ink-3); margin: 0 0 5px;
 }
-.rot-sub { color: var(--ink-3); font-size: 12.5px; margin: 0 0 18px; max-width: 62ch; }
+.rot-sub { color: var(--ink-3); font-size: 0.8333rem; margin: 0 0 18px; max-width: 62ch; }
 .linha-topo { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 16px; }
 .linha-topo > :first-child { flex: 1; min-width: 0; }
 .ir {
   border: 1px solid var(--borda); background: var(--folha); border-radius: 8px;
-  width: 28px; height: 28px; color: var(--ink-3); cursor: pointer; font-size: 13px; flex: none;
+  width: 28px; height: 28px; color: var(--ink-3); cursor: pointer; font-size: 0.8667rem; flex: none;
 }
 .ir:hover { border-color: var(--borda-forte); color: var(--ink); }
 .nota {
   padding-left: 13px; border-left: 2px solid var(--borda-forte); color: var(--ink-3);
-  font-size: 12.5px; margin-top: 18px;
+  font-size: 0.8333rem; margin-top: 18px;
 }
 
 /* ── a faixa de duas colunas; empilha quando espremeria número ── */
@@ -1015,12 +1032,12 @@ body { overflow-x: hidden; overflow-y: auto; }
   display: flex; flex-direction: column;
 }
 .heroi .rot { color: rgba(255, 255, 255, 0.76); margin-bottom: 8px; }
-.heroi h2 { font: 600 46px/1 var(--fonte); margin: 0; letter-spacing: -0.03em; }
-.heroi h2 em { font: 400 17px/1 var(--fonte); font-style: normal; opacity: 0.8; margin-right: 10px; vertical-align: middle; }
-.heroi .de { font-size: 13px; opacity: 0.82; margin-top: 9px; }
+.heroi h2 { font: 600 3.0667rem/1 var(--fonte); margin: 0; letter-spacing: -0.03em; }
+.heroi h2 em { font: 400 1.1333rem/1 var(--fonte); font-style: normal; opacity: 0.8; margin-right: 10px; vertical-align: middle; }
+.heroi .de { font-size: 0.8667rem; opacity: 0.82; margin-top: 9px; }
 .dica {
   margin-top: auto; padding-top: 16px; display: flex; gap: 10px; align-items: flex-start;
-  border-top: 1px solid rgba(255, 255, 255, 0.22); font-size: 13px; line-height: 1.45;
+  border-top: 1px solid rgba(255, 255, 255, 0.22); font-size: 0.8667rem; line-height: 1.45;
 }
 .dica i { font-style: normal; flex: none; opacity: 0.85; }
 .dica b { font-weight: 600; }
@@ -1029,13 +1046,13 @@ body { overflow-x: hidden; overflow-y: auto; }
 .apoio { display: flex; }
 .apoio > div { flex: 1; padding-right: var(--goteira); }
 .apoio > div + div { border-left: 1px solid var(--borda); padding-left: var(--goteira); }
-.apoio dt { font-size: 11px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--ink-3); margin: 0; }
-.apoio dd { margin: 6px 0 0; font-size: 22px; font-weight: 600; letter-spacing: -0.015em; }
+.apoio dt { font-size: 0.7333rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--ink-3); margin: 0; }
+.apoio dd { margin: 6px 0 0; font-size: 1.4667rem; font-weight: 600; letter-spacing: -0.015em; }
 .mais { color: var(--entrou); }
 .menos { color: var(--saiu); }
 .alerta { color: var(--deduzido); }
 .pilula {
-  display: inline-block; font-size: 11.5px; font-weight: 600; border-radius: 20px;
+  display: inline-block; font-size: 0.7667rem; font-weight: 600; border-radius: 20px;
   padding: 2px 8px; background: var(--entrou-tinta); color: var(--entrou);
   margin-left: 6px; vertical-align: middle;
 }
@@ -1047,16 +1064,16 @@ body { overflow-x: hidden; overflow-y: auto; }
 .dist { display: grid; grid-template-columns: 186px 1fr; gap: 26px; align-items: center; }
 .cat { display: flex; align-items: center; gap: 11px; padding: 7px 0; }
 .cat + .cat { border-top: 1px solid var(--borda); }
-.chip { width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; font-size: 14px; flex: none; }
-.cat .nome { font-size: 13.5px; font-weight: 500; flex: 1; min-width: 0; }
-.cat .pct { font-size: 11.5px; font-weight: 600; color: var(--ink-3); background: var(--folha-2); border-radius: 20px; padding: 1px 7px; }
-.cat .val { font-size: 13.5px; font-weight: 600; min-width: 84px; text-align: right; }
+.chip { width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; font-size: 0.9333rem; flex: none; }
+.cat .nome { font-size: 0.9rem; font-weight: 500; flex: 1; min-width: 0; }
+.cat .pct { font-size: 0.7667rem; font-weight: 600; color: var(--ink-3); background: var(--folha-2); border-radius: 20px; padding: 1px 7px; }
+.cat .val { font-size: 0.9rem; font-weight: 600; min-width: 84px; text-align: right; }
 .cat.resto .nome { color: var(--ink-3); }
 
 /* ── tabela: fio fino do jornal, dentro da folha ────────────── */
 .folha table { width: 100%; border-collapse: collapse; }
 .folha th {
-  text-align: left; font: 600 10.5px var(--fonte); text-transform: uppercase; letter-spacing: 0.13em;
+  text-align: left; font: 600 0.7rem var(--fonte); text-transform: uppercase; letter-spacing: 0.13em;
   color: var(--ink-3); padding: 0 0 10px; border-bottom: 1px solid var(--borda-forte);
 }
 .folha td { height: var(--linha); padding: 0; border-bottom: 1px solid var(--borda); vertical-align: middle; }
@@ -1065,7 +1082,7 @@ body { overflow-x: hidden; overflow-y: auto; }
 /* Sem zebra: faixa alternada compete com o âmbar da linha pendente. */
 .folha .v { text-align: right; font-weight: 600; white-space: nowrap; }
 .folha th.v { text-align: right; }
-.folha .sub { display: block; font-size: 11.5px; color: var(--ink-3); line-height: 1.3; }
+.folha .sub { display: block; font-size: 0.7667rem; color: var(--ink-3); line-height: 1.3; }
 .folha tr.conferir td { background: var(--deduzido-fundo); }
 .folha tr.conferir td:first-child {
   box-shadow: inset 3px 0 0 var(--deduzido); padding-left: 11px;
@@ -1073,18 +1090,18 @@ body { overflow-x: hidden; overflow-y: auto; }
 }
 .folha tr.conferir td:last-child { border-radius: 0 var(--raio-sm) var(--raio-sm) 0; }
 /* ◇ + texto: o segundo canal do âmbar, para quem não enxerga a cor. */
-.marca-d { color: var(--deduzido); font-size: 11.5px; font-weight: 600; }
+.marca-d { color: var(--deduzido); font-size: 0.7667rem; font-weight: 600; }
 .marca-d::before { content: "◇ "; }
 .selo {
-  font-size: 10.5px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase;
+  font-size: 0.7rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase;
   color: var(--ink-3); background: var(--folha-2); border-radius: 6px; padding: 3px 7px;
 }
 .rodape {
   display: flex; justify-content: flex-end; gap: 16px; align-items: baseline;
   border-top: 2px solid var(--ink); margin-top: 2px; padding-top: 14px;
-  font-size: 13px; color: var(--ink-3);
+  font-size: 0.8667rem; color: var(--ink-3);
 }
-.rodape strong { font-size: 17px; color: var(--ink); }
+.rodape strong { font-size: 1.1333rem; color: var(--ink); }
 
 /* ═══════════════════════════════════════════════════════════════
    MÊS (rodada 3) — o que é específico da tela, sobre o vocabulário
@@ -1100,7 +1117,7 @@ body { overflow-x: hidden; overflow-y: auto; }
 .heroi .insights-strip { display: flex; flex-direction: column; gap: 6px; margin: 0; padding: 0; }
 .heroi .insight-chip {
   background: transparent; border: 0; padding: 0; color: #fff;
-  font-size: 13px; line-height: 1.45; opacity: 0.92;
+  font-size: 0.8667rem; line-height: 1.45; opacity: 0.92;
 }
 .heroi .dica .btn-2 { margin-top: 10px; align-self: flex-start; }
 .heroi .dica { flex-direction: column; align-items: flex-start; }
@@ -1194,7 +1211,7 @@ body { overflow-x: hidden; overflow-y: auto; }
    O rótulo entra na própria fileira dos campos em vez de ocupar duas linhas
    por cima deles, e a explicação virou a legenda de cada campo — dito ao lado
    do campo que ele explica, custa zero linha e chega na hora certa. */
-.faixa-fina { padding: 14px 24px; }
+.faixa-fina { padding: 0.9333rem 1.6rem; }
 
 /* Rótulo + os campos numa fileira só. FLEX e não grid de colunas fixas: o
    número de campos VARIA — quem tem dois cartões responde um vencimento para
@@ -1213,8 +1230,8 @@ body { overflow-x: hidden; overflow-y: auto; }
    dobra outra vez. */
 .adiante-campo-dia { flex: 0 1 148px; }
 .adiante-campo-cartao { flex: 0 1 210px; }
-.adiante-campo > span { font-size: 13px; font-weight: 600; }
-.adiante-campo > i { font-style: normal; font-size: 11.5px; color: var(--ink-3); line-height: 1.4; }
+.adiante-campo > span { font-size: 0.8667rem; font-weight: 600; }
+.adiante-campo > i { font-style: normal; font-size: 0.7667rem; color: var(--ink-3); line-height: 1.4; }
 @media (max-width: 900px) {
   .adiante-campos > .rot { flex: 1 0 100%; margin: 0; }
   /* O saldo toma a linha inteira e os dias ficam DOIS POR LINHA: a 375px a
@@ -1225,8 +1242,8 @@ body { overflow-x: hidden; overflow-y: auto; }
   .adiante-campo-dia { flex: 1 1 130px; }
   .adiante-campo-cartao { flex: 1 1 160px; }
 }
-.adiante-campo > span { font-size: 12.5px; font-weight: 600; color: var(--ink-2); }
-.adiante-campo > i { font-style: normal; font-size: 11.5px; color: var(--ink-3); max-width: 42ch; }
+.adiante-campo > span { font-size: 0.8333rem; font-weight: 600; color: var(--ink-2); }
+.adiante-campo > i { font-style: normal; font-size: 0.7667rem; color: var(--ink-3); max-width: 42ch; }
 .adiante-campo .form-input { max-width: 180px; }
 
 /* 1fr 1.35fr 1fr: o do meio é o único que induz decisão, e o tamanho é o que
@@ -1234,12 +1251,12 @@ body { overflow-x: hidden; overflow-y: auto; }
 .adiante-kpis { display: grid; grid-template-columns: 1fr 1.35fr 1fr; gap: var(--goteira); margin-bottom: var(--goteira); }
 .adiante-kpi { display: flex; flex-direction: column; }
 .adiante-kpi-hero { background: var(--folha-2); }
-.adiante-kpi-val { font-size: 30px; font-weight: 600; letter-spacing: -0.02em; margin-top: 6px; }
-.adiante-kpi-hero .adiante-kpi-val { font-size: 38px; }
+.adiante-kpi-val { font-size: 2rem; font-weight: 600; letter-spacing: -0.02em; margin-top: 6px; }
+.adiante-kpi-hero .adiante-kpi-val { font-size: 2.5333rem; }
 /* Vermelho só para saldo negativo — fato aritmético sobre dado existente, não
    a "aritmética de dado faltando". Os parênteses são o segundo canal. */
 .adiante-kpi-val.menos { color: var(--saiu); }
-.adiante-kpi-sub { font-size: 12.5px; color: var(--ink-3); margin: 8px 0 0; }
+.adiante-kpi-sub { font-size: 0.8333rem; color: var(--ink-3); margin: 8px 0 0; }
 
 .adiante-chart { position: relative; height: 240px; }
 .adiante-chart canvas { position: absolute; inset: 0; }
@@ -1252,7 +1269,7 @@ body { overflow-x: hidden; overflow-y: auto; }
   position: sticky; top: var(--topbar-h); z-index: 1;
   background: var(--folha); padding: 14px 0 10px; border-bottom: 0;
   box-shadow: inset 0 -1px 0 var(--borda-forte);
-  text-align: left; font: 600 10.5px var(--fonte);
+  text-align: left; font: 600 0.7rem var(--fonte);
   text-transform: uppercase; letter-spacing: 0.13em; color: var(--ink-3);
 }
 .tabela-folha th.v { text-align: right; }
@@ -1261,7 +1278,7 @@ body { overflow-x: hidden; overflow-y: auto; }
 .tabela-folha tbody tr:last-child td { border-bottom: 0; }
 .tabela-folha .v { text-align: right; font-weight: 600; white-space: nowrap; }
 .adiante-nil { color: var(--ink-3); font-weight: 400; }
-.adiante-td-dia { color: var(--ink-3); font-size: 12.5px; }
+.adiante-td-dia { color: var(--ink-3); font-size: 0.8333rem; }
 .tabela-folha tfoot td {
   border-top: 2px solid var(--ink); border-bottom: 0; font-weight: 600; height: 44px;
 }
@@ -1271,7 +1288,7 @@ body { overflow-x: hidden; overflow-y: auto; }
 .tabela-folha tr.adiante-hoje td:first-child { box-shadow: inset 3px 0 0 var(--borda-forte); padding-left: 11px; }
 .tabela-folha tr.adiante-minimo td { background: var(--saiu-tinta); }
 .tabela-folha tr.adiante-sep td {
-  height: 30px; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.12em;
+  height: 30px; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.12em;
   color: var(--ink-3); border-bottom: 1px dashed var(--borda-forte);
 }
 
@@ -1311,7 +1328,7 @@ body { overflow-x: hidden; overflow-y: auto; }
   .sidebar-nav { flex-direction: row; overflow: visible; flex: 1; }
   .nav-link {
     flex: 1; flex-direction: column; gap: 3px; position: relative;
-    font-size: 10.5px; padding: 7px 2px; text-align: center; justify-content: center;
+    font-size: 0.7rem; padding: 7px 2px; text-align: center; justify-content: center;
   }
   .nav-link.active { background: transparent; color: var(--marca); }
   .nav-group-fim > .nav-link:first-child { margin-top: 0; }
@@ -1331,7 +1348,7 @@ body { overflow-x: hidden; overflow-y: auto; }
   .apoio { flex-wrap: wrap; gap: 14px 0; }
   .apoio > div { flex: 1 1 46%; }
   .apoio > div:nth-child(3) { border-left: 0; padding-left: 0; }
-  .heroi h2 { font-size: 38px; }
+  .heroi h2 { font-size: 2.5333rem; }
   .folha { padding: 18px 16px; }
   .esconde-sm { display: none; }
 }
@@ -1386,7 +1403,7 @@ body { overflow-x: hidden; overflow-y: auto; }
    herói é a folha escura de Mês, e duas folhas escuras no app competem
    entre si. Aqui o tamanho já basta como hierarquia. */
 .guardado-total-val {
-  font: 600 40px/1 var(--fonte); letter-spacing: -0.03em; color: var(--ink);
+  font: 600 2.6667rem/1 var(--fonte); letter-spacing: -0.03em; color: var(--ink);
   margin: 0 0 16px;
 }
 
@@ -1400,7 +1417,7 @@ body { overflow-x: hidden; overflow-y: auto; }
 .guardado-barra > span { display: block; }
 .guardado-legenda {
   display: flex; flex-wrap: wrap; gap: 6px 18px; margin-top: 10px;
-  font-size: 12px; color: var(--ink-3);
+  font-size: 0.8rem; color: var(--ink-3);
 }
 /* Segundo canal da cor: o nome vem escrito ao lado do quadradinho. */
 .guardado-legenda span { display: inline-flex; align-items: center; gap: 6px; }
@@ -1413,11 +1430,11 @@ body { overflow-x: hidden; overflow-y: auto; }
 .guardado-meta-topo {
   display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-bottom: 9px;
 }
-.guardado-meta-nome { font-size: 15px; font-weight: 600; color: var(--ink); }
+.guardado-meta-nome { font-size: 1rem; font-weight: 600; color: var(--ink); }
 .guardado-meta-val {
-  margin-left: auto; font-size: 16px; font-weight: 600; color: var(--ink); white-space: nowrap;
+  margin-left: auto; font-size: 1.0667rem; font-weight: 600; color: var(--ink); white-space: nowrap;
 }
-.guardado-meta-val em { font-style: normal; font-size: 12.5px; font-weight: 400; color: var(--ink-3); }
+.guardado-meta-val em { font-style: normal; font-size: 0.8333rem; font-weight: 400; color: var(--ink-3); }
 
 /* A barra de progresso usa `--marca`: a marca pinta navegação, botão, foco e
    curva — e progresso é curva, não valor em R$. O número em reais ao lado
@@ -1431,37 +1448,37 @@ body { overflow-x: hidden; overflow-y: auto; }
 
 .guardado-meta-pe {
   display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
-  margin-top: 9px; font-size: 12.5px; color: var(--ink-3);
+  margin-top: 9px; font-size: 0.8333rem; color: var(--ink-3);
 }
 .guardado-meta-pe b { color: var(--ink-2); font-weight: 600; }
 .guardado-acoes { margin-left: auto; display: flex; align-items: center; gap: 6px; }
 
 /* O vínculo ativo→meta, que antes só existia dentro de um <select>. */
-.guardado-vinculo { margin: 8px 0 0; font-size: 12px; color: var(--ink-3); }
+.guardado-vinculo { margin: 8px 0 0; font-size: 0.8rem; color: var(--ink-3); }
 
 /* ── histórico de aportes (meta e ativo usam o mesmo) ───────── */
 .guardado-aportes { margin-top: 10px; padding-left: 13px; border-left: 2px solid var(--borda); }
 .guardado-aporte {
   display: flex; justify-content: space-between; align-items: baseline; gap: 12px;
-  font-size: 12.5px; color: var(--ink-3); padding: 5px 0;
+  font-size: 0.8333rem; color: var(--ink-3); padding: 5px 0;
 }
 .guardado-aporte + .guardado-aporte { border-top: 1px solid var(--borda); }
-.guardado-aporte i { font-style: normal; font-size: 11px; }
+.guardado-aporte i { font-style: normal; font-size: 0.7333rem; }
 /* NÃO é `.ir`: aquele é um quadrado de 28px para o glifo "↗", e texto
    dentro dele quebra em três linhas ("2 / aport / e"). Foi medido. */
 .guardado-toggle {
   display: inline-flex; align-items: center; gap: 4px; white-space: nowrap;
   background: none; border: 0; padding: 2px 0; cursor: pointer;
-  font: 600 11.5px var(--fonte); color: var(--ink-3);
+  font: 600 0.7667rem var(--fonte); color: var(--ink-3);
   text-decoration: underline; text-underline-offset: 3px;
   text-decoration-color: var(--borda-forte);
 }
 .guardado-toggle:hover { color: var(--ink); }
 
 /* ── tabela de ativos ───────────────────────────────────────── */
-.guardado-ativo-nome { font-size: 13.5px; font-weight: 500; }
+.guardado-ativo-nome { font-size: 0.9rem; font-weight: 500; }
 .chip-tipo {
-  display: inline-block; font-size: 11px; font-weight: 600;
+  display: inline-block; font-size: 0.7333rem; font-weight: 600;
   border-radius: 6px; padding: 2px 8px; white-space: nowrap;
 }
 .guardado-acoes-td { text-align: right; white-space: nowrap; }
@@ -1482,7 +1499,7 @@ body { overflow-x: hidden; overflow-y: auto; }
 .guardado-chart canvas { position: absolute; inset: 0; }
 
 @media (max-width: 900px) {
-  .guardado-total-val { font-size: 34px; }
+  .guardado-total-val { font-size: 2.2667rem; }
   /* Só sobram "Ativo · Hoje · ações": o nome é o que precisa de espaço. */
   #guardado-ativos th:nth-child(4) { width: 104px; }
   #guardado-ativos th:nth-child(6) { width: 86px; }
@@ -1520,9 +1537,9 @@ body { overflow-x: hidden; overflow-y: auto; }
 .imp-zona:hover, .imp-zona.arrastando { border-color: var(--marca); background: var(--marca-tinta); }
 .imp-zona:focus-visible { outline: 2px solid var(--marca); outline-offset: 2px; }
 .imp-zona svg { display: block; margin: 0 auto 10px; opacity: 0.5; }
-.imp-zona-titulo { margin: 0 0 4px; font-size: 15px; font-weight: 600; color: var(--ink); }
+.imp-zona-titulo { margin: 0 0 4px; font-size: 1rem; font-weight: 600; color: var(--ink); }
 .imp-zona-ou { font-weight: 400; color: var(--ink-3); }
-.imp-zona-hint { font-size: 12px; color: var(--ink-3); }
+.imp-zona-hint { font-size: 0.8rem; color: var(--ink-3); }
 
 /* O offset de competência veio de Ajustes: ele decide em que mês a fatura
    INTEIRA cai, e o lugar de mexer nele é onde a consequência aparece —
@@ -1530,7 +1547,7 @@ body { overflow-x: hidden; overflow-y: auto; }
 .imp-ajuste { margin-top: var(--goteira); }
 .imp-ajuste-rot {
   display: block; margin: 0 0 8px;
-  font: 600 10.5px var(--fonte); text-transform: uppercase; letter-spacing: 0.13em; color: var(--ink-3);
+  font: 600 0.7rem var(--fonte); text-transform: uppercase; letter-spacing: 0.13em; color: var(--ink-3);
 }
 .imp-escolhas {
   display: grid; grid-template-columns: 1.6fr 1fr; gap: var(--goteira);
@@ -1542,7 +1559,7 @@ body { overflow-x: hidden; overflow-y: auto; }
 .imp-banco {
   cursor: pointer;
   background: var(--folha); border: 1px solid var(--borda-forte); border-radius: var(--raio-sm);
-  padding: 8px 12px; font: 500 13px var(--fonte); color: var(--ink);
+  padding: 8px 12px; font: 500 0.8667rem var(--fonte); color: var(--ink);
 }
 .imp-banco:hover { background: var(--folha-2); }
 /* Escolhido = contorno grosso da marca + fundo. Cor sozinha não basta. */
@@ -1555,7 +1572,7 @@ body { overflow-x: hidden; overflow-y: auto; }
 .imp-formatos { display: flex; gap: 8px; }
 .imp-formato {
   cursor: pointer; background: var(--folha); border: 1px solid var(--borda-forte);
-  border-radius: var(--raio-sm); padding: 8px 14px; font: 500 13px var(--fonte); color: var(--ink);
+  border-radius: var(--raio-sm); padding: 8px 14px; font: 500 0.8667rem var(--fonte); color: var(--ink);
 }
 .imp-formato:hover { background: var(--folha-2); }
 .imp-formato.ativo {
@@ -1573,16 +1590,16 @@ body { overflow-x: hidden; overflow-y: auto; }
 .imp-lote:first-child { border-top: 0; padding-top: 0; }
 .imp-lote-topo { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
 .imp-lote-nome { display: flex; align-items: center; gap: 10px; min-width: 0; }
-.imp-lote-titulo { font-size: 13.5px; font-weight: 600; color: var(--ink); overflow-wrap: break-word; }
+.imp-lote-titulo { font-size: 0.9rem; font-weight: 600; color: var(--ink); overflow-wrap: break-word; }
 .imp-lote-dir { display: flex; align-items: center; gap: 10px; flex: none; }
-.imp-lote-val { font-size: 13px; font-weight: 600; white-space: nowrap; }
+.imp-lote-val { font-size: 0.8667rem; font-weight: 600; white-space: nowrap; }
 
 /* NÃO é `.ir`: `.ir` é um quadrado de 28px para o glifo "↗" e texto dentro
    dele quebra em três linhas (medido na rodada 5, com `.guardado-toggle`). */
 .imp-lote-btn {
   cursor: pointer; background: var(--folha); border: 1px solid var(--borda-forte);
   border-radius: var(--raio-sm); padding: 5px 10px; white-space: nowrap;
-  font: 500 12px var(--fonte); color: var(--ink-2);
+  font: 500 0.8rem var(--fonte); color: var(--ink-2);
 }
 .imp-lote-btn:hover { background: var(--folha-2); color: var(--ink); border-color: var(--ink-2); }
 .imp-lote-excluir:hover { color: var(--saiu); border-color: var(--saiu); }
@@ -1592,7 +1609,7 @@ body { overflow-x: hidden; overflow-y: auto; }
 .imp-lote-tabela th:nth-child(1) { width: 96px; }
 .imp-lote-tabela th:nth-child(3) { width: 150px; }
 .imp-lote-tabela th:nth-child(4) { width: 110px; }
-.imp-lote-tabela td { font-size: 13px; }
+.imp-lote-tabela td { font-size: 0.8667rem; }
 
 @media (max-width: 900px) {
   .imp-escolhas { grid-template-columns: 1fr; }
@@ -1619,7 +1636,7 @@ body { overflow-x: hidden; overflow-y: auto; }
 .conferir-btn {
   cursor: pointer; background: var(--folha); border: 1px solid var(--borda-forte);
   border-radius: var(--raio-sm); padding: 5px 10px; white-space: nowrap;
-  font: 500 12px var(--fonte); color: var(--ink-2);
+  font: 500 0.8rem var(--fonte); color: var(--ink-2);
 }
 .conferir-btn:hover { background: var(--folha-2); color: var(--ink); border-color: var(--ink-2); }
 /* Vermelho só na BORDA do hover, nunca no rótulo em repouso: nesta tela o
@@ -1651,15 +1668,15 @@ body { overflow-x: hidden; overflow-y: auto; }
   padding-bottom: 10px; margin-bottom: 4px; border-bottom: 1px solid var(--borda);
 }
 .conferir-dup-topo .nota { flex: 1; min-width: 200px; }
-.conferir-dup-data { font-size: 13px; font-weight: 600; color: var(--ink); white-space: nowrap; }
+.conferir-dup-data { font-size: 0.8667rem; font-weight: 600; color: var(--ink); white-space: nowrap; }
 .conferir-dup-linha {
   display: flex; align-items: center; gap: 12px;
   padding: 9px 0; border-bottom: 1px solid var(--borda);
 }
 .conferir-dup-linha:last-child { border-bottom: 0; padding-bottom: 0; }
 .conferir-dup-quem { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; }
-.conferir-dup-desc { font-size: 13px; overflow-wrap: break-word; min-width: 0; }
-.conferir-dup-val { font-size: 13.5px; font-weight: 600; white-space: nowrap; }
+.conferir-dup-desc { font-size: 0.8667rem; overflow-wrap: break-word; min-width: 0; }
+.conferir-dup-val { font-size: 0.9rem; font-weight: 600; white-space: nowrap; }
 
 @media (max-width: 900px) {
   /* Medido a 375px: a folha tem ~343px por dentro, e o `padding-left: 16px` de
@@ -1676,7 +1693,7 @@ body { overflow-x: hidden; overflow-y: auto; }
      coluna e não havia como caber as quatro. */
   #conferir-tab-proj th:nth-child(3) { width: 84px; }
   #conferir-tab-proj th:nth-child(4) { width: 112px; }
-  .conferir-tabela .form-input.sm { font-size: 12px; padding-left: 6px; padding-right: 6px; }
+  .conferir-tabela .form-input.sm { font-size: 0.8rem; padding-left: 6px; padding-right: 6px; }
   /* Os dois botões empilham: lado a lado eles espremem a descrição. */
   .conferir-acoes { flex-direction: column; align-items: stretch; gap: 5px; }
   .conferir-dup-linha { flex-wrap: wrap; }
@@ -1702,12 +1719,12 @@ body { overflow-x: hidden; overflow-y: auto; }
 }
 .aj-item:first-child { border-top: 0; padding-top: 0; }
 .aj-cor { width: 11px; height: 11px; border-radius: 50%; flex: none; box-shadow: inset 0 0 0 1px rgba(20,24,33,0.12); }
-.aj-item-nome { font-size: 13.5px; font-weight: 500; color: var(--ink); flex: 1; min-width: 0; overflow-wrap: break-word; }
-.aj-item-nota { font-size: 11.5px; color: var(--ink-3); flex: none; }
+.aj-item-nome { font-size: 0.9rem; font-weight: 500; color: var(--ink); flex: 1; min-width: 0; overflow-wrap: break-word; }
+.aj-item-nota { font-size: 0.7667rem; color: var(--ink-3); flex: none; }
 .aj-item-acoes { display: flex; gap: 5px; flex: none; }
 /* A monoespaçada é do sistema — não há webfont de código nesta pele. */
 .aj-padrao {
-  font-family: var(--font-code); font-size: 12.5px; color: var(--ink);
+  font-family: var(--font-code); font-size: 0.8333rem; color: var(--ink);
   background: var(--folha-2); border-radius: var(--raio-sm);
   padding: 3px 8px; overflow-wrap: anywhere; min-width: 0; max-width: 46%;
 }
@@ -1718,19 +1735,19 @@ body { overflow-x: hidden; overflow-y: auto; }
 .aj-duplo > * { min-width: 0; }
 .aj-bloco { background: var(--folha-2); border-radius: var(--raio-sm); padding: 16px; }
 .aj-bloco-rot {
-  font-size: 11px; text-transform: uppercase; letter-spacing: 0.12em;
+  font-size: 0.7333rem; text-transform: uppercase; letter-spacing: 0.12em;
   color: var(--ink-3); margin: 0 0 8px; font-weight: 600;
 }
 .aj-linha-form { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.aj-rotulo { font-size: 12.5px; color: var(--ink-2); font-weight: 500; }
+.aj-rotulo { font-size: 0.8333rem; color: var(--ink-2); font-weight: 500; }
 
 .aj-stats {
   display: grid; grid-template-columns: repeat(auto-fill, minmax(146px, 1fr));
   gap: 8px; margin-bottom: var(--goteira);
 }
 .aj-stat { background: var(--folha-2); border-radius: var(--raio-sm); padding: 10px 12px; }
-.aj-stat-val { font-size: 20px; font-weight: 600; letter-spacing: -0.015em; color: var(--ink); }
-.aj-stat-rot { font-size: 11.5px; color: var(--ink-3); margin-top: 1px; }
+.aj-stat-val { font-size: 1.3333rem; font-weight: 600; letter-spacing: -0.015em; color: var(--ink); }
+.aj-stat-rot { font-size: 0.7667rem; color: var(--ink-3); margin-top: 1px; }
 
 /* A zona de risco é a única coisa da tela que apaga em massa e sem desfazer.
    Vermelho aqui NÃO é dinheiro negativo: é a borda de um bloco, e vem com a
@@ -1740,7 +1757,7 @@ body { overflow-x: hidden; overflow-y: auto; }
   border-radius: var(--raio-sm); background: var(--saiu-tinta); padding: 16px;
 }
 .aj-risco-rot {
-  font-size: 11px; text-transform: uppercase; letter-spacing: 0.12em;
+  font-size: 0.7333rem; text-transform: uppercase; letter-spacing: 0.12em;
   color: var(--saiu); font-weight: 700; margin: 0 0 6px;
 }
 .aj-btn-risco { color: var(--saiu); border-color: var(--saiu); background: var(--folha); }
@@ -1755,11 +1772,11 @@ body { overflow-x: hidden; overflow-y: auto; }
 .aj-conta-avatar {
   width: 42px; height: 42px; border-radius: 50%; flex: none;
   background: var(--marca-tinta); color: var(--marca);
-  display: grid; place-items: center; font-size: 17px; font-weight: 700;
+  display: grid; place-items: center; font-size: 1.1333rem; font-weight: 700;
 }
 .aj-conta-quem { display: flex; flex-direction: column; flex: 1; min-width: 0; }
-.aj-conta-quem b { font-size: 14px; font-weight: 600; color: var(--ink); }
-.aj-conta-quem i { font-style: normal; font-size: 12.5px; color: var(--ink-3); overflow-wrap: anywhere; }
+.aj-conta-quem b { font-size: 0.9333rem; font-weight: 600; color: var(--ink); }
+.aj-conta-quem i { font-style: normal; font-size: 0.8333rem; color: var(--ink-3); overflow-wrap: anywhere; }
 
 /* ── a escolha do tema (rodada 9, frente D) ─────────────────────
    Três botões, não um interruptor: "auto" é uma escolha de verdade e não
@@ -1767,7 +1784,7 @@ body { overflow-x: hidden; overflow-y: auto; }
    por cor — segundo canal, como em toda tela. */
 .aj-tema { display: flex; gap: 8px; flex-wrap: wrap; }
 .aj-tema-op {
-  font: 500 13px var(--fonte); cursor: pointer;
+  font: 500 0.8667rem var(--fonte); cursor: pointer;
   padding: 8px 14px; border-radius: var(--raio-sm);
   border: 1px solid var(--borda-forte); background: var(--folha); color: var(--ink-2);
 }
@@ -1822,7 +1839,7 @@ body { overflow-x: hidden; overflow-y: auto; }
 }
 .aba {
   appearance: none; background: none; border: 0; cursor: pointer;
-  font: 500 14px var(--fonte); color: var(--ink-3);
+  font: 500 0.9333rem var(--fonte); color: var(--ink-3);
   padding: 10px 16px; margin-bottom: -1px;
   display: inline-flex; align-items: center; gap: 7px;
   border-bottom: 2px solid transparent; border-radius: var(--raio-sm) var(--raio-sm) 0 0;
@@ -1837,7 +1854,7 @@ body { overflow-x: hidden; overflow-y: auto; }
    pendência) leva a tinta âmbar de `.marca-d`. Zero não chega aqui:
    a aba nem o desenha (ver `abas()` em js/utils.js). */
 .aba-conta {
-  font-size: 11.5px; font-weight: 600; line-height: 1;
+  font-size: 0.7667rem; font-weight: 600; line-height: 1;
   padding: 3px 7px; border-radius: 20px;
   background: var(--folha-3); color: var(--ink-3);
 }
@@ -1856,11 +1873,11 @@ body { overflow-x: hidden; overflow-y: auto; }
    não pendência. */
 .cartao-fileira { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
 .cartao-fileira-rot {
-  font: 600 10.5px var(--fonte); text-transform: uppercase; letter-spacing: 0.16em;
+  font: 600 0.7rem var(--fonte); text-transform: uppercase; letter-spacing: 0.16em;
   color: var(--ink-3); margin-right: 4px;
 }
 .cartao-op {
-  font: 500 13px var(--fonte); cursor: pointer;
+  font: 500 0.8667rem var(--fonte); cursor: pointer;
   display: inline-flex; align-items: center; gap: 7px;
   padding: 7px 13px; border-radius: 20px;
   border: 1px solid var(--borda-forte); background: var(--folha); color: var(--ink-2);

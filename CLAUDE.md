@@ -351,8 +351,25 @@ sete são vazias de propósito e montadas pelo módulo da tela.
     encolhia para o conteúdo (medido: 1448px onde cabiam 1560px).
   - Abaixo de 900px `--margem`/`--goteira` são fixados no piso (16/14px): ali
     a largura é toda do conteúdo.
+  - **TAMANHO DE FONTE É `rem`, NUNCA px.** Os 86 literais em px do vocabulário
+    v2 (`13.5px`, `12.5px`, `11.5px`, `30px`, `38px`, `46px`…) foram convertidos
+    dividindo por **15** — o tamanho de referência do desenho, e por isso
+    `1rem = 15px` na largura de sempre. Enquanto metade do CSS estava em px e a
+    outra metade em rem, a escala quebrava no meio: num monitor QHD o texto em
+    rem crescia e o resto não, e o resultado era *"fica tudo muito pequeno"*.
+    **Escrever `font-size: 13px` de novo reintroduz o bug.**
+  - **O passo tipográfico é `clamp(14px, 0.2586vw + 11.38px, 18px)`:** 14px no
+    celular · **15px a 1420px, o valor de sempre** · 16,3px a 1920 · 18px no
+    QHD de 2560. É ele que dimensiona a interface inteira, agora que tudo é rem.
+  - **O teto da coluna é em rem (`104rem`), não em px.** O teto existe para
+    limitar o COMPRIMENTO DA LINHA, e comprimento de linha se mede em
+    caracteres. Em px o texto crescia no QHD e a coluna não — a mesma tabela
+    passava a caber menos palavras. Em rem o número de caracteres por linha é o
+    mesmo em toda tela: 1560px a 15px, 1872px a 18px.
+  - `--linha`, `--nav`, `--topbar-h` e o `padding` da `.folha` também são rem,
+    pela mesma razão: são medidas de texto, não de pixel.
   - Tamanho novo entra como token no `:root`, junto dos outros. **Não abrir um
-    segundo sistema tipográfico** espalhado em `13.5px`/`30px` pelo arquivo.
+    segundo sistema tipográfico** espalhado em px pelo arquivo.
 - **BLOCO NÃO ESTICA POR DENTRO (rodada 9, frente A).** `.faixa` é
   `align-items: start`. Sem isso o grid esticava os dois blocos até a altura do
   mais alto e o herói de Mês sem receita virava 370px para 214px de conteúdo,
