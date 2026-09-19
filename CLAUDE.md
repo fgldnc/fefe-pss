@@ -117,13 +117,20 @@ Quatro blocos em `js/adiante.js`: **ajustes do mês · 3 KPIs · curva diária �
 tabela dos dias com movimento**. Contratos em aberto e parcelas previstas
 estiveram aqui na rodada 4 e foram para `js/cartao.js`.
 
-- **O bloco de ajustes é ESTREITO** (`#adiante-ajustes { max-width: 660px }`),
-  pedido da usuária depois da rodada 9: é o único da tela que só se CONFIGURA,
-  e quem manda em Adiante são os dois blocos de baixo, que MOSTRAM o resultado
-  do que foi configurado nele. Um painel de configuração ocupando a largura
-  inteira acima deles invertia a hierarquia da tela. Os dois campos dentro dele
-  são colunas iguais: são o mesmo tipo de campo, e larguras diferentes liam
-  como um sendo mais importante que o outro.
+- **O bloco de ajustes é uma FAIXA FINA** (`.faixa-fina`): largura inteira,
+  altura mínima — pedido da usuária depois da rodada 9, *"o primeiro bloco tem
+  que ser uma faixa menor e na largura completa, a fim de que os dois blocos
+  debaixo apareçam na tela sem ter que rolar"*. **O eixo é a ALTURA, não a
+  largura:** a primeira tentativa encolheu pela horizontal (`max-width`) e não
+  resolveu nada, porque o que empurrava os KPIs e a curva para fora da dobra
+  eram os 200px de altura. Hoje são **104px**, e a 1420×900 a curva termina em
+  897px — a tela cabe inteira sem rolar (medido).
+  - O `.rot` entra na PRÓPRIA fileira dos campos (grid `auto 1fr 1fr`) em vez
+    de ocupar duas linhas por cima deles, e o parágrafo de explicação virou a
+    legenda de cada campo: dito ao lado do campo que ele explica, custa zero
+    linha e chega na hora certa.
+  - Os dois campos são colunas IGUAIS: são o mesmo tipo de campo, e larguras
+    diferentes liam como um sendo mais importante que o outro.
 
 - **`saldos.js` virou só cálculo.** Sem DOM, sem `state`, sem Chart.js: as
   quatro funções puras que `test/saldos.test.mjs` fixa. Nenhuma conta delas é

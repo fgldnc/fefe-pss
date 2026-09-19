@@ -1,64 +1,94 @@
 /**
  * tmp-limpar-fatura.js — limpeza pontual, NÃO faz parte do app.
  *
- * A fatura de julho/2026 (invoiceFingerprint 5f6f5829…) entrou quatro vezes:
- * um lote com competência 2025-10, dois lotes com 2025-07 (o mesmo arquivo
- * duas vezes, 130 linhas para 65 compras) e o lote correto, de ids `fx-…`,
- * com competência 2026-07.
+ * A fatura de julho/2026 entrou QUATRO vezes. Três dessas importações gravaram
+ * a competência à mão e com o ano errado (2025-07 duas vezes, 2025-10 uma), e
+ * projetaram as parcelas dos contratos a partir de nov/2025 — por isso AMAZON
+ * BRSAO P e SENAC aparecem em dobro em Cartão. A quarta importação é a boa: é
+ * o lote de ids `fx-…`, com competência 2026-07 deduzida do vencimento.
  *
- * Este script apaga os TRÊS lotes errados — 197 linhas, R$ 8.336,77 — e deixa
- * o lote `fx-…` intacto. O alvo é o carimbo do próprio arquivo, não descrição
- * parecida: o lote bom não tem `invoiceFingerprint`, então não há como pegá-lo.
+ * O CRITÉRIO É O CARIMBO DO ARQUIVO, NÃO DESCRIÇÃO PARECIDA. As três ruins
+ * carregam `invoiceFingerprint = 5f6f5829…` e `competenceSource: "manual"`;
+ * o lote bom não tem fingerprint nenhum. Não há como pegar o certo por engano.
+ *
+ * ANTES DE APAGAR, TRANSPLANTA OS NOMES EDITADOS À MÃO. Nove linhas do lote
+ * ruim foram renomeadas pela usuária ("INGRESSO SHOW DA GABI", os "Compra
+ * LIGAFEST - …") e esse texto só existe lá: apagar sem copiar perderia o
+ * único trabalho humano que há nesses lotes. O par é achado por data + valor,
+ * que é o que os dois lotes têm em comum — a descrição, justamente, não é.
  *
  * Uso: abrir o app logado, colar no console:
- *   await import('/tmp-limpar-fatura.js'); await window.__limparFatura();      // confere só
- *   await window.__limparFatura({ apagar: true });                            // apaga
+ *   await import('/tmp-limpar-fatura.js'); await window.__limparFatura();
+ *   await window.__limparFatura({ apagar: true });
  *
  * Volta atrás: restaurar financas-backup-v6-2026-09-19-140119.json.
  */
 const FP = '5f6f5829a8a5673349c84c18aee23da1578c4ea89670d1537ce10650be601afe';
-const COMPETENCIAS_ERRADAS = ['2025-07', '2025-10'];
-const ESPERADO = 197;
+const ESPERADO = 213;
+
+const cent = (v) => Math.round((Number(v) || 0) * 100);
+const par = (t) => `${t.date}|${cent(t.amount)}`;
 
 window.__limparFatura = async function (opts = {}) {
   const { state } = await import('/js/utils.js');
   const db = await import('/js/db.js');
 
-  const alvo = state.transactions.filter(
-    t => t.invoiceFingerprint === FP && COMPETENCIAS_ERRADAS.includes(t.competenceMonth)
-  );
-  const total = alvo.reduce((s, t) => s + (Number(t.amount) || 0), 0);
+  const ruins = state.transactions.filter(t => t.invoiceFingerprint === FP);
+  const bons = state.transactions.filter(t => String(t.id).startsWith('fx-'));
 
   console.log(`Lançamentos hoje: ${state.transactions.length}`);
-  console.log(`Alvo: ${alvo.length} linhas, R$ ${total.toFixed(2)}`);
-  console.table(
-    Object.entries(alvo.reduce((a, t) => { a[t.competenceMonth] = (a[t.competenceMonth] || 0) + 1; return a; }, {}))
-      .map(([competencia, linhas]) => ({ competencia, linhas }))
-  );
+  console.log(`A apagar: ${ruins.length} | lote correto (fx-): ${bons.length}`);
 
-  // Trava: se a conta não bate com o que foi medido no backup v6, o estado do
-  // banco não é o que este script analisou — parar é mais barato que consertar.
-  if (alvo.length !== ESPERADO) {
-    console.error(`ABORTADO: esperava ${ESPERADO} linhas, achei ${alvo.length}. Nada foi apagado.`);
-    return { ok: false, achado: alvo.length };
+  // Trava: se a conta não bate com o que foi medido no backup v6, o banco não
+  // é o que este script analisou. Parar é mais barato que consertar depois.
+  if (ruins.length !== ESPERADO) {
+    console.error(`ABORTADO: esperava ${ESPERADO}, achei ${ruins.length}. Nada foi feito.`);
+    return { ok: false, achado: ruins.length };
   }
-  // Cinto e suspensório: o lote correto tem id `fx-…` e nenhum fingerprint.
-  if (alvo.some(t => String(t.id).startsWith('fx-'))) {
-    console.error('ABORTADO: o alvo inclui uma linha do lote correto. Nada foi apagado.');
+  if (ruins.some(t => String(t.id).startsWith('fx-'))) {
+    console.error('ABORTADO: o alvo inclui o lote correto. Nada foi feito.');
     return { ok: false };
   }
 
+  // ── nomes editados à mão, para transplantar ──────────────────────────
+  // Só conta como edição o que DIVERGE do texto cru do lote bom; o resto do
+  // lote ruim é a mesma descrição do parser e não tem nada a preservar.
+  const porPar = new Map();
+  for (const b of bons) if (!porPar.has(par(b))) porPar.set(par(b), b);
+
+  const transplantes = [];
+  const vistos = new Set();
+  for (const r of ruins) {
+    const b = porPar.get(par(r));
+    if (!b || r.description === b.description) continue;
+    if (vistos.has(b.id)) continue;          // duas cópias ruins, um alvo só
+    vistos.add(b.id);
+    transplantes.push({ id: b.id, de: b.description, para: r.description });
+  }
+
+  console.log(`\nNomes editados à mão a transplantar: ${transplantes.length}`);
+  console.table(transplantes.map(t => ({ 'vira': t.para, 'era': t.de })));
+
   if (!opts.apagar) {
-    console.log('Conferência só. Para apagar: await window.__limparFatura({ apagar: true })');
-    return { ok: true, alvo: alvo.length };
+    console.log('\nConferência só. Para executar: await window.__limparFatura({ apagar: true })');
+    return { ok: true, apagar: ruins.length, transplantes: transplantes.length };
+  }
+
+  // Renomear PRIMEIRO: se algo falhar no meio, o pior caso é ter os dois
+  // lotes com o nome certo — não o lote bom sem o nome e o ruim já apagado.
+  for (const t of transplantes) {
+    await db.updateFields('transactions', t.id, { description: t.para });
+    console.log(`  renomeado: ${t.para}`);
   }
 
   let feitos = 0;
-  for (const t of alvo) {
+  for (const t of ruins) {
     await db.deleteTx(t.id);
-    if (++feitos % 25 === 0) console.log(`  ${feitos}/${alvo.length}…`);
+    if (++feitos % 25 === 0) console.log(`  apagados ${feitos}/${ruins.length}…`);
   }
-  console.log(`Apagados ${feitos}. Sobraram ${state.transactions.length} lançamentos (esperado: 752).`);
-  console.log('Recarregue a página para as telas recontarem.');
-  return { ok: true, apagados: feitos };
+
+  console.log(`\nPronto. Apagados ${feitos}, renomeados ${transplantes.length}.`);
+  console.log(`Sobraram ${state.transactions.length} lançamentos (esperado: 736).`);
+  console.log('Recarregue a página.');
+  return { ok: true, apagados: feitos, renomeados: transplantes.length };
 };

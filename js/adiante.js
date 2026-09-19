@@ -142,28 +142,24 @@ function _fechamentoAnterior(month) {
 function _ajustes(d) {
   const mesNome = monthLabel(d.month).split(' ')[0];
   return `
-    <div class="folha" id="adiante-ajustes">
-      <p class="rot">Os dois números que esta tela precisa</p>
-      <p class="rot-sub">Sem o saldo inicial, a curva mede fluxo acumulado e não saldo de conta.
-        Sem o dia de vencimento, o cartão do mês cai espalhado nos dias das compras
-        em vez de sair de uma vez.</p>
+    <div class="folha faixa-fina" id="adiante-ajustes">
       <div class="adiante-campos">
+        <p class="rot">Os dois números<br>que esta tela precisa</p>
         <label class="adiante-campo">
           <span>Saldo inicial de ${esc(mesNome)}</span>
           <input type="number" id="fx-saldo-inicial" class="form-input sm" step="0.01" inputmode="decimal"
                  value="${d.temAbertura ? d.abertura : ''}"
                  placeholder="${d.sugerido !== null ? d.sugerido.toFixed(2) : 'não definido'}" />
           ${!d.temAbertura && d.sugerido !== null
-            ? `<button type="button" class="btn btn-2" id="fx-usar-fechamento">Usar o fechamento de ${esc(monthLabel(offsetMonth(d.month, -1)).split(' ')[0])}</button>`
-            : `<i>Enter ou sair do campo salva. Em branco remove.</i>`}
+            ? `<button type="button" class="btn btn-2 btn-xs" id="fx-usar-fechamento">Usar o fechamento de ${esc(monthLabel(offsetMonth(d.month, -1)).split(' ')[0])}</button>`
+            : `<i>Sem ele a curva mede fluxo acumulado, não saldo de conta.</i>`}
         </label>
         <label class="adiante-campo">
           <span>Dia de vencimento da fatura</span>
           <input type="number" id="fatura-vencimento-dia" class="form-input sm"
                  min="1" max="28" step="1" placeholder="não definido"
                  value="${d.venc || ''}" />
-          <i>De 1 a 28 — 29, 30 e 31 não existem em todo mês.
-            ${d.venc ? '' : 'Em branco, o cartão cai no dia da compra.'}</i>
+          <i>De 1 a 28. ${d.venc ? '' : 'Em branco, o cartão cai no dia de cada compra.'}</i>
         </label>
       </div>
     </div>`;
