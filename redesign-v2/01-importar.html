@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Radar v2 — Importar</title>
+<link rel="stylesheet" href="base.css">
+</head>
+<body>
+<div class="shell">
+  <div id="nav-slot"></div>
+  <main class="main">
+    <div id="head-slot"></div>
+    <div class="page">
+
+      <p class="intro">O passo 1 do mês. <b>Arraste a fatura do cartão ou o extrato do banco</b> — o Radar
+        descobre qual é dos dois pelo conteúdo, lê tudo <b>dentro do seu navegador</b> e abre a revisão.</p>
+
+      <div class="drop" style="margin-bottom:10px">
+        <p class="drop-t">Solte o arquivo aqui</p>
+        <p class="drop-x">PDF, OFX ou CSV · até 20 MB</p>
+        <button class="btn">Escolher arquivo</button>
+        <p style="margin:18px 0 0;font-size:12px;color:var(--text-3)">
+          O arquivo <b style="color:var(--text-2)">não sai do seu computador</b>. Nada é enviado para servidor
+          nenhum — dá para conferir na aba Network do navegador, ou desconectar da internet e importar assim mesmo.
+        </p>
+      </div>
+
+      <div class="row row-2" style="margin:20px 0">
+        <div class="card">
+          <h2>Se for fatura de cartão</h2>
+          <p class="card-sub">O Radar precisa saber em que mês de competência a fatura entra.</p>
+          <label class="lab" for="offset">Fatura que vence em <b>outubro</b> é a fatura de…</label>
+          <select class="field" id="offset" style="width:100%">
+            <option selected>setembro — o mês anterior ao vencimento (padrão)</option>
+            <option>outubro — o próprio mês do vencimento</option>
+          </select>
+          <p class="note">Este é o ajuste que decide em que mês a fatura inteira aparece. Ele morava em
+            Configurações → Preferências; agora mora aqui, ao lado da consequência.</p>
+        </div>
+        <div class="card">
+          <h2>Se for extrato bancário</h2>
+          <p class="card-sub">O formato é detectado; o banco melhora a leitura das colunas.</p>
+          <label class="lab" for="banco">Banco</label>
+          <select class="field" id="banco" style="width:100%">
+            <option>Detectar automaticamente</option>
+            <option>Itaú</option><option>Nubank</option><option>Inter</option>
+            <option>Santander</option><option>Bradesco</option>
+          </select>
+          <p class="note">Os cartões de banco com emoji saíram: seis logotipos coloridos competiam com o
+            único lugar da tela que precisava de cor, que é a revisão.</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Importações recentes</h2>
+        <p class="card-sub">Cada linha é um arquivo. Importou errado? “Excluir lote” desfaz o arquivo inteiro.</p>
+        <table class="tbl">
+          <thead><tr>
+            <th>Arquivo</th><th>Origem</th><th>Período</th><th class="num">Lançamentos</th>
+            <th class="hide-sm">Resultado</th><th class="col-act"></th>
+          </tr></thead>
+          <tbody>
+            <tr>
+              <td>fatura-itau-set.pdf<span class="desc-sub">14/09/2026 · 11:02</span></td>
+              <td><span class="tag">FATURA</span></td>
+              <td>ago/26</td>
+              <td class="num">38</td>
+              <td class="hide-sm"><span class="chip chip-ok">3 parcelas previstas confirmadas</span></td>
+              <td class="col-act"><span class="acts"><button class="btn btn-icon" title="Excluir lote">✕</button></span></td>
+            </tr>
+            <tr>
+              <td>extrato-092026.ofx<span class="desc-sub">14/09/2026 · 10:58</span></td>
+              <td><span class="tag">EXTRATO</span></td>
+              <td>01–14/09</td>
+              <td class="num">52</td>
+              <td class="hide-sm"><span class="mark">7 sem categoria</span></td>
+              <td class="col-act"><span class="acts"><button class="btn btn-icon" title="Excluir lote">✕</button></span></td>
+            </tr>
+            <tr>
+              <td>extrato-082026.ofx<span class="desc-sub">03/08/2026 · 21:40</span></td>
+              <td><span class="tag">EXTRATO</span></td>
+              <td>01–31/08</td>
+              <td class="num">61</td>
+              <td class="hide-sm" style="color:var(--text-3)">tudo classificado</td>
+              <td class="col-act"><span class="acts"><button class="btn btn-icon" title="Excluir lote">✕</button></span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p class="note" style="margin-top:24px">
+        <b style="color:var(--text-2)">O que mudou nesta tela:</b> as duas portas de entrada viraram uma
+        (hoje fatura entra por Gastos e extrato entra por Extratos); a coluna “Resultado” conta em voz alta
+        a reconciliação de parcela projetada, que hoje acontece em silêncio dentro de
+        <code>js/pdf-import.js:541</code>; e a frase de privacidade passou a existir — o app já fazia e não dizia.
+      </p>
+
+    </div>
+  </main>
+</div>
+<script src="_nav.js"></script>
+<script>montarShell('Importar');
+  document.querySelector('.drop').addEventListener('mouseenter', function(){ this.classList.add('on'); });
+  document.querySelector('.drop').addEventListener('mouseleave', function(){ this.classList.remove('on'); });
+</script>
+</body>
+</html>

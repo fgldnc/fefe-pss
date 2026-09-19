@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Direção B — Ateliê</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400..700&family=Inter:wght@400;500;600&display=swap');
+
+:root{
+  --papel:#FBF7F0; --papel-2:#F3ECE0; --tinta:#2A241D; --tinta-2:#6B6155; --tinta-3:#938878;
+  --fio:#E3D9C8;
+  --oliva:#4C5B3C; --terracota:#AE5A34; --petroleo:#2E5C63; --mostarda:#C08A2E; --vinho:#8A3A4A; --areia:#A79779;
+  --entrou:#2F6B43; --saiu:#A8452F; --deduzido:#96651A; --creme:#FBF7F0;
+}
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--papel); color:var(--tinta);
+  font:400 14px/1.6 'Inter',system-ui,sans-serif;
+  font-variant-numeric:lining-nums tabular-nums; -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:1020px; margin:0 auto; padding:0 36px 80px}
+
+.top{display:flex; align-items:center; gap:26px; padding:20px 0 18px}
+.logo{font:600 23px 'Fraunces',Georgia,serif}
+.abas{display:flex; gap:6px; margin-left:auto; flex-wrap:wrap}
+.abas a{
+  color:var(--tinta-2); text-decoration:none; font-size:13px; font-weight:500;
+  padding:6px 13px; border-radius:20px;
+}
+.abas a.on{background:var(--oliva); color:var(--creme); font-weight:600}
+.abas .pend::after{
+  content:'7'; margin-left:6px; background:var(--mostarda); color:var(--tinta);
+  border-radius:20px; padding:0 6px; font-size:11px; font-weight:700;
+}
+
+/* bloco de cor chapada — sem sombra, sem borda, sem gradiente */
+.lede{background:var(--oliva); color:var(--creme); padding:32px 34px; border-radius:6px; margin-bottom:8px}
+.data{font-size:12px; letter-spacing:.08em; text-transform:uppercase; opacity:.72}
+.lede h1{font:600 54px/1.05 'Fraunces',Georgia,serif; margin:10px 0 2px; letter-spacing:-.015em}
+.lede h1 small{display:block; font:400 16px 'Inter',sans-serif; opacity:.78; letter-spacing:.02em; margin-bottom:4px}
+.lede p{margin:14px 0 0; opacity:.85; font-size:13.5px}
+
+.tiras{display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:38px}
+.tira{padding:16px 18px; border-radius:6px; background:var(--papel-2)}
+.tira dt{font-size:12px; color:var(--tinta-2); margin:0}
+.tira dd{margin:3px 0 0; font:600 21px 'Inter',sans-serif}
+.tira.alerta{background:#F6E9CE}
+.tira.alerta dd{color:var(--deduzido)}
+
+h2{font:600 21px 'Fraunces',Georgia,serif; margin:34px 0 3px; letter-spacing:-.005em}
+.h2sub{color:var(--tinta-2); font-size:13px; margin:0 0 16px; max-width:62ch}
+
+.duas{display:grid; grid-template-columns:1.2fr 1fr; gap:42px; align-items:start}
+
+.barra{display:grid; grid-template-columns:1fr 92px; gap:12px; align-items:center; margin-bottom:6px}
+.pill{height:30px; border-radius:6px; display:flex; align-items:center; padding:0 11px;
+  font-size:13px; font-weight:500; color:var(--creme)}
+.barra .v{text-align:right; font-weight:600; font-size:13.5px}
+
+table{width:100%; border-collapse:collapse; margin-top:4px}
+th{text-align:left; font:500 12px 'Inter',sans-serif; color:var(--tinta-3); padding:0 0 9px}
+td{padding:12px 0; border-top:1px solid var(--fio); vertical-align:baseline}
+td+td,th+th{padding-left:18px}
+.v{text-align:right; font-weight:600; white-space:nowrap} th.v{text-align:right}
+.sub{display:block; font-size:11.5px; color:var(--tinta-3)}
+.mais{color:var(--entrou)} .menos{color:var(--saiu)}
+tr.conferir td{background:#F8EED9}
+tr.conferir td:first-child{border-radius:6px 0 0 6px; padding-left:11px; box-shadow:inset 3px 0 0 var(--mostarda)}
+tr.conferir td:last-child{border-radius:0 6px 6px 0; padding-right:11px}
+.marca{color:var(--deduzido); font-size:11.5px; font-weight:600}
+.marca::before{content:'◇ '}
+.selo{font-size:10.5px; color:var(--tinta-2); background:var(--papel-2); border-radius:4px; padding:2px 7px}
+tfoot td{border-top:2px solid var(--tinta); padding-top:13px; font-size:15px}
+
+.nota{color:var(--tinta-3); font-size:12.5px; margin-top:20px; padding-left:14px; border-left:2px solid var(--fio)}
+.assinatura{margin-top:52px; background:var(--papel-2); border-radius:6px; padding:18px 20px; font-size:12.5px; color:var(--tinta-2)}
+@media(max-width:800px){ .wrap{padding:0 18px 60px} .duas{grid-template-columns:1fr; gap:22px}
+  .tiras{grid-template-columns:1fr} .lede h1{font-size:40px} }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="top">
+    <span class="logo">Radar</span>
+    <nav class="abas">
+      <a href="#">Importar</a><a href="#" class="pend">Conferir</a>
+      <a href="#" class="on">Mês</a><a href="#">Adiante</a><a href="#">Guardado</a><a href="#">⚙</a>
+    </nav>
+  </div>
+
+  <div class="lede">
+    <div class="data">Setembro de 2026</div>
+    <h1><small>Ainda dá para gastar</small>R$ 1.842,60</h1>
+    <p>Entrou R$ 7.400,00, saiu R$ 5.557,40, e faltam 16 dias de mês.</p>
+  </div>
+
+  <div class="tiras">
+    <dl class="tira"><dt>Saiu até agora</dt><dd class="menos">−5.557,40</dd></dl>
+    <dl class="tira"><dt>Guardado no mês</dt><dd>900,00</dd></dl>
+    <dl class="tira alerta"><dt>A conferir</dt><dd>7 lançamentos</dd></dl>
+  </div>
+
+  <div class="duas">
+    <div>
+      <h2>Para onde foi</h2>
+      <p class="h2sub">Da maior para a menor, com o nome escrito dentro da barra.</p>
+      <div class="barra"><span class="pill" style="background:var(--terracota);width:100%">Mercado</span><span class="v">1.730,20</span></div>
+      <div class="barra"><span class="pill" style="background:var(--petroleo);width:72%">Casa</span><span class="v">1.166,00</span></div>
+      <div class="barra"><span class="pill" style="background:var(--oliva);width:60%">Transporte</span><span class="v">944,80</span></div>
+      <div class="barra"><span class="pill" style="background:var(--mostarda);width:45%;color:var(--tinta)">Saúde</span><span class="v">663,50</span></div>
+      <div class="barra"><span class="pill" style="background:var(--vinho);width:36%">Lazer</span><span class="v">502,10</span></div>
+      <div class="barra"><span class="pill" style="background:var(--areia);width:38%;color:var(--tinta)">+4 menores</span><span class="v">550,80</span></div>
+      <p class="nota">Paleta terrosa: terracota, petróleo, oliva, mostarda, vinho e areia.
+        Cor cheia no bloco, não borda colorida — é o que faz a tela parecer impressa e não gerada.</p>
+    </div>
+
+    <div>
+      <h2>O mês aperta no dia 10</h2>
+      <p class="h2sub">É quando a fatura sai da conta. O salário entra 3 dias depois.</p>
+      <svg viewBox="0 0 340 150" width="100%" height="150" role="img" aria-label="Curva do saldo diário">
+        <line x1="0" y1="96" x2="340" y2="96" stroke="var(--fio)" stroke-width="1.5"/>
+        <path d="M118,96 L150,124 L170,112 L186,96 Z" fill="var(--saiu)" opacity=".16"/>
+        <polyline points="0,44 40,50 78,60 100,76 118,96 150,124 170,112 186,96 210,70"
+                  fill="none" stroke="var(--petroleo)" stroke-width="2.4" stroke-linejoin="round"/>
+        <polyline points="210,70 255,64 300,56 340,48" fill="none"
+                  stroke="var(--petroleo)" stroke-width="2.4" stroke-dasharray="5 5"/>
+        <line x1="210" y1="26" x2="210" y2="132" stroke="var(--fio)" stroke-width="1.5"/>
+        <text x="214" y="34" font-size="10.5" fill="var(--tinta-3)" font-family="Inter">hoje</text>
+        <circle cx="150" cy="124" r="4" fill="var(--saiu)"/>
+        <text x="150" y="143" text-anchor="middle" font-size="10.5" font-weight="600" fill="var(--saiu)" font-family="Inter">(312,40) no dia 10</text>
+        <text x="0" y="90" font-size="10" fill="var(--tinta-3)" font-family="Inter">0</text>
+      </svg>
+      <p class="nota">Traço cheio é o que aconteceu; tracejado é previsão.</p>
+    </div>
+  </div>
+
+  <h2>Tudo que entrou e saiu</h2>
+  <p class="h2sub">Gasto manual, fatura e extrato na mesma tabela.</p>
+  <table>
+    <thead><tr><th>Data</th><th>Descrição</th><th>Categoria</th><th>Origem</th><th class="v">Valor</th></tr></thead>
+    <tbody>
+      <tr><td>05/09</td><td>Salário</td><td>—</td><td><span class="selo">manual</span></td><td class="v mais">+7.400,00</td></tr>
+      <tr><td>14/09</td><td>Carrefour São Paulo</td><td>Mercado</td><td><span class="selo">extrato</span></td><td class="v menos">−412,88</td></tr>
+      <tr><td>13/09</td><td>Senac Curso<span class="sub">parcela 4 de 6</span></td><td>Educação</td><td><span class="selo">fatura</span></td><td class="v menos">−267,30</td></tr>
+      <tr class="conferir"><td>12/09</td><td>Drogasil 1422 SP<span class="marca">sem categoria</span></td><td>—</td><td><span class="selo">extrato</span></td><td class="v menos">−89,90</td></tr>
+      <tr><td>11/09</td><td>Uber *Trip</td><td>Transporte</td><td><span class="selo">extrato</span></td><td class="v menos">−28,70</td></tr>
+      <tr><td>10/09</td><td>Aporte Tesouro Selic</td><td>Investimento</td><td><span class="selo">manual</span></td><td class="v">−900,00</td></tr>
+    </tbody>
+    <tfoot><tr><td colspan="4">6 de 91 lançamentos</td><td class="v">−5.557,40</td></tr></tfoot>
+  </table>
+
+  <div class="assinatura">
+    <b style="color:var(--tinta)">Direção B — ateliê.</b>
+    Papel quente e paleta terrosa brasileira. Os blocos existem, mas são <b>cor chapada sem sombra
+    e sem borda</b> — a sombra é o que dá o ar de cartão flutuante de dashboard. Mais acolhedor que a
+    direção A, ainda longe de infantil.
+  </div>
+
+</div>
+</body>
+</html>

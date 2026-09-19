@@ -4,9 +4,10 @@
 
 /* ── CARDS ──────────────────────────────────────────────────── */
 .card {
-  background: var(--bg-card);
-  border: 1px solid var(--border-soft);
-  border-radius: var(--radius-lg);
+  background: var(--folha);
+  border: 1px solid var(--borda);
+  border-radius: var(--raio);
+  box-shadow: var(--sombra);
   overflow: hidden;
 }
 .card-header {
@@ -68,7 +69,7 @@
   padding: 0.6rem 1rem; text-align: left;
   font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
   letter-spacing: 0.6px; color: var(--text-muted);
-  border-bottom: 1px solid var(--border-soft); white-space: nowrap;
+  border-bottom: 1px solid var(--borda-forte); white-space: nowrap;
 }
 .data-table td {
   padding: 0.62rem 1rem; border-bottom: 1px solid var(--border-soft);
@@ -85,7 +86,9 @@
 .val-negative { color: var(--danger); }
 .val-positive { color: var(--success); }
 .val-gold    { color: var(--warning); }
-.val-accent  { color: var(--accent-bright); }
+/* A marca nunca toca um valor em R$: dinheiro que não é entrada nem
+   saída (aporte, saldo) é --ink, e não a cor do chrome. */
+.val-accent  { color: var(--ink); }
 
 .empty-row { text-align: center; color: var(--text-muted); font-style: italic; padding: 2.5rem !important; }
 
@@ -108,7 +111,7 @@
 /* ── MODAIS ───────────────────────────────────────────────────── */
 .modal-overlay {
   position: fixed; inset: 0;
-  background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(4px);
+  background: rgba(20, 24, 33, 0.38); backdrop-filter: blur(4px);
   display: flex; align-items: center; justify-content: center;
   z-index: 500; padding: 1rem; animation: fadeIn 0.15s ease;
 }
@@ -144,7 +147,8 @@
 .form-label { font-size: 0.77rem; font-weight: 600; color: var(--text-secondary); letter-spacing: 0.2px; }
 
 .form-input, .form-select, .form-textarea {
-  background: var(--bg-main); border: 1px solid var(--border-soft);
+  /* Borda de campo precisa de 3:1 (WCAG 1.4.11): --borda some no branco. */
+  background: var(--folha); border: 1px solid var(--borda-forte);
   border-radius: var(--radius-sm); color: var(--text-primary);
   font-family: var(--font-sans); font-size: 0.875rem;
   padding: 0.55rem 0.85rem; transition: border-color var(--transition); width: 100%;
@@ -241,7 +245,7 @@
 .meta-atual-val { color: var(--text-primary); font-size: 1.1rem; font-weight: 500; }
 .meta-alvo-val  { color: var(--text-muted); }
 .meta-progress-bar { height: 6px; background: var(--bg-hover); border-radius: 3px; overflow: hidden; margin-bottom: 0.5rem; }
-.meta-progress-fill { height: 100%; border-radius: 3px; background: linear-gradient(90deg, var(--accent-secondary), var(--accent-primary)); transition: width 0.5s ease; }
+.meta-progress-fill { height: 100%; border-radius: 3px; background: linear-gradient(90deg, var(--marca-2), var(--marca)); transition: width 0.5s ease; }
 .meta-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 0.75rem; font-size: 0.77rem; color: var(--text-muted); }
 .meta-actions { display: flex; gap: 0.4rem; }
 

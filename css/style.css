@@ -1,127 +1,138 @@
 /* ═══════════════════════════════════════════════════════════════
-   RADAR — Design System v4 · paleta A "Galo"
-   Preto, branco e grafites. O chrome NÃO tem cor: a ação primária é
-   o próprio contraste (botão preto no claro, branco no escuro).
-   Cor na tela significa sempre alguma coisa — receita, gasto,
-   inferido, ou série categórica de gráfico. Nada de azul.
-   Fonte: Nunito. Número NÃO usa monoespaçada (a JetBrains Mono
-   fazia o app parecer terminal); a coluna alinha por
-   font-variant-numeric: tabular-nums, não por largura fixa.
-   DM Mono sobra só para referência de código.
-   Os nomes de token antigos foram mantidos e reapontados: trocar
-   os nomes em 1.400 linhas de CSS/JS seria mudança de estrutura,
-   e esta rodada é só de pele.
+   RADAR — Design System v2 · direção "híbrido"
+   Fonte da verdade visual: redesign-v2/direcoes/hibrido.html.
+
+   O esqueleto de jornal (hierarquia tipográfica, frase no lugar de
+   fileira de KPI, malha explícita) sobre material de papel: folha
+   branca em fundo cinza-claro, raio generoso, sombra quase
+   invisível. A COR VOLTOU, mas com endereço: a marca (ameixa) pinta
+   navegação, botão, foco e a curva do saldo — e NUNCA um valor em
+   R$. Todo número de dinheiro é --ink, --entrou ou --saiu.
+   Nada de azul em papel nenhum, nem no chrome, nem em série de
+   gráfico: a série categórica foi redesenhada sem ele.
+
+   Por que os nomes antigos continuam aqui: 1.400 linhas de CSS e
+   ~30 referências em js/ falam --bg-card, --text-muted, --danger.
+   Renomear tudo seria mudança de estrutura, e esta rodada é de
+   pele. Os nomes velhos viraram APELIDOS dos tokens novos; quem
+   escrever CSS daqui em diante usa os nomes novos.
+
+   Contraste conferido por redesign-v2/direcoes/contraste-hibrido.mjs
+   (texto 4,5:1 · gráfico, borda e glifo 3:1).
 ════════════════════════════════════════════════════════════════ */
-@import url('https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,300..900;1,400&family=DM+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300..700&display=swap');
 
 :root {
-  /* Fundos */
-  --bg-main:          #0B0B0C;
-  --bg-card:          #141416;
-  --bg-card-raised:   #1D1D20;
-  --bg-hover:         #24242A;
-  --bg-active:        #2B2B31;
+  /* ── malha e ritmo — os números que mandam no layout ───────── */
+  --coluna: 1180px; --margem: 32px; --goteira: 20px; --u: 8px;
+  --ar-secao: 40px; --linha: 52px; --nav: 232px;
+  --raio: 16px; --raio-sm: 10px;
 
-  /* "Acento" agora é contraste, não cor. Os quatro nomes antigos
-     apontam para o mesmo neutro para que nenhum azul sobreviva num
-     seletor esquecido. --accent-fg é o texto que vai em cima dele. */
-  --accent-secondary: #F2F2F3;
-  --accent-primary:   #F2F2F3;
-  --accent-bright:    #F2F2F3;
-  --accent-fg:        #0B0B0C;
-  --accent-dim:       #24242A;
-  --accent-glow:      rgba(0, 0, 0, 0.55);
-  /* Magenta sobrevive só como série categórica de gráfico (--c6). */
-  --accent-magenta:     #A34E9E;
-  --accent-magenta-dim: rgba(163, 78, 158, 0.14);
+  /* ── superfícies ───────────────────────────────────────────── */
+  --fundo:  #F3F5F9;
+  --folha:  #FFFFFF;
+  --folha-2:#EDF1F8;
+  --folha-3:#E4EAF3;
+  --borda:      #E2E8F1;
+  --borda-media:#B9C4D4;
+  --borda-forte:#7E8999;
 
-  --text-primary:   #F2F2F3;
-  --text-secondary: #A9A9B1;
-  --text-muted:     #87878F;
-  --text-inverse:   #0B0B0C;
+  /* ── tinta ─────────────────────────────────────────────────── */
+  --ink:   #141821;
+  --ink-2: #4A5265;
+  --ink-3: #616B79;
 
-  --border-soft:   #2B2B31;
-  --border-md:     #3A3A42;
-  /* Alto contraste: é o que marca campo editado e linha de hoje. */
-  --border-strong: #F2F2F3;
+  /* ── significado: cor que fala de dinheiro ─────────────────── */
+  --entrou:   #0E7C4C;
+  --saiu:     #BE3729;
+  --deduzido: #8F5C00;
+  --entrou-tinta:  #E4F3EB;
+  --saiu-tinta:    #FBE9E6;
+  --deduzido-tinta:#F7EEDC;
+  --deduzido-fundo:#FDF8EE;
 
-  --success:      #4ADE80;
-  --success-dim:  rgba(74, 222, 128, 0.14);
-  --danger:       #FF7A7A;
-  --danger-dim:   rgba(255, 122, 122, 0.14);
-  --warning:      #FBBF24;
-  --warning-dim:  rgba(251, 191, 36, 0.14);
-  /* --info não carrega juízo nenhum (tags de meio de pagamento):
-     vira neutro em vez do roxo antigo. */
-  --info:         #A9A9B1;
-  --info-dim:     #24242A;
-  /* --gold foi removido: era idêntico a --warning, e dois nomes para
-     a mesma cor é como se perde a disciplina do âmbar. */
+  /* ── série categórica de gráfico — SEM AZUL ────────────────── */
+  --s1:#A8336B; --s2:#12915A; --s3:#E0553F; --s4:#B97A0C; --s5:#6B4BC9; --s6:#79838F;
+  --s1-chip:#F7E5EE; --s2-chip:#DEF0E8; --s3-chip:#FBE7E4;
+  --s4-chip:#F5ECDD; --s5-chip:#E9E4F7; --s6-chip:#ECEEEF;
 
-  /* Séries categóricas de gráfico — o único lugar com cor arbitrária. */
-  --c1:#C7414F; --c2:#C4661A; --c3:#A88414; --c4:#5E8A2C; --c5:#2E8B6E; --c6:#A34E9E;
+  --sombra: 0 1px 2px rgba(20, 24, 33, 0.04), 0 6px 20px rgba(20, 24, 33, 0.05);
 
-  --font-sans: 'Nunito', system-ui, -apple-system, sans-serif;
-  --font-mono: 'Nunito', system-ui, sans-serif;
-  --font-code: 'DM Mono', ui-monospace, monospace;
+  /* ── tipografia ────────────────────────────────────────────── */
+  --fonte: 'Outfit', system-ui, -apple-system, 'Segoe UI', sans-serif;
 
-  --radius-sm:  6px;
-  --radius-md:  10px;
-  --radius-lg:  14px;
-  --radius-xl:  20px;
-  --radius-2xl: 28px;
+  /* ═══ APELIDOS — os nomes antigos, reapontados ═══════════════
+     Não usar em código novo. Existem para o CSS e o js/ atuais
+     continuarem funcionando enquanto as telas são refeitas. */
+  --bg-main:        var(--fundo);
+  --bg-card:        var(--folha);
+  --bg-card-raised: var(--folha-2);
+  --bg-hover:       var(--folha-2);
+  --bg-active:      var(--folha-3);
 
-  --shadow:      0 4px 24px rgba(0, 0, 0, 0.6);
-  --shadow-card: 0 2px 16px rgba(0, 0, 0, 0.45), 0 0 0 1px var(--border-soft);
-  --shadow-glow: 0 0 40px var(--accent-glow);
-
-  --sidebar-w:        230px;
-  --topbar-h:         60px;
-  --transition:       0.18s cubic-bezier(0.4, 0, 0.2, 1);
-  --transition-slow:  0.35s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-/* Tema claro: mesmos nomes, valores espelhados. Ainda sem botão de
-   troca na interface — quem quiser conferir põe data-theme="light"
-   no <html>. O botão entra junto com a sidebar nova (rodada 2). */
-[data-theme="light"] {
-  --bg-main:          #F2F2F3;
-  --bg-card:          #FFFFFF;
-  --bg-card-raised:   #E9E9EB;
-  --bg-hover:         #EDEDEF;
-  --bg-active:        #E4E4E7;
-
-  --accent-secondary: #17171A;
-  --accent-primary:   #17171A;
-  --accent-bright:    #17171A;
+  /* "Acento" volta a ser cor — mas só a da marca, e só no chrome. */
+  --accent-primary:   var(--marca);
+  --accent-secondary: var(--marca);
+  --accent-bright:    var(--marca-2);
   --accent-fg:        #FFFFFF;
-  --accent-dim:       #E9E9EB;
-  --accent-glow:      rgba(0, 0, 0, 0.18);
+  --accent-dim:       var(--marca-tinta);
+  --accent-glow:      rgba(122, 46, 82, 0.18);
+  /* Magenta antigo = a primeira série categórica. Nunca chrome. */
+  --accent-magenta:     var(--s1);
+  --accent-magenta-dim: var(--s1-chip);
 
-  --text-primary:   #101013;
-  --text-secondary: #55555C;
-  --text-muted:     #6D6D76;
+  --text-primary:   var(--ink);
+  --text-secondary: var(--ink-2);
+  --text-muted:     var(--ink-3);
   --text-inverse:   #FFFFFF;
 
-  --border-soft:   #D8D8DC;
-  --border-md:     #C6C6CC;
-  --border-strong: #17171A;
+  --border-soft:   var(--borda);
+  --border-md:     var(--borda-media);
+  --border-strong: var(--borda-forte);
 
-  --success:      #0F6B33;
-  --success-dim:  rgba(15, 107, 51, 0.12);
-  --danger:       #A81F16;
-  --danger-dim:   rgba(168, 31, 22, 0.10);
-  --warning:      #7A5000;
-  --warning-dim:  rgba(122, 80, 0, 0.12);
-  --info:         #55555C;
-  --info-dim:     #E9E9EB;
+  --success:     var(--entrou);
+  --success-dim: var(--entrou-tinta);
+  --danger:      var(--saiu);
+  --danger-dim:  var(--saiu-tinta);
+  --warning:     var(--deduzido);
+  --warning-dim: var(--deduzido-tinta);
+  --info:        var(--ink-3);
+  --info-dim:    var(--folha-2);
 
-  --shadow:      0 4px 24px rgba(0, 0, 0, 0.14);
-  --shadow-card: 0 2px 16px rgba(0, 0, 0, 0.08), 0 0 0 1px var(--border-soft);
+  --c1: var(--s1); --c2: var(--s2); --c3: var(--s3);
+  --c4: var(--s4); --c5: var(--s5); --c6: var(--s6);
+
+  --font-sans: var(--fonte);
+  /* Número NÃO usa monoespaçada: a coluna alinha por tabular-nums.
+     O nome sobrevive porque js/ e css/ o citam em ~20 lugares. */
+  --font-mono: var(--fonte);
+  --font-code: ui-monospace, 'SFMono-Regular', Menlo, monospace;
+
+  --radius-sm:  8px;
+  --radius-md:  var(--raio-sm);
+  --radius-lg:  var(--raio);
+  --radius-xl:  var(--raio);
+  --radius-2xl: 20px;
+
+  --shadow:      var(--sombra);
+  --shadow-card: var(--sombra);
+  --shadow-glow: none;
+
+  --sidebar-w:       var(--nav);
+  --topbar-h:        60px;
+  --transition:      0.18s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: 0.35s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* ── MARCA — pinta navegação, botão, foco e a curva do saldo.
+      NUNCA um valor em R$. Três opções, NENHUMA azul. A troca é de
+      um atributo no <html>; não há botão na interface. ───────── */
+html, html[data-marca="ameixa"] { --marca:#7A2E52; --marca-2:#9A3E6E; --marca-tinta:#F6E8F0; }
+html[data-marca="roxo"]         { --marca:#6B3FA0; --marca-2:#8557C4; --marca-tinta:#EFE8F8; }
+html[data-marca="grafite"]      { --marca:#2E3440; --marca-2:#41485A; --marca-tinta:#E7E9EE; }
+
 /* Todo algarismo da interface alinha em coluna sem virar terminal. */
-*, *::before, *::after { font-variant-numeric: tabular-nums lining-nums; }
+*, *::before, *::after { font-variant-numeric: lining-nums tabular-nums; }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -151,10 +162,8 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  background:
-    radial-gradient(ellipse 70% 60% at 20% 80%, rgba(255,255,255,0.05) 0%, transparent 55%),
-    radial-gradient(ellipse 50% 40% at 80% 20%, rgba(255,255,255,0.07) 0%, transparent 55%),
-    var(--bg-main);
+  /* Papel liso: o brilho branco sobre branco não aparece, só suja. */
+  background: var(--fundo);
   padding: 1.5rem;
 }
 
@@ -434,8 +443,8 @@ body {
 #kpi-grid { grid-template-columns: 1.55fr 1fr 1fr 1fr; align-items: stretch; }
 #kpi-grid .kpi-card { gap: 0.55rem; justify-content: flex-start; }
 
-/* Peso maior por tamanho e por fundo, nunca por cor: azul é navegação e
-   quantidade neutra; verde/vermelho carregam juízo e ficam só no delta. */
+/* Peso maior por tamanho e por fundo, nunca por cor: a cor da marca é
+   navegação; verde/vermelho carregam juízo e ficam só no delta. */
 .kpi-hero { background: var(--bg-card-raised); padding: 1.15rem 1.3rem; }
 .kpi-hero .kpi-label { color: var(--text-primary); }
 .kpi-hero .kpi-value { font-size: 2.1rem; font-weight: 600; }
@@ -565,7 +574,7 @@ body {
   100% { background-position: 600px 0; }
 }
 .skeleton {
-  background: linear-gradient(90deg, rgba(255,255,255,0.04) 25%, rgba(255,255,255,0.09) 50%, rgba(255,255,255,0.04) 75%);
+  background: linear-gradient(90deg, var(--folha-2) 25%, var(--folha-3) 50%, var(--folha-2) 75%);
   background-size: 600px 100%;
   animation: shimmer 1.5s infinite linear;
   border-radius: var(--radius-sm);
@@ -617,7 +626,7 @@ body {
 ════════════════════════════════════════════════════════════════ */
 .cmd-overlay {
   position: fixed; inset: 0;
-  background: rgba(0, 0, 0, 0.75); backdrop-filter: blur(8px);
+  background: rgba(20, 24, 33, 0.38); backdrop-filter: blur(8px);
   z-index: 800; display: flex; align-items: flex-start;
   justify-content: center; padding-top: 10vh; animation: fadeIn 0.15s ease;
 }
@@ -689,7 +698,7 @@ body {
 ════════════════════════════════════════════════════════════════ */
 .onboarding-overlay {
   position: fixed; inset: 0;
-  background: rgba(0, 0, 0, 0.82); backdrop-filter: blur(10px);
+  background: rgba(20, 24, 33, 0.42); backdrop-filter: blur(10px);
   z-index: 700; display: flex; align-items: center; justify-content: center;
   padding: 1rem; animation: fadeIn 0.3s ease;
 }
@@ -711,7 +720,7 @@ body {
 /* ═══════════════════════════════════════════════════════════════
    MOBILE
 ════════════════════════════════════════════════════════════════ */
-.sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(3px); z-index: 150; }
+.sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(20, 24, 33, 0.38); backdrop-filter: blur(3px); z-index: 150; }
 .sidebar-overlay.active { display: block; }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -752,7 +761,7 @@ body {
   :root { --sidebar-w: 0px; }
   .app { grid-template-columns: 1fr; }
   .sidebar { position: fixed; left: 0; top: 0; width: 245px; transform: translateX(-100%); transition: transform 0.25s ease; z-index: 200; }
-  .sidebar.open { transform: translateX(0); box-shadow: 8px 0 40px rgba(0,0,0,0.8); }
+  .sidebar.open { transform: translateX(0); box-shadow: 8px 0 40px rgba(20, 24, 33, 0.22); }
   .btn-menu-toggle { display: flex; }
   .tab-content { padding: 1rem; }
   .topbar-search { display: none; }
@@ -859,8 +868,8 @@ body {
 .fx-table th.num, .fx-table td.num { text-align: right; }
 .fx-table tbody td { padding: 0.55rem 0.7rem; border-bottom: 1px solid var(--border-soft); }
 .fx-table td.num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
-/* Hoje deixou de ser ciano (ciano é azul): vira ênfase neutra —
-   fundo elevado e uma barra forte na borda esquerda da linha. */
+/* Hoje é ênfase neutra — fundo elevado e uma barra forte na borda
+   esquerda da linha. Nunca cor: cor nesta tabela já é dinheiro. */
 .fx-table tbody tr.fx-hoje { background: var(--bg-card-raised); box-shadow: inset 3px 0 0 var(--border-strong); }
 .fx-table tbody tr.fx-hoje td:first-child { color: var(--text-primary); font-weight: 700; }
 .fx-table tbody tr.fx-minimo td { background: var(--danger-dim); }
@@ -938,335 +947,194 @@ body {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   CABER NUMA TELA SÓ
-   A PÁGINA não rola. Quem rola é a região que tem lista longa. O
-   usuário nunca perde a barra do mês e a navegação ao procurar um
-   lançamento lá embaixo, que é o que rolagem de página faz.
-
-   Esta rodada entrega o esqueleto: `.app` trava na altura da tela,
-   `.tab-content` vira a região que rola, e o cabeçalho de tabela
-   fica preso. Fazer a FAIXA DE KPIs ficar parada enquanto só a
-   tabela rola depende da estrutura de cada aba — é `.fit`/`.grow`
-   abaixo, adotado tela a tela nas rodadas seguintes, porque cada
-   aba tem um bloco diferente que merece ficar com a sobra da altura.
+   A PÁGINA ROLA
+   A regra antiga ("cada tela cabe numa dobra só") foi REVOGADA na
+   v2: para caber, ela espremia a linha da tabela — que é o que o
+   app existe para ler. Agora o cabeçalho da tela é que fica preso,
+   e a tabela desce com a página, com o <thead> grudado no topo.
+   As classes .fit e .grow continuam no HTML e não fazem mais nada;
+   somem junto com o markup de cada aba, na rodada dela.
 ════════════════════════════════════════════════════════════════ */
-html, body { height: 100%; }
-body { overflow: hidden; }
+html, body { height: auto; }
+body { overflow-x: hidden; overflow-y: auto; }
+.app { min-height: 100vh; }
+.main-content { min-height: 0; }
+.topbar { position: sticky; top: 0; z-index: 90; }
 
-.app { height: 100vh; min-height: 0; overflow: hidden; }
-.sidebar { height: 100%; min-height: 0; position: static; }
-.main-content { min-height: 0; height: 100%; overflow: hidden; }
-/* A topbar não precisa mais ser sticky: nada rola por baixo dela. */
-.topbar { position: static; flex: 0 0 auto; }
-.tab-content { flex: 1 1 auto; min-height: 0; overflow: auto; }
-
-/* Opt-in por aba: transforma a tela numa coluna em que um bloco fica
-   com a sobra da altura, em vez de tudo rolar junto. */
-.tab-content.fit { display: flex; flex-direction: column; }
-.tab-content.fit > .page-header,
-.tab-content.fit > .page-intro,
-.tab-content.fit > .kpi-grid { flex: 0 0 auto; }
-
-/* O card que contém a lista longa cresce até o limite e rola por dentro. */
-.card.grow { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; margin-bottom: 0; }
-.card.grow > .card-header { flex: 0 0 auto; }
-.card.grow .table-wrapper { flex: 1 1 auto; min-height: 0; overflow: auto; }
-
-/* Cabeçalho preso enquanto o corpo rola. `background` explícito: sem ele a
-   linha de dados aparece por baixo do <th>, que é transparente por padrão. */
-.card.grow .data-table thead th {
+/* Cabeçalho preso enquanto o corpo desce. `background` explícito: sem
+   ele a linha de dados aparece por baixo do <th>, que é transparente. */
+.data-table thead th {
   position: sticky; top: 0; z-index: 1;
-  background: var(--bg-card);
-  box-shadow: inset 0 -1px 0 var(--border-soft);
+  background: var(--folha);
+  box-shadow: inset 0 -1px 0 var(--borda-forte);
 }
 
-/* No celular a página rola mesmo — não há dobra que caiba tudo, e o uso real
-   ali é consulta, com o polegar rolando. Mesma quebra da sidebar em gaveta. */
-@media (max-width: 768px) {
-  body { overflow: auto; }
-  /* Reafirma o `fixed` da gaveta: a regra `.sidebar { position: static }` acima
-     é mais tardia no arquivo e venceria a do bloco responsivo original. */
-  .sidebar { position: fixed; height: 100vh; }
-  .app { height: auto; min-height: 100vh; overflow: visible; }
-  .main-content { height: auto; min-height: 100vh; overflow: visible; }
-  .topbar { position: sticky; top: 0; }
-  .tab-content { overflow: visible; }
-  .tab-content.fit { display: block; }
-  .card.grow { display: block; }
-  .card.grow .table-wrapper { overflow-x: auto; }
-}
-
-/* ═══════════════════════════════════════════════════════════════
-   VISÃO DO MÊS — a tela inteira numa dobra só
-   Os quatro cards não têm mais altura de conteúdo: têm a altura da
-   SOBRA da tela, dividida entre as duas linhas. Card com lista
-   curta para de esticar até a altura do vizinho (era o buraco
-   embaixo da rosca com três categorias); card com lista longa rola
-   por dentro em vez de empurrar a página. A faixa de KPIs e a
-   tira de insights nunca saem de vista.
-════════════════════════════════════════════════════════════════ */
-#tab-dashboard.fit { gap: 1rem; }
-#tab-dashboard > .insights-strip,
-#tab-dashboard > .kpi-grid { flex: 0 0 auto; }
-#tab-dashboard > .kpi-grid { margin-bottom: 0; }
-
-/* As duas linhas repartem o que sobra. A de cima leva um pouco mais: é onde
-   estão as duas leituras do mesmo total, que é o que se vem ver aqui. */
-#tab-dashboard > .dashboard-row { margin-top: 0; min-height: 0; }
-#tab-dashboard > .dashboard-row:nth-of-type(1) { flex: 1.15 1 0; }
-#tab-dashboard > .dashboard-row:nth-of-type(2) { flex: 1 1 0; }
-/* `start` em vez do `stretch` padrão: cada card tem a altura do PRÓPRIO
-   conteúdo e cresce só até o teto da linha, onde passa a rolar por dentro.
-   Sem isso, o card da rosca com três categorias esticava até a altura do card
-   de orçamento com dez — meia tela de buraco embaixo de um círculo. */
-#tab-dashboard > .dashboard-row { align-items: start; }
-#tab-dashboard > .dashboard-row > .card {
-  min-height: 0; max-height: 100%; display: flex; flex-direction: column;
-}
-#tab-dashboard > .dashboard-row > .card > .card-header { flex: 0 0 auto; }
-/* O corpo do card é quem rola — o cabeçalho fica. */
-#tab-dashboard > .dashboard-row > .card > .card-header ~ * {
-  flex: 1 1 auto; min-height: 0; overflow: auto;
-}
-
-/* Rosca encostada na margem do card, alinhada com o título, e um pouco menor:
-   a legenda é que carrega o número, o círculo só reparte. */
-.card-pizza .pizza-wrap { padding: 0.9rem 1.25rem; align-items: flex-start; gap: 1rem; }
-.card-pizza .pizza-donut { width: 150px; height: 150px; }
-.card-pizza #pizza-legend { min-width: 170px; }
-
-/* Gráfico de evolução: altura elástica em vez dos 220px fixos. O canvas é
-   absoluto dentro da caixa para o Chart.js medir um retângulo já resolvido —
-   canvas que empurra o próprio container entra em laço de redimensionamento. */
-#tab-dashboard .card-evolucao .evolucao-box { position: relative; padding: 0.9rem 1.25rem; overflow: hidden; }
-#tab-dashboard .card-evolucao .evolucao-box canvas { position: absolute; inset: 0.9rem 1.25rem; }
-
-/* ─── Densidade ────────────────────────────────────────────────
-   Dez categorias de orçamento cabendo na dobra sem rolar é questão de
-   fôlego de linha, não de esconder linha. O corpo do texto encolhe; o
-   VALOR não encolhe junto, porque é o que se vem ler. */
-#orcamento-list .orcamento-item { padding: 0.4rem 1.25rem; }
-#orcamento-list .orcamento-row  { margin-bottom: 0.22rem; font-size: 0.79rem; }
-#orcamento-list .orcamento-vals { font-size: 0.78rem; }
-#orcamento-list .progress-bar   { height: 3px; }
-.card-pizza .lg-row  { padding: 0.34rem 0; }
-.card-pizza .lg-name { font-size: 0.79rem; }
-
-/* No celular nada disso vale: lá a página rola e o card volta a ter a altura
-   do conteúdo. */
-@media (max-width: 768px) {
-  #tab-dashboard.fit { display: block; }
-  #tab-dashboard > .dashboard-row { margin-top: 1rem; }
-  #tab-dashboard > .dashboard-row > .card { display: block; }
-  #tab-dashboard > .dashboard-row > .card > .card-header ~ * { overflow: visible; }
-  .card-evolucao .evolucao-box { height: 220px; }
-}
+/* Altura da caixa do gráfico de evolução. O canvas é absoluto dentro
+   dela para o Chart.js medir um retângulo já resolvido — canvas que
+   empurra o próprio container entra em laço de redimensionamento. */
+.evolucao-box { position: relative; height: 240px; padding: 0.9rem 1.25rem; overflow: hidden; }
+.evolucao-box canvas { position: absolute; inset: 0.9rem 1.25rem; }
 
 /* ═══════════════════════════════════════════════════════════════
    A FRASE DE ABERTURA E A LINHA DE APOIO
    Toda tela abre dizendo o que ela responde e o que fazer nela, com
    a AÇÃO em negrito; todo bloco principal tem uma linha de apoio
-   abaixo do título. O alvo é alguém que não construiu o app
-   entender a tela sem ninguém explicando. Os textos vêm dos
-   mockups em /redesign — são para copiar, não reescrever.
+   abaixo do título.
 ════════════════════════════════════════════════════════════════ */
 .page-intro {
-  font-size: 0.92rem; color: var(--text-secondary); line-height: 1.55;
+  font-size: 0.92rem; color: var(--ink-2); line-height: 1.55;
   max-width: 70ch; margin: 0 0 1.1rem;
 }
-.page-intro b { color: var(--text-primary); font-weight: 700; }
+.page-intro b { color: var(--ink); font-weight: 600; }
 .card-sub {
-  font-size: 0.79rem; color: var(--text-muted); line-height: 1.5;
-  max-width: 70ch; padding: 0.7rem 1.25rem 0; margin: 0;
+  font-size: 0.79rem; color: var(--ink-3); line-height: 1.5;
+  max-width: 62ch; padding: 0.7rem 1.25rem 0; margin: 0;
 }
-/* Depois de um .card-header a linha de apoio encosta no título, sem o
-   respiro que ela precisa quando é o primeiro elemento do card. */
 .card-header + .card-sub { padding-top: 0.6rem; }
 
-/* ─── Gastos e Extratos na dobra ───────────────────────────────
-   Mesma regra da Visão do mês: os controles ficam parados e a TABELA
-   é que rola, com o cabeçalho preso. Numa aba de conferência linha a
-   linha, perder a barra de filtros ao descer é perder a ferramenta
-   no meio do uso. */
-#tab-gastos.fit > .page-header,
-#tab-gastos.fit > .filter-bar,
-#tab-gastos.fit > .advanced-filter-panel,
-#tab-extratos.fit > .page-header,
-#tab-extratos.fit > .card:not(.grow) { flex: 0 0 auto; }
-#tab-extratos.fit > .card:not(.grow) { margin-bottom: 0; }
-#tab-extratos.fit { gap: 1rem; }
-#tab-extratos.fit > .card[style*="margin-top"] { margin-top: 0 !important; }
-#tab-gastos.fit > .card.grow > .table-footer { flex: 0 0 auto; }
-/* O card com a tabela leva a sobra da tela; o `.card.grow` da rodada A3 faz o
-   resto (rolagem por dentro e <thead> preso). */
-#tab-gastos.fit > .card.grow,
-#tab-extratos.fit > .card.grow { margin-bottom: 0; }
-
-@media (max-width: 768px) {
-  #tab-gastos.fit, #tab-extratos.fit { display: block; }
-  #tab-extratos.fit > .card[style*="margin-top"] { margin-top: 1rem !important; }
-}
-
-/* ─── Fluxo de Caixa na dobra ──────────────────────────────────
-   `.fx-card` não é `.card` — a aba tem vocabulário próprio (`.fx-*`,
-   por decisão da rodada 4 do redesign), então a regra de rolar por
-   dentro precisa ser escrita de novo aqui em vez de reusar `.grow`. */
-#tab-calendario.fit > .page-intro,
-#tab-calendario.fit > .page-header,
-#tab-calendario.fit > #fx-kpis { flex: 0 0 auto; }
-#tab-calendario.fit > #fx-corpo {
-  flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; gap: 1rem;
-}
-#tab-calendario.fit .fx-card { margin-bottom: 0; }
-/* O gráfico fica com altura própria; a tabela leva a sobra e rola por dentro. */
-#tab-calendario.fit .fx-card-tabela {
-  flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; overflow: hidden;
-}
-#tab-calendario.fit .fx-card-tabela .fx-table-head,
-#tab-calendario.fit .fx-card-tabela > .card-sub { flex: 0 0 auto; }
-#tab-calendario.fit .fx-card-tabela .fx-table { display: block; overflow: auto; flex: 1 1 auto; min-height: 0; }
-#tab-calendario.fit .fx-card-tabela .fx-table thead,
-#tab-calendario.fit .fx-card-tabela .fx-table tbody,
-#tab-calendario.fit .fx-card-tabela .fx-table tfoot { display: table; width: 100%; table-layout: fixed; }
-#tab-calendario.fit .fx-card-tabela .fx-table thead { position: sticky; top: 0; z-index: 1; background: var(--bg-card); }
-#tab-calendario.fit .fx-card .card-sub { padding-left: 0; padding-right: 0; padding-top: 0; margin: -0.4rem 0 0.7rem; }
-
-@media (max-width: 768px) {
-  #tab-calendario.fit { display: block; }
-  #tab-calendario.fit > #fx-corpo { display: block; }
-  #tab-calendario.fit .fx-card { margin-bottom: 1rem; }
-  #tab-calendario.fit .fx-card-tabela,
-  #tab-calendario.fit .fx-card-tabela .fx-table { display: block; overflow-x: auto; }
-  #tab-calendario.fit .fx-card-tabela .fx-table { display: table; }
-}
-
-/* O histórico de importações não pode comer a dobra inteira: com o estado
-   vazio (ilustração + texto + botão) ele empurrava a tabela para três linhas
-   visíveis. Teto de 40% da altura, rolando por dentro se passar disso. */
-#tab-extratos.fit > .card:not(.grow) { max-height: 40%; overflow: auto; }
-@media (max-width: 768px) {
-  #tab-extratos.fit > .card:not(.grow) { max-height: none; overflow: visible; }
-}
-
-/* Repartição da dobra entre a curva e a tabela. Os 230px fixos do gráfico
-   deixavam a tabela com 80px — uma linha e meia de movimento, que é o oposto
-   do que a aba serve para responder. A curva encolhe, a tabela ganha. */
-#tab-calendario.fit .fx-card:not(.fx-card-tabela) {
-  flex: 1.15 1 0; min-height: 0; display: flex; flex-direction: column;
-}
-#tab-calendario.fit .fx-card:not(.fx-card-tabela) .fx-card-head { flex: 0 0 auto; }
-#tab-calendario.fit .fx-chart-box {
-  flex: 1 1 auto; height: auto; min-height: 130px; overflow: hidden;
-}
-/* Canvas absoluto pelo mesmo motivo do gráfico de evolução: retângulo já
-   resolvido, sem laço de redimensionamento. */
-#tab-calendario.fit .fx-chart-box canvas { position: absolute; inset: 0; }
-#tab-calendario.fit .fx-card-tabela { flex: 1 1 0; }
-
-@media (max-width: 768px) {
-  #tab-calendario.fit .fx-card:not(.fx-card-tabela) { display: block; }
-  #tab-calendario.fit .fx-chart-box { height: 230px; }
-}
-
-/* ─── As sete abas restantes na dobra ──────────────────────────
-   Mesma regra: os controles ficam parados e a região com lista longa
-   rola por dentro. O que muda de aba para aba é QUAL região é essa —
-   tabela, editor, grade de cards ou feed. */
-#tab-receitas.fit > .page-header,
-#tab-orcamento.fit > .page-header,
-#tab-metas.fit > .page-header,
-#tab-patrimonio.fit > .page-header,
-#tab-patrimonio.fit > .kpi-grid,
-#tab-timeline.fit > .page-header { flex: 0 0 auto; }
-#tab-patrimonio.fit > .kpi-grid { margin-bottom: 0; }
-#tab-patrimonio.fit > .card.grow[style] { margin-top: 1rem !important; margin-bottom: 0; }
-#tab-receitas.fit > .card.grow > .table-footer { flex: 0 0 auto; }
-
-/* Orçamento: quem rola é o editor de limites. */
-#tab-orcamento.fit > .card.grow > .orcamento-editor {
-  flex: 1 1 auto; min-height: 0; overflow: auto;
-}
-
-/* Metas e Configurações são grades de cards, não tabelas: a própria grade
-   rola, mantendo os cards na altura do conteúdo (`align-content: start`,
-   senão os cards esticam para preencher a sobra). */
-#tab-metas.fit > .metas-grid,
-#tab-configuracoes.fit > .config-grid {
-  flex: 1 1 auto; min-height: 0; overflow: auto; align-content: start; padding-right: 2px;
-}
-
-/* Timeline: o feed rola dentro do card. */
-#tab-timeline.fit > .card.grow > #timeline-feed {
-  flex: 1 1 auto; min-height: 0; overflow: auto;
-}
-#tab-timeline.fit > .card.grow { margin-bottom: 0; }
-
-/* Relatórios: a grade de cards de exportação rola. */
-#tab-relatorios.fit > .gridscroll {
-  flex: 1 1 auto; min-height: 0; overflow: auto; padding-right: 2px;
-}
-
-@media (max-width: 768px) {
-  #tab-receitas.fit, #tab-orcamento.fit, #tab-metas.fit, #tab-patrimonio.fit,
-  #tab-timeline.fit, #tab-relatorios.fit, #tab-configuracoes.fit { display: block; }
-  #tab-metas.fit > .metas-grid,
-  #tab-configuracoes.fit > .config-grid,
-  #tab-relatorios.fit > .gridscroll,
-  #tab-timeline.fit > .card.grow > #timeline-feed,
-  #tab-orcamento.fit > .card.grow > .orcamento-editor { overflow: visible; }
-}
-
 /* ─── Atalhos entre abas ───────────────────────────────────────
-   Cinco blocos que antes eram beco sem saída passam a levar à tela que
-   responde a pergunta seguinte. São <button>, não <a>: não há URL para onde
-   ir — a navegação é `switchTab`. Sem cor: o sublinhado é a afordância, e
-   azul de link foi o que a paleta A tirou de circulação. */
+   São <button>, não <a>: não há URL para onde ir — a navegação é
+   `switchTab`. Sem cor de link: o sublinhado é a afordância. */
 .kpi-goto, .cat-goto {
   font: inherit; background: none; border: 0; padding: 0; cursor: pointer;
-  color: var(--text-secondary); text-decoration: underline;
-  text-underline-offset: 3px; text-decoration-color: var(--border-md);
+  color: var(--ink-2); text-decoration: underline;
+  text-underline-offset: 3px; text-decoration-color: var(--borda-media);
 }
 .kpi-goto { font-size: 0.74rem; margin-top: 0.45rem; align-self: flex-start; }
 .cat-goto { font-size: inherit; display: inline-flex; align-items: center; text-align: left; }
 .kpi-goto:hover, .cat-goto:hover,
 .kpi-goto:focus-visible, .cat-goto:focus-visible {
-  color: var(--text-primary); text-decoration-color: currentColor; outline: none;
+  color: var(--ink); text-decoration-color: currentColor; outline: none;
 }
 .parcelas-goto { margin: 0.6rem 1.25rem 0.9rem; }
 
-/* Configurações: a régua de seções fica parada e a seção ativa rola. */
-#tab-configuracoes.fit > .page-intro,
-#tab-configuracoes.fit > .config-tabs { flex: 0 0 auto; }
-#tab-configuracoes.fit > .config-section:not(.hidden) {
-  flex: 1 1 auto; min-height: 0; overflow: auto; padding-right: 2px;
+/* ═══════════════════════════════════════════════════════════════
+   VOCABULÁRIO v2 — as classes do hibrido.html
+   Copiadas de redesign-v2/direcoes/hibrido.html, não reinventadas.
+   Ainda não há markup usando a maior parte delas: entram tela a
+   tela, da rodada 3 em diante. Estão aqui para que cada rodada
+   seguinte só escreva HTML, sem voltar a mexer na pele.
+
+   Os seletores de elemento (table/th/td) do mockup estão ESCOPADOS
+   em .folha: soltos, pegariam as tabelas .data-table das abas
+   antigas, que ainda estão no ar.
+════════════════════════════════════════════════════════════════ */
+
+/* ── a folha: o cartão, mas lido como papel ─────────────────── */
+.folha {
+  background: var(--folha); border: 1px solid var(--borda); border-radius: var(--raio);
+  box-shadow: var(--sombra); padding: 22px 24px;
 }
-@media (max-width: 768px) {
-  #tab-configuracoes.fit > .config-section:not(.hidden) { overflow: visible; }
+.rot {
+  font: 600 10.5px var(--fonte); text-transform: uppercase; letter-spacing: 0.16em;
+  color: var(--ink-3); margin: 0 0 5px;
+}
+.rot-sub { color: var(--ink-3); font-size: 12.5px; margin: 0 0 18px; max-width: 62ch; }
+.linha-topo { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 16px; }
+.linha-topo > :first-child { flex: 1; min-width: 0; }
+.ir {
+  border: 1px solid var(--borda); background: var(--folha); border-radius: 8px;
+  width: 28px; height: 28px; color: var(--ink-3); cursor: pointer; font-size: 13px; flex: none;
+}
+.ir:hover { border-color: var(--borda-forte); color: var(--ink); }
+.nota {
+  padding-left: 13px; border-left: 2px solid var(--borda-forte); color: var(--ink-3);
+  font-size: 12.5px; margin-top: 18px;
 }
 
-/* Estado de erro de bloco (`_guard`). Era uma frase cinza sem saída: a pessoa
-   via "não foi possível carregar" e não sabia se o resto da tela também estava
-   errado nem o que fazer. Mesmo formato do erro do Fluxo de Caixa. */
-.card-error { padding: 1.25rem; text-align: center; }
-.card-error-t { font-weight: 600; font-size: 0.88rem; color: var(--danger); margin-bottom: 0.3rem; }
-.card-error-x { font-size: 0.78rem; color: var(--text-muted); line-height: 1.5; max-width: 42ch; margin: 0 auto 0.85rem; }
+/* ── a faixa de duas colunas; empilha quando espremeria número ── */
+.faixa { display: grid; grid-template-columns: 1.05fr 1.45fr; gap: var(--goteira); margin-bottom: var(--goteira); }
+.faixa > * { min-width: 0; }
 
-/* Timeline: o feed leva a sobra da tela, o card de contratos fica embaixo com
-   a altura do conteúdo (e some quando não há contrato aberto). */
-#tab-timeline.fit > #contratos-card { flex: 0 0 auto; margin-top: 1rem; margin-bottom: 0; max-height: 45%; overflow: auto; }
-#tab-timeline.fit > #contratos-card[hidden] { display: none; }
-@media (max-width: 768px) {
-  #tab-timeline.fit > #contratos-card { max-height: none; overflow: visible; }
+/* ── herói: a frase do jornal dentro da faixa de marca ──────── */
+.heroi {
+  background: linear-gradient(152deg, var(--marca) 0%, var(--marca-2) 100%);
+  color: #fff; border-radius: var(--raio); padding: 24px 26px 22px;
+  display: flex; flex-direction: column;
 }
+.heroi .rot { color: rgba(255, 255, 255, 0.76); margin-bottom: 8px; }
+.heroi h2 { font: 600 46px/1 var(--fonte); margin: 0; letter-spacing: -0.03em; }
+.heroi h2 em { font: 400 17px/1 var(--fonte); font-style: normal; opacity: 0.8; margin-right: 10px; vertical-align: middle; }
+.heroi .de { font-size: 13px; opacity: 0.82; margin-top: 9px; }
+.dica {
+  margin-top: auto; padding-top: 16px; display: flex; gap: 10px; align-items: flex-start;
+  border-top: 1px solid rgba(255, 255, 255, 0.22); font-size: 13px; line-height: 1.45;
+}
+.dica i { font-style: normal; flex: none; opacity: 0.85; }
+.dica b { font-weight: 600; }
 
-/* ─── Patrimônio: os dois gráficos ─────────────────────────────
-   A linha dos gráficos tem altura própria e a tabela leva a sobra — quem se
-   consulta linha a linha aqui é a tabela, não o gráfico. */
-#tab-patrimonio.fit > #pat-graficos { flex: 0 0 auto; margin-top: 1rem; align-items: start; }
-#tab-patrimonio.fit > .card.grow[style] { margin-top: 1rem !important; }
-.card-pat-chart .pat-chart-box { position: relative; height: 170px; padding: 0.4rem 1.25rem 1rem; overflow: hidden; }
-.card-pat-chart .pat-chart-box canvas { position: absolute; inset: 0.4rem 1.25rem 1rem; }
-@media (max-width: 768px) {
-  #tab-patrimonio.fit > #pat-graficos { display: block; }
-  .card-pat-chart { margin-bottom: 1rem; }
+/* ── números de apoio: a régua do jornal, dentro da folha ───── */
+.apoio { display: flex; }
+.apoio > div { flex: 1; padding-right: var(--goteira); }
+.apoio > div + div { border-left: 1px solid var(--borda); padding-left: var(--goteira); }
+.apoio dt { font-size: 11px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--ink-3); margin: 0; }
+.apoio dd { margin: 6px 0 0; font-size: 22px; font-weight: 600; letter-spacing: -0.015em; }
+.mais { color: var(--entrou); }
+.menos { color: var(--saiu); }
+.alerta { color: var(--deduzido); }
+.pilula {
+  display: inline-block; font-size: 11.5px; font-weight: 600; border-radius: 20px;
+  padding: 2px 8px; background: var(--entrou-tinta); color: var(--entrou);
+  margin-left: 6px; vertical-align: middle;
+}
+.pilula.baixa { background: var(--saiu-tinta); color: var(--saiu); }
+
+/* ── distribuição: rosca + lista ordenada com o nome escrito ──
+   A rosca diz o peso; a lista diz o que É o maior. Uma sem a outra
+   obriga a procurar legenda, e legenda de rosca é procura. */
+.dist { display: grid; grid-template-columns: 186px 1fr; gap: 26px; align-items: center; }
+.cat { display: flex; align-items: center; gap: 11px; padding: 7px 0; }
+.cat + .cat { border-top: 1px solid var(--borda); }
+.chip { width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; font-size: 14px; flex: none; }
+.cat .nome { font-size: 13.5px; font-weight: 500; flex: 1; min-width: 0; }
+.cat .pct { font-size: 11.5px; font-weight: 600; color: var(--ink-3); background: var(--folha-2); border-radius: 20px; padding: 1px 7px; }
+.cat .val { font-size: 13.5px; font-weight: 600; min-width: 84px; text-align: right; }
+.cat.resto .nome { color: var(--ink-3); }
+
+/* ── tabela: fio fino do jornal, dentro da folha ────────────── */
+.folha table { width: 100%; border-collapse: collapse; }
+.folha th {
+  text-align: left; font: 600 10.5px var(--fonte); text-transform: uppercase; letter-spacing: 0.13em;
+  color: var(--ink-3); padding: 0 0 10px; border-bottom: 1px solid var(--borda-forte);
+}
+.folha td { height: var(--linha); padding: 0; border-bottom: 1px solid var(--borda); vertical-align: middle; }
+.folha td + td, .folha th + th { padding-left: 16px; }
+.folha tbody tr:last-child td { border-bottom: 0; }
+/* Sem zebra: faixa alternada compete com o âmbar da linha pendente. */
+.folha .v { text-align: right; font-weight: 600; white-space: nowrap; }
+.folha th.v { text-align: right; }
+.folha .sub { display: block; font-size: 11.5px; color: var(--ink-3); line-height: 1.3; }
+.folha tr.conferir td { background: var(--deduzido-fundo); }
+.folha tr.conferir td:first-child {
+  box-shadow: inset 3px 0 0 var(--deduzido); padding-left: 11px;
+  border-radius: var(--raio-sm) 0 0 var(--raio-sm);
+}
+.folha tr.conferir td:last-child { border-radius: 0 var(--raio-sm) var(--raio-sm) 0; }
+/* ◇ + texto: o segundo canal do âmbar, para quem não enxerga a cor. */
+.marca-d { color: var(--deduzido); font-size: 11.5px; font-weight: 600; }
+.marca-d::before { content: "◇ "; }
+.selo {
+  font-size: 10.5px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--ink-3); background: var(--folha-2); border-radius: 6px; padding: 3px 7px;
+}
+.rodape {
+  display: flex; justify-content: flex-end; gap: 16px; align-items: baseline;
+  border-top: 2px solid var(--ink); margin-top: 2px; padding-top: 14px;
+  font-size: 13px; color: var(--ink-3);
+}
+.rodape strong { font-size: 17px; color: var(--ink); }
+
+/* Abaixo de 1120px as duas colunas não cabem sem espremer número. */
+@media (max-width: 1120px) {
+  .faixa { grid-template-columns: 1fr; }
+}
+@media (max-width: 900px) {
+  :root { --margem: 16px; --goteira: 14px; }
+  .dist { grid-template-columns: 1fr; justify-items: center; }
+  .apoio { flex-wrap: wrap; gap: 14px 0; }
+  .apoio > div { flex: 1 1 46%; }
+  .apoio > div:nth-child(3) { border-left: 0; padding-left: 0; }
+  .heroi h2 { font-size: 38px; }
+  .folha { padding: 18px 16px; }
+  .esconde-sm { display: none; }
 }

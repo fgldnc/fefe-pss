@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Radar v2 — Adiante</title>
+<link rel="stylesheet" href="base.css">
+</head>
+<body>
+<div class="shell">
+  <div id="nav-slot"></div>
+  <main class="main">
+    <div id="head-slot"></div>
+    <div class="page">
+
+      <p class="intro">O que ainda vem. <b>Olhe o número do meio:</b> ele diz qual é o dia mais apertado
+        do mês e por quê. Abaixo, o que já está compromissado e onde o dinheiro está guardado.</p>
+
+      <div class="card" style="margin-bottom:16px;display:flex;gap:18px;align-items:flex-end;flex-wrap:wrap">
+        <div>
+          <label class="lab" for="ab">Saldo inicial de setembro</label>
+          <input class="field" id="ab" value="3.120,00" style="width:150px;text-align:right">
+        </div>
+        <div>
+          <label class="lab" for="vc">Dia em que a fatura sai da conta</label>
+          <input class="field" id="vc" value="10" style="width:90px;text-align:right">
+        </div>
+        <p class="note" style="flex:1;min-width:240px;margin:0;border-color:var(--line-soft)">
+          Os dois números que a pessoa declara, lado a lado. O dia de vencimento morava em
+          Configurações → Preferências e decide se o cartão do mês vira <b style="color:var(--text-2)">uma
+          linha</b> aqui ou dez espalhadas — ou seja, decide se o “menor saldo” aponta o dia certo.
+        </p>
+      </div>
+
+      <div class="kpis">
+        <div class="kpi">
+          <div class="kpi-lab">Abriu o mês com</div>
+          <div class="kpi-val">R$ 3.120,00</div>
+          <div class="kpi-sub">Fechamento de agosto</div>
+        </div>
+        <div class="kpi kpi-hero">
+          <div class="kpi-lab">Menor saldo do mês</div>
+          <div class="kpi-val neg">(R$ 312,40)</div>
+          <div class="kpi-sub">no dia <b>10</b> — a fatura sai · entra salário <b>3 dias</b> depois</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-lab">Projeção para 30/09</div>
+          <div class="kpi-val pos">R$ 1.842,60</div>
+          <div class="kpi-sub"><span class="mark">inclui R$ 679,30 previstos</span></div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom:16px">
+        <h2>Saldo dia a dia</h2>
+        <p class="card-sub">Sólido é o que já aconteceu; tracejado é previsão, e a faixa atrás dele
+          alarga porque a incerteza cresce com o prazo.</p>
+        <svg viewBox="0 0 700 220" width="100%" height="220" role="img"
+             aria-label="Curva do saldo diário de setembro; menor saldo de menos 312,40 no dia 10">
+          <!-- grade -->
+          <g stroke="var(--line-soft)" stroke-width="1">
+            <line x1="40" y1="30" x2="690" y2="30"/><line x1="40" y1="75" x2="690" y2="75"/>
+            <line x1="40" y1="120" x2="690" y2="120"/><line x1="40" y1="165" x2="690" y2="165"/>
+          </g>
+          <!-- zero -->
+          <line x1="40" y1="120" x2="690" y2="120" stroke="var(--line-strong)" stroke-width="1"/>
+          <text x="34" y="34" text-anchor="end" font-size="10" fill="var(--text-3)">4k</text>
+          <text x="34" y="124" text-anchor="end" font-size="10" fill="var(--text-3)">0</text>
+          <text x="34" y="169" text-anchor="end" font-size="10" fill="var(--text-3)">−1k</text>
+          <!-- área negativa -->
+          <path d="M240,120 L300,152 L340,138 L370,120 Z" fill="var(--expense)" opacity=".16"/>
+          <!-- faixa de incerteza, alargando -->
+          <path d="M420,84 L500,70 L580,58 L660,44 L660,86 L580,92 L500,96 L420,92 Z"
+                fill="var(--brand)" opacity=".13"/>
+          <!-- realizado -->
+          <polyline points="40,58 90,64 140,72 190,90 240,120 300,152 340,138 370,120 420,88"
+                    fill="none" stroke="var(--brand)" stroke-width="2.5" stroke-linejoin="round"/>
+          <!-- projetado -->
+          <polyline points="420,88 500,83 580,75 660,65"
+                    fill="none" stroke="var(--brand)" stroke-width="2.5" stroke-dasharray="6 5"/>
+          <!-- hoje -->
+          <line x1="420" y1="24" x2="420" y2="185" stroke="var(--line-strong)" stroke-width="1" stroke-dasharray="3 4"/>
+          <text x="426" y="34" font-size="10.5" fill="var(--text-3)">hoje · 14</text>
+          <!-- mínimo -->
+          <circle cx="300" cy="152" r="5" fill="var(--expense)"/>
+          <text x="300" y="176" text-anchor="middle" font-size="11" font-weight="700" fill="var(--expense)">menor saldo · dia 10</text>
+          <g font-size="10" fill="var(--text-3)">
+            <text x="40" y="200">01</text><text x="190" y="200">05</text><text x="300" y="200">10</text>
+            <text x="420" y="200">14</text><text x="580" y="200">22</text><text x="660" y="200">30</text>
+          </g>
+        </svg>
+        <table class="tbl" style="margin-top:14px">
+          <thead><tr><th>Dia</th><th>O que acontece</th><th class="num">Entra</th><th class="num">Sai</th><th class="num">Saldo</th></tr></thead>
+          <tbody>
+            <tr><td>05</td><td>Salário</td><td class="num pos">+7.400,00</td><td class="num">—</td><td class="num pos">9.680,10</td></tr>
+            <tr><td>10</td><td>Fatura do cartão <span class="tag">38 itens</span></td><td class="num">—</td><td class="num neg">−4.218,90</td><td class="num neg">(312,40)</td></tr>
+            <tr><td>14</td><td>Mercado, transporte <span class="tag">6 itens</span></td><td class="num">—</td><td class="num neg">−498,20</td><td class="num pos">1.104,30</td></tr>
+            <tr><td colspan="5" style="color:var(--text-3);font-size:12px">8 dias sem movimento omitidos</td></tr>
+            <tr><td>25</td><td>Aluguel <span class="tag tag-proj">prevista</span></td><td class="num">—</td><td class="num neg">−1.200,00</td><td class="num pos">1.842,60</td></tr>
+          </tbody>
+        </table>
+        <div class="tfoot"><span>Investimento de R$ 900,00 não entra no saldo <i>(fora do caixa)</i></span></div>
+      </div>
+
+      <div class="row row-2" style="margin-bottom:16px">
+        <div class="card">
+          <h2>Contratos em aberto</h2>
+          <p class="card-sub">Quanto ainda falta de cada compra parcelada — agrupado por contrato,
+            não repetido mês a mês.</p>
+          <table class="tbl">
+            <thead><tr><th>Compra</th><th>Parcelas</th><th class="num">Falta</th><th class="hide-sm">Termina</th></tr></thead>
+            <tbody>
+              <tr><td>NOTEBOOK DELL</td><td>8 de 12</td><td class="num neg">−1.648,00</td><td class="hide-sm">dez/26</td></tr>
+              <tr><td>SENAC CURSO</td><td>3 de 6</td><td class="num neg">−801,90</td><td class="hide-sm">dez/26</td></tr>
+              <tr><td>SOFÁ MÓVEIS SP</td><td>9 de 10</td><td class="num neg">−289,00</td><td class="hide-sm">out/26</td></tr>
+            </tbody>
+          </table>
+          <div class="tfoot"><span>compromissado até dez/26</span><strong class="neg">−2.738,90</strong></div>
+          <p class="note">Hoje este bloco existe, e está no fim da aba Timeline — a menos visitada do app.
+            É o número que o Firefly III não tem (issue #10073) e que o app brasileiro precisa ter.</p>
+        </div>
+
+        <div class="card">
+          <h2>Metas</h2>
+          <p class="card-sub">Alvos com prazo. Meta ligada a um ativo credita sozinha quando você aporta lá.</p>
+          <div class="bars" style="gap:16px">
+            <div>
+              <div style="display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:5px">
+                <span>Reserva de emergência</span><span><b>18.400</b> <span style="color:var(--text-3)">/ 30.000</span></span></div>
+              <div class="bar-track" style="height:8px"><div class="bar-fill" style="width:61%;background:var(--c1)"></div></div>
+              <div style="font-size:11.5px;color:var(--text-3);margin-top:4px">61% · ligada ao ativo “Tesouro Selic”</div>
+            </div>
+            <div>
+              <div style="display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:5px">
+                <span>Viagem 2027</span><span><b>4.200</b> <span style="color:var(--text-3)">/ 12.000</span></span></div>
+              <div class="bar-track" style="height:8px"><div class="bar-fill" style="width:35%;background:var(--c5)"></div></div>
+              <div style="font-size:11.5px;color:var(--text-3);margin-top:4px">35% · prazo jul/27</div>
+            </div>
+          </div>
+          <button class="btn btn-ghost btn-sm" style="margin-top:16px">+ Aporte</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div style="display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:6px">
+          <div style="flex:1;min-width:200px">
+            <h2 style="margin-bottom:3px">Patrimônio</h2>
+            <p class="card-sub" style="margin:0">R$ 48.210,00 no total — investimento R$ 31.400, conta R$ 6.810, bens R$ 10.000.</p>
+          </div>
+          <button class="btn btn-ghost btn-sm">+ Ativo</button>
+        </div>
+        <div style="display:flex;gap:2px;margin:16px 0 8px;height:12px;border-radius:6px;overflow:hidden">
+          <div style="flex:31.4;background:var(--c1)"></div>
+          <div style="flex:6.81;background:var(--c5)"></div>
+          <div style="flex:10;background:var(--c3)"></div>
+        </div>
+        <div style="display:flex;gap:16px;font-size:12px;color:var(--text-2);flex-wrap:wrap">
+          <span><b style="color:var(--c1)">▬</b> Investimento 65%</span>
+          <span><b style="color:var(--c5)">▬</b> Conta 14%</span>
+          <span><b style="color:var(--c3)">▬</b> Bens 21%</span>
+        </div>
+        <p class="note">A rosca de “Composição” foi substituída por esta barra: os quatro KPIs de hoje
+          <i>já são</i> a composição, e um gráfico circular repetindo os mesmos quatro números era desenho
+          a mais. O segundo gráfico continua sendo <b style="color:var(--text-2)">aportes por mês</b>, e não
+          “patrimônio mês a mês” — esse histórico o app não guarda.</p>
+      </div>
+
+    </div>
+  </main>
+</div>
+<script src="_nav.js"></script>
+<script>montarShell('Adiante');</script>
+</body>
+</html>

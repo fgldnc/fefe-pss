@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Candidatas à fonte — teste de algarismo tabular</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300..700&family=Urbanist:wght@300..700&family=Figtree:wght@300..700&family=Plus+Jakarta+Sans:wght@300..700&family=Manrope:wght@300..700&family=DM+Sans:opsz,wght@9..40,300..700&family=Poppins:wght@300;400;500;600;700&family=Lexend:wght@300..700&family=Red+Hat+Display:wght@300..700&family=Nunito+Sans:opsz,wght@6..12,300..700&display=swap" rel="stylesheet">
+<style>
+  body{margin:0;background:#FCFCFD;color:#16181D;font:400 14px/1.6 'Outfit',system-ui,sans-serif;
+       font-variant-numeric:lining-nums tabular-nums}
+  .wrap{max-width:980px;margin:0 auto;padding:36px 32px 80px}
+  h1{font:600 30px 'Outfit',sans-serif;margin:0 0 6px}
+  p.intro{color:#5B6068;margin:0 0 28px;max-width:66ch}
+  table{width:100%;border-collapse:collapse;margin-bottom:34px}
+  th{text-align:left;font:500 11px 'Outfit',sans-serif;text-transform:uppercase;letter-spacing:.12em;
+     color:#7A8089;padding:0 10px 9px 0;border-bottom:1px solid #C9CDD4}
+  td{padding:12px 10px 12px 0;border-bottom:1px solid #E6E8EC;vertical-align:middle}
+  td.n{text-align:right;font-variant-numeric:lining-nums tabular-nums}
+  .ok{color:#116B42;font-weight:600}
+  .no{color:#A32A1E;font-weight:600}
+  .amostra{font-size:19px;font-weight:500;white-space:nowrap}
+  .nome{font-weight:600}
+  .par{border:0;border-top:1px solid #C9CDD4;margin:34px 0 0;padding-top:22px}
+  .par h2{font:600 20px 'Outfit',sans-serif;margin:0 0 4px}
+  .col{font-size:20px;font-weight:600;text-align:right;line-height:1.65;
+       font-variant-numeric:lining-nums tabular-nums}
+  .duas{display:grid;grid-template-columns:1fr 1fr;gap:40px;margin-top:14px}
+  .lab{font:500 11px 'Outfit',sans-serif;text-transform:uppercase;letter-spacing:.12em;color:#7A8089;margin-bottom:8px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Candidatas “redondinhas”, e quais servem para dinheiro</h1>
+  <p class="intro">Todas são do Google Fonts (permitidas pela CSP atual). O teste mede a largura de
+    <b>1.111,11</b> e <b>9.999,99</b> com <code>tabular-nums</code> ligado: se as duas derem o mesmo
+    número, a fonte tem algarismo tabular de verdade e a coluna de valor alinha. Se diferirem, o
+    “1” é estreito e a coluna dança — a fonte não serve para a tabela, mesmo que sirva para título.</p>
+
+  <table id="tab">
+    <thead><tr>
+      <th>Fonte</th><th>Amostra</th>
+      <th class="n">1.111,11</th><th class="n">9.999,99</th>
+      <th class="n">Diferença</th><th>Tabular?</th><th>Carregou?</th>
+    </tr></thead>
+    <tbody></tbody>
+  </table>
+
+  <div class="par">
+    <h2>Coluna de valor, lado a lado</h2>
+    <p class="intro" style="margin-bottom:0">É assim que a tabela de gastos vai ficar. Os dígitos
+      têm que alinhar em coluna perfeita, e a vírgula não pode boiar.</p>
+    <div class="duas" id="colunas"></div>
+  </div>
+</div>
+
+<script>
+var FONTES = ['Outfit','Urbanist','Figtree','Plus Jakarta Sans','Manrope','DM Sans',
+              'Poppins','Lexend','Red Hat Display','Nunito Sans'];
+
+function medir(txt, familia) {
+  var s = document.createElement('span');
+  s.style.cssText = 'position:absolute;visibility:hidden;white-space:pre;font:600 20px "' + familia +
+                    '";font-variant-numeric:lining-nums tabular-nums';
+  s.textContent = txt;
+  document.body.appendChild(s);
+  var w = s.getBoundingClientRect().width;
+  s.remove();
+  return w;
+}
+
+function montar() {
+  var tb = document.querySelector('#tab tbody');
+  tb.innerHTML = '';
+  var bons = [];
+  FONTES.forEach(function (f) {
+    var a = medir('1.111,11', f), b = medir('9.999,99', f);
+    var dif = Math.abs(a - b);
+    var tabular = dif < 0.5;
+    var carregou = document.fonts.check('600 20px "' + f + '"');
+    if (tabular && carregou) bons.push(f);
+    var tr = document.createElement('tr');
+    tr.innerHTML =
+      '<td class="nome" style="font-family:\'' + f + '\'">' + f + '</td>' +
+      '<td class="amostra" style="font-family:\'' + f + '\'">R$ 1.842,60 · Mercado</td>' +
+      '<td class="n">' + a.toFixed(2) + '</td>' +
+      '<td class="n">' + b.toFixed(2) + '</td>' +
+      '<td class="n">' + dif.toFixed(2) + 'px</td>' +
+      '<td class="' + (tabular ? 'ok">sim' : 'no">NÃO') + '</td>' +
+      '<td>' + (carregou ? 'sim' : '<span class="no">não — medida inválida</span>') + '</td>';
+    tb.appendChild(tr);
+  });
+
+  var col = document.getElementById('colunas');
+  col.innerHTML = '';
+  (bons.length ? bons : FONTES).slice(0, 2).forEach(function (f) {
+    col.insertAdjacentHTML('beforeend',
+      '<div><div class="lab">' + f + '</div><div class="col" style="font-family:\'' + f + '\'">' +
+      '7.400,00<br>−5.557,40<br>1.842,60<br>−89,90<br>−412,88<br>11,11<br>99.999,99</div></div>');
+  });
+}
+
+document.fonts.ready.then(montar);
+</script>
+</body>
+</html>

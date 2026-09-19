@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Radar v2 — Mês</title>
+<link rel="stylesheet" href="base.css">
+</head>
+<body>
+<div class="shell">
+  <div id="nav-slot"></div>
+  <main class="main">
+    <div id="head-slot"></div>
+    <div class="page">
+
+      <p class="intro">O que já aconteceu em setembro. <b>Comece pelo número grande</b> — é quanto ainda
+        dá para gastar. Abaixo, tudo que entrou e saiu, numa tabela só.</p>
+
+      <div class="kpis">
+        <div class="kpi kpi-hero">
+          <div class="kpi-lab">Ainda dá para gastar</div>
+          <div class="kpi-val pos">R$ 1.842,60</div>
+          <div class="kpi-sub">Receita <b>R$ 7.400,00</b> − despesa <b>R$ 5.557,40</b> · faltam <b>16 dias</b></div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-lab">Despesas</div>
+          <div class="kpi-val neg">−R$ 5.557,40</div>
+          <div class="kpi-sub">▲ 8,2% vs. agosto · não inclui investimento</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-lab">Investido</div>
+          <div class="kpi-val">R$ 900,00</div>
+          <div class="kpi-sub">= mês anterior · patrimônio R$ 48.210</div>
+        </div>
+      </div>
+
+      <div class="row row-2" style="margin-bottom:20px">
+        <div class="card">
+          <h2>Para onde foi</h2>
+          <p class="card-sub">A rosca diz o peso; a lista ao lado diz o que é o maior — em ordem, com nome escrito.</p>
+          <div class="pizza">
+            <svg viewBox="0 0 120 120" width="150" height="150" role="img" aria-label="Rosca de distribuição por categoria">
+              <!-- fatias desenhadas com stroke-dasharray sobre um círculo de raio 44 (circunf. ~276,5) -->
+              <g transform="rotate(-90 60 60)" fill="none" stroke-width="17">
+                <circle cx="60" cy="60" r="44" stroke="var(--c4)" stroke-dasharray="86 190"></circle>
+                <circle cx="60" cy="60" r="44" stroke="var(--c1)" stroke-dasharray="58 218" stroke-dashoffset="-86"></circle>
+                <circle cx="60" cy="60" r="44" stroke="var(--c2)" stroke-dasharray="47 229" stroke-dashoffset="-144"></circle>
+                <circle cx="60" cy="60" r="44" stroke="var(--c3)" stroke-dasharray="33 243" stroke-dashoffset="-191"></circle>
+                <circle cx="60" cy="60" r="44" stroke="var(--c5)" stroke-dasharray="25 251" stroke-dashoffset="-224"></circle>
+                <circle cx="60" cy="60" r="44" stroke="var(--text-3)" stroke-dasharray="27 249" stroke-dashoffset="-249"></circle>
+              </g>
+              <text x="60" y="56" text-anchor="middle" font-size="8" fill="var(--text-3)">total</text>
+              <text x="60" y="68" text-anchor="middle" font-size="11" font-weight="700" fill="var(--text-1)">5.557</text>
+            </svg>
+            <div class="bars">
+              <div class="bar-row">
+                <div class="bar-track"><div class="bar-fill" style="width:100%;background:color-mix(in srgb,var(--c4) 26%,transparent);border-left:3px solid var(--c4)"></div><div class="bar-lab">Mercado</div></div>
+                <div class="bar-val">1.730,20</div></div>
+              <div class="bar-row">
+                <div class="bar-track"><div class="bar-fill" style="width:67%;background:color-mix(in srgb,var(--c1) 26%,transparent);border-left:3px solid var(--c1)"></div><div class="bar-lab">Casa</div></div>
+                <div class="bar-val">1.166,00</div></div>
+              <div class="bar-row">
+                <div class="bar-track"><div class="bar-fill" style="width:54%;background:color-mix(in srgb,var(--c2) 26%,transparent);border-left:3px solid var(--c2)"></div><div class="bar-lab">Transporte</div></div>
+                <div class="bar-val">944,80</div></div>
+              <div class="bar-row">
+                <div class="bar-track"><div class="bar-fill" style="width:38%;background:color-mix(in srgb,var(--c3) 26%,transparent);border-left:3px solid var(--c3)"></div><div class="bar-lab">Saúde</div></div>
+                <div class="bar-val">663,50</div></div>
+              <div class="bar-row">
+                <div class="bar-track"><div class="bar-fill" style="width:29%;background:color-mix(in srgb,var(--c5) 26%,transparent);border-left:3px solid var(--c5)"></div><div class="bar-lab">Lazer</div></div>
+                <div class="bar-val">502,10</div></div>
+              <div class="bar-row">
+                <div class="bar-track"><div class="bar-fill" style="width:31%;background:var(--bg-hover);border-left:3px solid var(--text-3)"></div>
+                  <div class="bar-lab" style="color:var(--text-3)">+4 categorias menores <span style="margin-left:6px;text-decoration:underline">ver todas</span></div></div>
+                <div class="bar-val" style="color:var(--text-3)">550,80</div></div>
+            </div>
+          </div>
+          <p class="note">“Outros” não é inventado pelo gráfico: as 6 maiores aparecem com nome, e o resto
+            vira uma fatia neutra chamada pelo que ela é — um resto de desenho.</p>
+        </div>
+
+        <div class="card">
+          <h2>Orçamento × real</h2>
+          <p class="card-sub">Edite o limite na própria linha. Em branco é válido — é categoria sem teto.</p>
+          <div class="bars" style="gap:14px">
+            <div>
+              <div style="display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:5px">
+                <span>Mercado</span>
+                <span><b class="neg">1.730,20</b> <span style="color:var(--text-3)">de</span>
+                  <input class="field" style="width:86px;height:26px;text-align:right;display:inline-block" value="1500,00"></span></div>
+              <div class="bar-track" style="height:8px"><div class="bar-fill" style="width:100%;background:var(--expense)"></div></div>
+              <div style="font-size:11.5px;color:var(--expense);margin-top:4px">115% — ultrapassou em 230,20</div>
+            </div>
+            <div>
+              <div style="display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:5px">
+                <span>Casa</span>
+                <span><b>1.166,00</b> <span style="color:var(--text-3)">de</span>
+                  <input class="field" style="width:86px;height:26px;text-align:right;display:inline-block" value="1300,00"></span></div>
+              <div class="bar-track" style="height:8px"><div class="bar-fill" style="width:90%;background:var(--inferred)"></div></div>
+              <div style="font-size:11.5px;color:var(--inferred);margin-top:4px">90% — falta pouco para o limite</div>
+            </div>
+            <div>
+              <div style="display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:5px">
+                <span>Transporte</span>
+                <span><b>944,80</b> <span style="color:var(--text-3)">de</span>
+                  <input class="field" style="width:86px;height:26px;text-align:right;display:inline-block" value="1400,00"></span></div>
+              <div class="bar-track" style="height:8px"><div class="bar-fill" style="width:67%;background:var(--income)"></div></div>
+              <div style="font-size:11.5px;color:var(--text-3);margin-top:4px">67% — dentro do limite</div>
+            </div>
+            <div style="border-top:1px solid var(--line-soft);padding-top:12px">
+              <div style="display:flex;justify-content:space-between;font-size:12.5px">
+                <span style="color:var(--text-3)">Fora de qualquer limite</span>
+                <b>R$ 1.716,40</b></div>
+              <div style="font-size:11.5px;color:var(--text-3);margin-top:3px">4 categorias sem teto definido</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div style="display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:14px">
+          <div style="flex:1;min-width:200px">
+            <h2 style="margin-bottom:3px">Tudo que entrou e saiu</h2>
+            <p class="card-sub" style="margin:0">Gasto manual, fatura e extrato na mesma tabela — a coluna
+              <i>origem</i> diz de onde veio.</p>
+          </div>
+          <button class="btn btn-ghost btn-sm">Exportar CSV</button>
+          <button class="btn btn-sm">+ Lançamento</button>
+        </div>
+
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
+          <select class="field"><option>Todas as categorias</option></select>
+          <select class="field"><option>Entradas e saídas</option><option>Só saídas</option><option>Só entradas</option></select>
+          <input class="field" placeholder="Buscar descrição…" style="flex:1;min-width:150px">
+          <button class="btn btn-ghost btn-sm">Valor, data, parcela ▾</button>
+        </div>
+
+        <table class="tbl">
+          <thead><tr>
+            <th>Data</th><th>Descrição</th><th class="hide-sm">Categoria</th>
+            <th class="hide-sm">Origem</th><th class="num">Valor</th><th class="col-act"></th>
+          </tr></thead>
+          <tbody>
+            <tr><td>05/09</td><td>Salário<span class="desc-sub">crédito em conta</span></td>
+              <td class="hide-sm">—</td><td class="hide-sm"><span class="tag">MANUAL</span></td>
+              <td class="num pos">+7.400,00</td>
+              <td class="col-act"><span class="acts"><button class="btn btn-icon">✎</button><button class="btn btn-icon">✕</button></span></td></tr>
+            <tr><td>14/09</td><td>CARREFOUR SAO PAULO</td>
+              <td class="hide-sm">Mercado</td><td class="hide-sm"><span class="tag">EXTRATO</span></td>
+              <td class="num neg">−412,88</td>
+              <td class="col-act"><span class="acts"><button class="btn btn-icon">✎</button><button class="btn btn-icon">✕</button></span></td></tr>
+            <tr><td>13/09</td><td>SENAC CURSO<span class="desc-sub">parcela 4 de 6</span></td>
+              <td class="hide-sm">Educação</td><td class="hide-sm"><span class="tag">FATURA</span></td>
+              <td class="num neg">−267,30</td>
+              <td class="col-act"><span class="acts"><button class="btn btn-icon">✎</button><button class="btn btn-icon">✕</button></span></td></tr>
+            <tr class="pendente"><td>12/09</td><td>DROGASIL 1422 SP<span class="mark desc-sub">sem categoria</span></td>
+              <td class="hide-sm"><select class="field field-inferido" style="height:28px"><option>— escolher —</option></select></td>
+              <td class="hide-sm"><span class="tag">EXTRATO</span></td>
+              <td class="num neg">−89,90</td>
+              <td class="col-act"><span class="acts"><button class="btn btn-icon">✎</button></span></td></tr>
+            <tr><td>11/09</td><td>UBER *TRIP</td>
+              <td class="hide-sm">Transporte</td><td class="hide-sm"><span class="tag">EXTRATO</span></td>
+              <td class="num neg">−28,70</td>
+              <td class="col-act"><span class="acts"><button class="btn btn-icon">✎</button><button class="btn btn-icon">✕</button></span></td></tr>
+            <tr><td>10/09</td><td>Aporte Tesouro Selic</td>
+              <td class="hide-sm">Investimento</td><td class="hide-sm"><span class="tag">MANUAL</span></td>
+              <td class="num">−900,00</td>
+              <td class="col-act"><span class="acts"><button class="btn btn-icon">✎</button><button class="btn btn-icon">✕</button></span></td></tr>
+            <tr><td>08/09</td><td>NETFLIX.COM</td>
+              <td class="hide-sm">Lazer</td><td class="hide-sm"><span class="tag">FATURA</span></td>
+              <td class="num neg">−55,90</td>
+              <td class="col-act"><span class="acts"><button class="btn btn-icon">✎</button><button class="btn btn-icon">✕</button></span></td></tr>
+          </tbody>
+        </table>
+        <div class="tfoot">
+          <span>7 de 91 lançamentos ·</span>
+          <span>entrou <b class="pos">+7.400,00</b></span>
+          <span>saiu <strong class="neg">−5.557,40</strong></span>
+        </div>
+      </div>
+
+      <p class="note" style="margin-top:24px">
+        <b style="color:var(--text-2)">O que mudou:</b> Gastos, Receitas e “Transações importadas” eram três
+        tabelas do mesmo mês em três abas — viraram uma, com a coluna <i>origem</i>.
+        O sinal <b style="color:var(--text-2)">+</b>/<b style="color:var(--text-2)">−</b> na coluna de valor
+        é o segundo canal que a cor sozinha não dá.
+        Investimento aparece na tabela sem cor de gasto, porque não é gasto — e segue fora do total de despesa.
+      </p>
+
+    </div>
+  </main>
+</div>
+<script src="_nav.js"></script>
+<script>montarShell('Mês');</script>
+</body>
+</html>

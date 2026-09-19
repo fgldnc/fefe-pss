@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-marca="ameixa">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Híbrido — jornal + folha branca</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300..700&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════════════════════════
+   HÍBRIDO — o esqueleto de jornal (hierarquia tipográfica, frase
+   no lugar de fileira de KPI, barra ordenada com nome escrito,
+   malha explícita) sobre o material da referência: folha branca
+   em fundo cinza-claro, raio generoso, sombra quase invisível,
+   sem azul em papel nenhum, ícone de categoria em pastilha colorida.
+   Fonte: Outfit (passou no teste de algarismo tabular).
+   Contraste conferido: contraste-hibrido.mjs
+═══════════════════════════════════════════════════════════════ */
+
+:root{
+  /* malha e ritmo — os números que mandam no layout */
+  --coluna:1180px; --margem:32px; --goteira:20px; --u:8px;
+  --ar-secao:40px; --linha:52px; --nav:232px;
+  --raio:16px; --raio-sm:10px;
+
+  /* superfícies */
+  --fundo:#F3F5F9; --folha:#FFFFFF; --folha-2:#EDF1F8;
+  --borda:#E2E8F1; --borda-forte:#7E8999;
+
+  /* tinta */
+  --ink:#141821; --ink-2:#4A5265; --ink-3:#616B79;
+
+  /* significado — cor que fala de dinheiro */
+
+  --entrou:#0E7C4C; --saiu:#BE3729; --deduzido:#8F5C00;
+
+  /* série categórica */
+  --s1:#A8336B; --s2:#12915A; --s3:#E0553F; --s4:#B97A0C; --s5:#6B4BC9; --s6:#79838F;
+  --s1-chip:#F7E5EE; --s2-chip:#DEF0E8; --s3-chip:#FBE7E4;
+  --s4-chip:#F5ECDD; --s5-chip:#E9E4F7; --s6-chip:#ECEEEF;
+
+  --sombra:0 1px 2px rgba(20,24,33,.04), 0 6px 20px rgba(20,24,33,.05);
+}
+
+/* ── MARCA — pinta navegação, botão, foco e a curva do saldo.
+      NUNCA um valor em R$. Três opções, NENHUMA azul. ───────── */
+html[data-marca="ameixa"] { --marca:#7A2E52; --marca-2:#9A3E6E; --marca-tinta:#F6E8F0; }
+html[data-marca="roxo"]   { --marca:#6B3FA0; --marca-2:#8557C4; --marca-tinta:#EFE8F8; }
+html[data-marca="grafite"]{ --marca:#2E3440; --marca-2:#41485A; --marca-tinta:#E7E9EE; }
+
+*{box-sizing:border-box}
+:focus-visible{outline:2px solid var(--marca); outline-offset:2px; border-radius:4px}
+body{
+  margin:0; background:var(--fundo); color:var(--ink);
+  font:400 14px/1.55 'Outfit',system-ui,sans-serif;
+  font-variant-numeric:lining-nums tabular-nums; -webkit-font-smoothing:antialiased;
+}
+.app{display:grid; grid-template-columns:var(--nav) minmax(0,1fr); min-height:100vh}
+main{min-width:0}
+
+/* ── NAVEGAÇÃO ──────────────────────────────────────────────── */
+.nav{padding:22px 16px; position:sticky; top:0; height:100vh; display:flex; flex-direction:column; gap:2px}
+.marca{display:flex; align-items:center; gap:9px; padding:0 8px 26px}
+.marca i{
+  width:28px; height:28px; border-radius:9px; background:var(--marca); color:#fff;
+  display:grid; place-items:center; font-style:normal; font-size:14px; font-weight:700; flex:none;
+}
+.marca b{font:600 20px 'Outfit',sans-serif; letter-spacing:-.01em}
+.grupo{
+  font:600 10.5px 'Outfit',sans-serif; text-transform:uppercase; letter-spacing:.16em;
+  color:var(--ink-3); padding:20px 10px 8px;
+}
+.item{
+  display:flex; align-items:center; gap:10px; padding:9px 11px; border-radius:var(--raio-sm);
+  color:var(--ink-2); text-decoration:none; font-size:13.5px; font-weight:500;
+}
+.item:hover{background:var(--folha)}
+.item[aria-current]{background:var(--marca-tinta); color:var(--marca); font-weight:600}
+.item i{font-style:normal; width:18px; text-align:center; font-size:14px}
+.item .pend{
+  margin-left:auto; font-size:11px; font-weight:700; color:var(--deduzido);
+  background:#F7EEDC; border-radius:20px; padding:1px 7px;
+}
+
+/* ── CABEÇALHO ──────────────────────────────────────────────── */
+.topo{
+  display:flex; align-items:center; gap:14px; padding:22px var(--margem) 0;
+  max-width:var(--coluna);
+}
+.topo h1{font:600 24px 'Outfit',sans-serif; margin:0; letter-spacing:-.015em}
+.mes{
+  margin-left:auto; display:flex; align-items:center; gap:2px; background:var(--folha);
+  border:1px solid var(--borda); border-radius:var(--raio-sm); padding:3px;
+}
+.mes b{font-size:13px; font-weight:600; padding:0 10px; min-width:112px; text-align:center}
+.mes button{
+  width:26px; height:26px; border:0; background:transparent; border-radius:7px;
+  color:var(--ink-3); cursor:pointer; font-size:15px;
+}
+.mes button:hover{background:var(--folha-2); color:var(--ink)}
+
+.pagina{padding:var(--ar-secao) var(--margem) 80px; max-width:var(--coluna)}
+
+/* ── FOLHA (o cartão, mas lido como papel) ──────────────────── */
+.folha{
+  background:var(--folha); border:1px solid var(--borda); border-radius:var(--raio);
+  box-shadow:var(--sombra); padding:22px 24px;
+}
+.rot{
+  font:600 10.5px 'Outfit',sans-serif; text-transform:uppercase; letter-spacing:.16em;
+  color:var(--ink-3); margin:0 0 5px;
+}
+.rot-sub{color:var(--ink-3); font-size:12.5px; margin:0 0 18px; max-width:62ch}
+.linha-topo{display:flex; align-items:flex-start; gap:12px; margin-bottom:16px}
+.linha-topo > :first-child{flex:1; min-width:0}
+.ir{
+  border:1px solid var(--borda); background:var(--folha); border-radius:8px; width:28px; height:28px;
+  color:var(--ink-3); cursor:pointer; font-size:13px; flex:none;
+}
+.ir:hover{border-color:var(--borda-forte); color:var(--ink)}
+
+/* ── HERÓI: a frase do jornal dentro da faixa de marca ──────── */
+.faixa{display:grid; grid-template-columns:1.05fr 1.45fr; gap:var(--goteira); margin-bottom:var(--goteira)}
+.faixa > *{min-width:0}
+.heroi{
+  background:linear-gradient(152deg, var(--marca) 0%, var(--marca-2) 100%);
+  color:#fff; border-radius:var(--raio); padding:24px 26px 22px;
+  display:flex; flex-direction:column;
+}
+.heroi .rot{color:rgba(255,255,255,.76); margin-bottom:8px}
+.heroi h2{font:600 46px/1 'Outfit',sans-serif; margin:0; letter-spacing:-.03em}
+.heroi h2 em{font:400 17px/1 'Outfit',sans-serif; font-style:normal; opacity:.8; margin-right:10px; vertical-align:middle}
+.heroi .de{font-size:13px; opacity:.82; margin-top:9px}
+.dica{
+  margin-top:auto; padding-top:16px; display:flex; gap:10px; align-items:flex-start;
+  border-top:1px solid rgba(255,255,255,.22); font-size:13px; line-height:1.45;
+}
+.dica i{font-style:normal; flex:none; opacity:.85}
+.dica b{font-weight:600}
+
+/* números de apoio: a régua do jornal, agora dentro da folha */
+.apoio{display:flex}
+.apoio > div{flex:1; padding-right:var(--goteira)}
+.apoio > div + div{border-left:1px solid var(--borda); padding-left:var(--goteira)}
+.apoio dt{font-size:11px; text-transform:uppercase; letter-spacing:.12em; color:var(--ink-3); margin:0}
+.apoio dd{margin:6px 0 0; font-size:22px; font-weight:600; letter-spacing:-.015em}
+.mais{color:var(--entrou)} .menos{color:var(--saiu)} .alerta{color:var(--deduzido)}
+.pilula{
+  display:inline-block; font-size:11.5px; font-weight:600; border-radius:20px; padding:2px 8px;
+  background:#E4F3EB; color:var(--entrou); margin-left:6px; vertical-align:middle;
+}
+.pilula.baixa{background:#FBE9E6; color:var(--saiu)}
+
+/* ── DISTRIBUIÇÃO: rosca + lista ordenada com nome escrito ──── */
+.dist{display:grid; grid-template-columns:186px 1fr; gap:26px; align-items:center}
+.cat{display:flex; align-items:center; gap:11px; padding:7px 0}
+.cat + .cat{border-top:1px solid var(--borda)}
+.chip{
+  width:30px; height:30px; border-radius:9px; display:grid; place-items:center;
+  font-size:14px; flex:none;
+}
+.cat .nome{font-size:13.5px; font-weight:500; flex:1; min-width:0}
+.cat .pct{font-size:11.5px; font-weight:600; color:var(--ink-3); background:var(--folha-2);
+  border-radius:20px; padding:1px 7px}
+.cat .val{font-size:13.5px; font-weight:600; min-width:84px; text-align:right}
+.cat.resto .nome{color:var(--ink-3)}
+
+/* ── TABELA: fio fino do jornal, dentro da folha ────────────── */
+table{width:100%; border-collapse:collapse}
+th{
+  text-align:left; font:600 10.5px 'Outfit',sans-serif; text-transform:uppercase; letter-spacing:.13em;
+  color:var(--ink-3); padding:0 0 10px; border-bottom:1px solid var(--borda-forte);
+}
+td{height:var(--linha); padding:0; border-bottom:1px solid var(--borda); vertical-align:middle}
+td+td, th+th{padding-left:16px}
+tbody tr:last-child td{border-bottom:0}
+.v{text-align:right; font-weight:600; white-space:nowrap} th.v{text-align:right}
+.sub{display:block; font-size:11.5px; color:var(--ink-3); line-height:1.3}
+tr.conferir td{background:#FDF8EE}
+tr.conferir td:first-child{box-shadow:inset 3px 0 0 var(--deduzido); padding-left:11px}
+tr.conferir td:first-child{border-radius:var(--raio-sm) 0 0 var(--raio-sm)}
+tr.conferir td:last-child{border-radius:0 var(--raio-sm) var(--raio-sm) 0}
+.marca-d{color:var(--deduzido); font-size:11.5px; font-weight:600}
+.marca-d::before{content:'◇ '}
+.selo{
+  font-size:10.5px; font-weight:600; letter-spacing:.06em; text-transform:uppercase;
+  color:var(--ink-3); background:var(--folha-2); border-radius:6px; padding:3px 7px;
+}
+.rodape{
+  display:flex; justify-content:flex-end; gap:16px; align-items:baseline;
+  border-top:2px solid var(--ink); margin-top:2px; padding-top:14px; font-size:13px; color:var(--ink-3);
+}
+.rodape strong{font-size:17px; color:var(--ink)}
+
+.btn{
+  font:600 13px 'Outfit',sans-serif; height:34px; padding:0 14px; border-radius:var(--raio-sm);
+  border:1px solid transparent; background:var(--marca); color:#fff; cursor:pointer;
+}
+.btn-2{background:var(--folha); border-color:var(--borda-forte); color:var(--ink)}
+.nota{padding-left:13px; border-left:2px solid var(--borda-forte); color:var(--ink-3);
+  font-size:12.5px; margin-top:18px}
+
+/* Abaixo de 1120px as duas colunas nao cabem sem espremer numero: empilha. */
+.ctrl{position:fixed; right:16px; bottom:16px; z-index:99; display:flex; gap:6px; align-items:center;
+  background:var(--folha); border:1px solid var(--borda-forte); border-radius:var(--raio-sm);
+  padding:7px 9px; font-size:12px; box-shadow:var(--sombra)}
+.ctrl b{font-weight:600; color:var(--ink-3); margin-right:2px}
+.ctrl button{font:500 12px 'Outfit',sans-serif; padding:5px 11px; cursor:pointer; border-radius:7px;
+  background:transparent; border:1px solid var(--borda); color:var(--ink)}
+.ctrl button.on{background:var(--marca); border-color:var(--marca); color:#fff}
+
+@media(max-width:1120px){
+  .faixa{grid-template-columns:1fr}
+  .dist{grid-template-columns:186px 1fr}
+}
+@media(max-width:900px){
+  :root{--margem:16px; --goteira:14px}
+  .app{grid-template-columns:1fr}
+  .nav{position:fixed; inset:auto 0 0 0; height:auto; flex-direction:row; padding:6px 4px 10px;
+    background:var(--folha); border-top:1px solid var(--borda); z-index:40; gap:0}
+  .marca,.grupo,.nav .so-desk{display:none}
+  .item{flex:1; flex-direction:column; gap:3px; font-size:10.5px; padding:7px 2px; text-align:center}
+  .item[aria-current]{background:transparent; color:var(--marca)}
+  .item .pend{position:absolute; margin:0; transform:translate(16px,-4px)}
+  .pagina{padding-bottom:104px}
+  .ctrl{bottom:78px}
+  .faixa{grid-template-columns:1fr}
+  .dist{grid-template-columns:1fr; justify-items:center}
+  .apoio{flex-wrap:wrap; gap:14px 0}
+  .apoio > div{flex:1 1 46%}
+  .apoio > div:nth-child(3){border-left:0; padding-left:0}
+  .esconde-sm,.so-larga{display:none}
+  .topo{flex-wrap:wrap}
+  .mes{margin-left:0; flex:1}
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <nav class="nav">
+    <div class="marca"><i>◈</i><b>Radar</b></div>
+
+    <div class="grupo so-desk">O ciclo do mês</div>
+    <a class="item" href="#"><i>↓</i><span>Importar</span></a>
+    <a class="item" href="#"><i>◇</i><span>Conferir</span><span class="pend">7</span></a>
+    <a class="item" href="#" aria-current="page"><i>▦</i><span>Mês</span></a>
+    <a class="item" href="#"><i>↗</i><span>Adiante</span></a>
+
+    <div class="grupo so-desk">Longo prazo</div>
+    <a class="item" href="#"><i>◈</i><span>Guardado</span></a>
+
+    <div style="margin-top:auto"></div>
+    <a class="item so-desk" href="#"><i>⚙</i><span>Ajustes</span></a>
+  </nav>
+
+  <main>
+    <div class="topo">
+      <h1>Mês</h1>
+      <div class="mes">
+        <button aria-label="Mês anterior">‹</button><b>setembro / 2026</b><button aria-label="Próximo mês">›</button>
+      </div>
+      <button class="btn">+<span class="so-larga"> Lançamento</span></button>
+    </div>
+
+    <div class="pagina">
+
+      <!-- HERÓI + APOIO -->
+      <div class="faixa">
+        <div class="heroi">
+          <p class="rot">Ainda dá para gastar</p>
+          <h2><em>Sobrou</em>R$ 1.842,60</h2>
+          <div class="de">de R$ 7.400,00 que entraram · o mês fecha em 16 dias</div>
+          <div class="dica">
+            <i>◈</i>
+            <div>Você está <b>R$ 200 abaixo do ritmo</b> de agosto. No caminho certo para fechar
+              o mês com saldo positivo.</div>
+          </div>
+        </div>
+
+        <div class="folha">
+          <div class="linha-topo">
+            <div>
+              <p class="rot">Distribuição dos gastos</p>
+              <p class="rot-sub" style="margin:0">Da maior para a menor, com o nome escrito na linha —
+                não há legenda para procurar.</p>
+            </div>
+            <button class="ir" title="Ver tudo em Gastos">↗</button>
+          </div>
+          <div class="dist">
+            <svg viewBox="0 0 120 120" width="186" height="186" role="img"
+                 aria-label="Rosca da distribuição dos gastos de setembro">
+              <g transform="rotate(-90 60 60)" fill="none" stroke-width="15">
+                <circle cx="60" cy="60" r="45" stroke="var(--folha-2)" stroke-width="15"></circle>
+                <circle cx="60" cy="60" r="45" stroke="var(--s3)" stroke-dasharray="88 195"></circle>
+                <circle cx="60" cy="60" r="45" stroke="var(--s1)" stroke-dasharray="59 224" stroke-dashoffset="-88"></circle>
+                <circle cx="60" cy="60" r="45" stroke="var(--s2)" stroke-dasharray="48 235" stroke-dashoffset="-147"></circle>
+                <circle cx="60" cy="60" r="45" stroke="var(--s4)" stroke-dasharray="34 249" stroke-dashoffset="-195"></circle>
+                <circle cx="60" cy="60" r="45" stroke="var(--s5)" stroke-dasharray="25 258" stroke-dashoffset="-229"></circle>
+                <circle cx="60" cy="60" r="45" stroke="var(--s6)" stroke-dasharray="28 255" stroke-dashoffset="-254"></circle>
+              </g>
+              <text x="60" y="55" text-anchor="middle" font-size="7" fill="#616B79" font-family="Outfit"
+                    letter-spacing=".8">GASTO NO MÊS</text>
+              <text x="60" y="69" text-anchor="middle" font-size="13" font-weight="600" fill="#141821" font-family="Outfit">5.557</text>
+            </svg>
+            <div>
+              <div class="cat"><span class="chip" style="background:var(--s3-chip);color:var(--s3)">◧</span>
+                <span class="nome">Mercado</span><span class="pct">31%</span><span class="val">1.730,20</span></div>
+              <div class="cat"><span class="chip" style="background:var(--s1-chip);color:var(--s1)">⌂</span>
+                <span class="nome">Casa</span><span class="pct">21%</span><span class="val">1.166,00</span></div>
+              <div class="cat"><span class="chip" style="background:var(--s2-chip);color:var(--s2)">⇢</span>
+                <span class="nome">Transporte</span><span class="pct">17%</span><span class="val">944,80</span></div>
+              <div class="cat"><span class="chip" style="background:var(--s4-chip);color:var(--s4)">✚</span>
+                <span class="nome">Saúde</span><span class="pct">12%</span><span class="val">663,50</span></div>
+              <div class="cat"><span class="chip" style="background:var(--s5-chip);color:var(--s5)">♪</span>
+                <span class="nome">Lazer</span><span class="pct">9%</span><span class="val">502,10</span></div>
+              <div class="cat resto"><span class="chip" style="background:var(--s6-chip);color:var(--s6)">+</span>
+                <span class="nome">+4 categorias menores</span><span class="pct">10%</span><span class="val">550,80</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- APOIO + FLUXO -->
+      <div class="faixa" style="grid-template-columns:1.05fr 1.45fr">
+        <div class="folha">
+          <p class="rot">Resultado do mês</p>
+          <p class="rot-sub">Investimento não entra em “saiu” — é dinheiro que mudou de lugar, não que sumiu.</p>
+          <dl class="apoio">
+            <div><dt>Entrou</dt><dd class="mais">+7.400,00</dd></div>
+            <div><dt>Saiu</dt><dd class="menos">−5.557,40 <span class="pilula baixa">+8%</span></dd></div>
+            <div><dt>Investido</dt><dd>900,00</dd></div>
+          </dl>
+          <div class="nota">O sinal <b style="color:var(--ink-2)">+</b> e <b style="color:var(--ink-2)">−</b>
+            é o segundo canal: quem não distingue verde de vermelho lê o sinal.</div>
+        </div>
+
+        <div class="folha">
+          <div class="linha-topo">
+            <div>
+              <p class="rot">O mês aperta no dia 10</p>
+              <p class="rot-sub" style="margin:0">É quando a fatura sai da conta. O salário entra 3 dias depois.</p>
+            </div>
+            <button class="ir" title="Ver o dia a dia em Adiante">↗</button>
+          </div>
+          <svg viewBox="0 0 560 150" width="100%" height="150" role="img"
+               aria-label="Curva do saldo diário; menor saldo negativo de 312,40 no dia 10">
+            <defs>
+              <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="var(--marca)" stop-opacity=".16"/>
+                <stop offset="100%" stop-color="var(--marca)" stop-opacity="0"/>
+              </linearGradient>
+            </defs>
+            <line x1="0" y1="96" x2="560" y2="96" stroke="var(--borda-forte)" stroke-width="1"/>
+            <path d="M0,44 L64,50 L128,60 L166,76 L194,96 L248,124 L282,112 L310,96 L346,68 L346,96 L0,96 Z" fill="url(#g)"/>
+            <path d="M194,96 L248,124 L282,112 L310,96 Z" fill="var(--saiu)" opacity=".15"/>
+            <polyline points="0,44 64,50 128,60 166,76 194,96 248,124 282,112 310,96 346,68"
+                      fill="none" stroke="var(--marca)" stroke-width="2.4" stroke-linejoin="round"/>
+            <polyline points="346,68 420,62 496,54 560,46" fill="none"
+                      stroke="var(--marca)" stroke-width="2.4" stroke-dasharray="6 5"/>
+            <line x1="346" y1="22" x2="346" y2="132" stroke="var(--borda-forte)" stroke-dasharray="2 3"/>
+            <text x="352" y="30" font-size="10.5" fill="#616B79" font-family="Outfit">hoje</text>
+            <circle cx="248" cy="124" r="4" fill="var(--saiu)"/>
+            <circle cx="248" cy="124" r="7.5" fill="none" stroke="var(--saiu)" stroke-opacity=".3"/>
+            <text x="248" y="143" text-anchor="middle" font-size="11" font-weight="600"
+                  fill="#BE3729" font-family="Outfit">(312,40) no dia 10</text>
+            <text x="4" y="90" font-size="10" fill="#616B79" font-family="Outfit">0</text>
+          </svg>
+          <div class="nota">Traço cheio é o que já aconteceu; tracejado é previsão. Sem grade —
+            só o fio do zero, que é a única linha que significa alguma coisa.</div>
+        </div>
+      </div>
+
+      <!-- TABELA -->
+      <div class="folha">
+        <div class="linha-topo">
+          <div>
+            <p class="rot">Tudo que entrou e saiu</p>
+            <p class="rot-sub" style="margin:0">Gasto manual, fatura e extrato na mesma tabela.
+              A coluna <i>origem</i> diz de onde veio.</p>
+          </div>
+          <button class="btn btn-2">Exportar CSV</button>
+        </div>
+        <table>
+          <thead><tr>
+            <th style="width:70px">Data</th><th>Descrição</th>
+            <th class="esconde-sm" style="width:136px">Categoria</th>
+            <th class="esconde-sm" style="width:96px">Origem</th>
+            <th class="v" style="width:124px">Valor</th>
+          </tr></thead>
+          <tbody>
+            <tr><td>05/09</td><td>Salário</td><td class="esconde-sm">—</td>
+              <td class="esconde-sm"><span class="selo">manual</span></td><td class="v mais">+7.400,00</td></tr>
+            <tr><td>14/09</td><td>Carrefour São Paulo</td><td class="esconde-sm">Mercado</td>
+              <td class="esconde-sm"><span class="selo">extrato</span></td><td class="v menos">−412,88</td></tr>
+            <tr><td>13/09</td><td>Senac Curso<span class="sub">parcela 4 de 6</span></td><td class="esconde-sm">Educação</td>
+              <td class="esconde-sm"><span class="selo">fatura</span></td><td class="v menos">−267,30</td></tr>
+            <tr class="conferir"><td>12/09</td><td>Drogasil 1422 SP<span class="marca-d">sem categoria</span></td>
+              <td class="esconde-sm">—</td><td class="esconde-sm"><span class="selo">extrato</span></td>
+              <td class="v menos">−89,90</td></tr>
+            <tr><td>11/09</td><td>Uber *Trip</td><td class="esconde-sm">Transporte</td>
+              <td class="esconde-sm"><span class="selo">extrato</span></td><td class="v menos">−28,70</td></tr>
+            <tr><td>10/09</td><td>Aporte Tesouro Selic</td><td class="esconde-sm">Investimento</td>
+              <td class="esconde-sm"><span class="selo">manual</span></td><td class="v">−900,00</td></tr>
+          </tbody>
+        </table>
+        <div class="rodape">
+          <span>6 de 91 lançamentos</span>
+          <span>entrou <b class="mais">+7.400,00</b></span>
+          <span>saiu <strong class="menos">−5.557,40</strong></span>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+<div class="ctrl">
+  <b>Marca</b>
+  <button data-m="ameixa" class="on">Ameixa</button>
+  <button data-m="roxo">Roxo</button>
+  <button data-m="grafite">Grafite</button>
+</div>
+<script>
+document.querySelectorAll('.ctrl [data-m]').forEach(function (b) {
+  b.addEventListener('click', function () {
+    document.documentElement.setAttribute('data-marca', b.dataset.m);
+    document.querySelectorAll('.ctrl [data-m]').forEach(function (o) { o.classList.remove('on'); });
+    b.classList.add('on');
+  });
+});
+</script>
+</body>
+</html>

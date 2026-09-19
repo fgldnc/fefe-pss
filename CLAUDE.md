@@ -198,44 +198,70 @@ Cada item abaixo é uma regra de negócio real codificada como literal, sem cons
 - `js/db.js:154` — gasto de extrato: `date.slice(0,7) === month`.
 - `js/db.js:197-200` — receita: `month`, senão `competenceMonth`, senão `date.slice(0,7)`.
 
-## Regras de interface que valem em toda tela (redesign aplicado)
+## Regras de interface que valem em toda tela (redesign v2 — rodada 1 aplicada)
 
-O redesign de `/redesign` foi aplicado ao app em sete rodadas (A1–A7), todas
-registradas em `ROTEIRO-REDESIGN.md`. O que passou a ser contrato:
+O redesign v1 (`/redesign`, paleta A "Galo", 7 rodadas A1–A7) foi **substituído**
+pelo redesign v2. A fonte da verdade visual é
+`redesign-v2/direcoes/hibrido.html` — arquivo único, abre do disco. **Abrir
+antes de escrever qualquer linha de CSS.** O plano das 8 rodadas está em
+`PROMPT-implementar-v2.md`; a arquitetura de 5 destinos, em `ARQUITETURA-v2.md`.
 
-- **Paleta A "Galo": o chrome não tem cor.** A ação primária é o próprio
-  contraste — preto no tema claro, branco no escuro. Cor na tela significa
-  sempre alguma coisa: receita, gasto, inferido, ou série categórica de gráfico.
-  **Nada de azul em nenhum papel.** Os nomes de token antigos (`--accent-primary`,
-  `--accent-bright`, `--border-strong`…) foram mantidos e reapontados para
-  neutros; `--accent-fg` é o texto que vai em cima do acento. `--gold` **não
-  existe mais** — era idêntico a `--warning`.
-- **Dois temas, mesmos nomes de token.** `[data-theme="light"]` em
-  `css/style.css`; escuro é o padrão. O botão está na topbar (`#btn-tema`) e a
-  escolha vai para `localStorage.fluxo_tema`. O tema é aplicado no topo de
-  `app.js`, antes do `DOMContentLoaded`, para não piscar.
+Aplicado até aqui: **rodada 1 (fundação)** — `css/style.css` e
+`css/components.css`. O `js/` não foi tocado, e o markup de `index.html` segue
+sendo o das 11 abas antigas, agora vestidas com a pele nova.
+
+- **Material de papel, um tema só.** Fundo cinza-claro (`--fundo`), folha branca
+  (`--folha`) com raio 16 e sombra quase invisível. **O tema escuro acabou** — a
+  direção escolhida tem um tema só, o seletor `[data-theme="light"]` sumiu do
+  CSS e o botão `#btn-tema` saiu da topbar. `aplicarTema` ainda existe em
+  `js/app.js` escrevendo um atributo que ninguém lê; sai na rodada 2.
+- **A marca tem endereço.** Ameixa (`--marca` `#7A2E52`) pinta navegação, botão,
+  foco e a curva do saldo — e **NUNCA um valor em R$**. Todo número de dinheiro
+  é `--ink`, `--entrou` ou `--saiu`. Foi por isso que `.val-accent` deixou de ser
+  cor de acento e virou `--ink`. Trocar de marca é um atributo no `<html>`
+  (`data-marca="roxo|grafite"`); não há botão na interface.
+- **Nada de azul em papel nenhum** — nem chrome, nem série de gráfico. A série
+  categórica `--s1…--s6` foi redesenhada sem ele. Se faltar uma sétima cor, use
+  marrom ou oliva.
+- **Os nomes de token antigos viraram apelidos.** `--bg-card`, `--text-muted`,
+  `--danger`, `--c1…--c6`, `--font-mono`, `--radius-*` continuam existindo no
+  `:root` apontando para os nomes novos (`--folha`, `--ink-3`, `--saiu`,
+  `--s1…`, `--fonte`, `--raio*`). É o que permitiu trocar a pele sem tocar nas
+  ~30 referências a token dentro de `js/`. **Código novo usa os nomes novos.**
+- **Outfit em tudo, inclusive número.** `--fonte`. Nunito e DM Mono saíram;
+  `--font-code` virou a monoespaçada do sistema, sem webfont. A coluna de
+  valores alinha por `font-variant-numeric: lining-nums tabular-nums`, aplicado
+  globalmente e conferido no navegador (`1.111,11` e `9.999,99` medem o mesmo).
+- **A PÁGINA ROLA.** A regra v1 ("cada tela cabe numa dobra só") está
+  **revogada**: para caber, ela espremia a linha da tabela, que é o que o app
+  existe para ler. Agora só a `.topbar` é `sticky`, e o `<thead>` de
+  `.data-table` fica preso enquanto o corpo desce. As classes `.fit` e `.grow`
+  continuam no HTML e **não fazem mais nada** — somem com o markup de cada aba.
+- **Contraste se roda, não se supõe:** `node redesign-v2/direcoes/contraste-hibrido.mjs`
+  (texto 4,5:1 · gráfico, borda e glifo 3:1). Borda de campo de formulário usa
+  `--borda-forte`, não `--borda`: `--borda` é 1,3:1 no branco e reprova em
+  WCAG 1.4.11.
 - **Chart.js pinta em canvas e não resolve `var(--…)`.** As cores vêm de
-  `getComputedStyle` no momento de montar o gráfico — `coresGrafico()` em
-  `js/saldos.js`, `token()` em `js/dashboard.js` — e **o gráfico é refeito
-  quando o tema muda** (o botão re-renderiza a aba). HEX fixo aqui é regressão:
-  a curva do tema errado some no fundo.
-- **Nunito, e número não usa monoespaçada.** A coluna de valores alinha por
-  `font-variant-numeric: tabular-nums lining-nums`, aplicado globalmente.
-  `--font-mono` continua existindo como nome mas aponta para Nunito;
-  `--font-code` (DM Mono) é o monoespaçado de verdade, só para código.
-- **A página não rola; quem rola é a região.** `.app` trava em `100vh`,
-  `body` é `overflow: hidden`, e cada aba é `.tab-content.fit` (coluna) com um
-  bloco marcado `.card.grow` levando a sobra da altura e rolando por dentro, com
-  `<thead>` preso. **Abaixo de 768px a regra se desliga inteira** — no celular a
-  página rola, porque não há dobra que caiba tudo.
-- **Toda tela abre com uma frase** (`.page-intro`) dizendo o que ela responde e
-  o que fazer, com a ação em `<b>`; todo bloco principal tem uma linha de apoio
-  (`.card-sub`). Os textos vêm dos mockups `redesign/03-*.html` — **copiar, não
-  reescrever**; só o nome de botão citado foi ajustado para bater com o botão
-  real do app.
-- **Navegação em quatro grupos por horizonte de tempo**: Este mês · O que vem ·
-  Longo prazo · Registro. Os `data-tab` continuam sendo os ids internos de
-  sempre: `dashboard` só mudou de **rótulo** para "Visão do mês".
+  `getComputedStyle` na hora de montar o gráfico — `coresGrafico()` em
+  `js/saldos.js`, `token()` em `js/dashboard.js`, `_token()` em
+  `js/patrimonio.js`. HEX literal no código é regressão conhecida.
+- **Segundo canal em tudo** (WCAG 1.4.1): sinal `+` / `−` (U+2212) na coluna de
+  valor, parênteses no KPI negativo, `◇` + texto + barra na borda esquerda da
+  linha pendente (`.marca-d`, `tr.conferir`), tracejado na projeção, nome escrito
+  na série do gráfico. **A rosca nunca vem sozinha**: ao lado dela vai a lista
+  ordenada com nome, percentual e valor (`.dist` / `.cat`).
+- **Silêncio quando está tudo certo.** Contador zerado não aparece como "0" —
+  some, como `atualizarBadgeExtratos` (`js/app.js:118`) já faz.
+- **Vocabulário v2 disponível em `css/style.css`** (fim do arquivo): `.folha`,
+  `.rot`, `.rot-sub`, `.linha-topo`, `.ir`, `.nota`, `.faixa`, `.heroi`,
+  `.dica`, `.apoio`, `.mais`/`.menos`/`.alerta`, `.pilula`, `.dist`, `.cat`,
+  `.chip`, `.selo`, `.rodape`, `.marca-d`, `tr.conferir`, `.esconde-sm`. Copiado
+  do `hibrido.html`, **não reinventado** — reusar, não criar símbolo novo. Os
+  seletores de elemento (`table`, `th`, `td`) estão escopados em `.folha` para
+  não pegarem as `.data-table` das abas antigas.
+- **Navegação em quatro grupos por horizonte de tempo** vira **5 destinos**
+  (Importar · Conferir · Mês · Adiante · Guardado + ⚙ Ajustes) na rodada 2.
+  Enquanto isso, a sidebar antiga de 11 abas continua no ar.
 - **Atalho entre abas é `data-goto`**, delegado uma única vez em `document` por
   `app.js` (`_goto`), com `data-filtro-cat` e `data-filtro-proj` para chegar já
   filtrado. Nunca ligar listener no elemento: os cards são reinjetados por
@@ -266,10 +292,24 @@ registradas em `ROTEIRO-REDESIGN.md`. O que passou a ser contrato:
 
 ## Redesign em andamento
 
-`ROTEIRO-REDESIGN.md` é o estado do redesign entre sessões: diagnóstico por aba,
-decisões já fechadas, as 7 rodadas e suas dependências, e o prompt de retomada.
-**Ler antes de propor qualquer mudança de interface.** A rodada corrente e seu
-prompt ficam em `PROMPT-rodada-N.md`.
+O redesign **v2** está em curso. Ler, nesta ordem, antes de propor qualquer
+mudança de interface:
+
+| arquivo | o que fixa |
+|---|---|
+| `redesign-v2/direcoes/hibrido.html` | **a fonte da verdade visual.** Abrir primeiro; copiar dele é o certo. |
+| `PROMPT-implementar-v2.md` | as 8 rodadas, a ordem e os critérios de aceitação. |
+| `ARQUITETURA-v2.md` | as 3 arquiteturas e a escolhida (B, "o ciclo do mês"): 5 destinos + Ajustes. |
+| `INVENTARIO-FUNCOES.md` | as 64 capacidades com arquivo:linha, e o que pode sumir. |
+| `PESQUISA-UX.md` | a evidência. O que está `[NÃO CONFIRMADO]` lá segue não confirmado. |
+
+Rodadas: **1 fundação (feita)** · 2 navegação · 3 Mês · 4 Adiante ·
+5 Guardado · 6 Importar · 7 Conferir · 8 Ajustes. Uma por vez, cada uma
+terminando com o app funcionando.
+
+`ROTEIRO-REDESIGN.md` e os `PROMPT-rodada-N.md` são o registro do redesign **v1**
+(rodadas A1–A8), já substituído. Valem como histórico do *porquê* de cada
+decisão antiga, não como plano.
 
 ## Contexto pendente
 

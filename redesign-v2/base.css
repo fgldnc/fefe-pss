@@ -1,0 +1,242 @@
+/* ═══════════════════════════════════════════════════════════════
+   RADAR — Design System v2 · "Papel e tinta"
+   Especificação em DESIGN-SYSTEM-v2.md. Este arquivo é dos MOCKUPS:
+   é a prova de que os tokens funcionam, não o CSS final do app.
+   Escuro é o padrão; [data-theme="light"] espelha os mesmos nomes.
+═══════════════════════════════════════════════════════════════ */
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400..700&family=Inter:wght@400;500;600;700&display=swap');
+
+:root {
+  --bg-app:#0E1014; --bg-surface:#161A21; --bg-raised:#1E232C; --bg-hover:#272D38;
+  --text-1:#EEF0F4; --text-2:#A8B0BE; --text-3:#828B99;
+  --line-soft:#242A34; --line:#333A47; --line-strong:#666F80;
+  --brand:#8E9BFF; --brand-fg:#0E1014; --brand-dim:#1C2140;
+  --income:#5BD98C; --expense:#FF8A82; --inferred:#F0B849;
+  --c1:#8E9BFF; --c2:#5BD98C; --c3:#F0B849; --c4:#FF8A82; --c5:#5FD0D6; --c6:#D08CE8;
+
+  --font-display:'Fraunces',Georgia,'Times New Roman',serif;
+  --font-ui:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;
+
+  --r-sm:8px; --r-md:14px; --r-lg:20px;
+  --shadow:0 1px 2px rgba(0,0,0,.25), 0 8px 24px rgba(0,0,0,.35);
+  --nav-w:216px; --head-h:56px;
+}
+[data-theme="light"] {
+  --bg-app:#F6F5F2; --bg-surface:#FFFFFF; --bg-raised:#EFEEEA; --bg-hover:#E6E5E0;
+  --text-1:#15171C; --text-2:#555C69; --text-3:#636A76;
+  --line-soft:#E4E2DC; --line:#D4D2CC; --line-strong:#8C887E;
+  --brand:#4A4FD4; --brand-fg:#FFFFFF; --brand-dim:#E7E8FB;
+  --income:#0B7A45; --expense:#C0362B; --inferred:#8A5A00;
+  --c1:#4A4FD4; --c2:#0B7A45; --c3:#8A5A00; --c4:#C0362B; --c5:#0E6E77; --c6:#8A3FA8;
+  --shadow:0 1px 2px rgba(0,0,0,.06), 0 8px 24px rgba(0,0,0,.08);
+}
+
+*,*::before,*::after{box-sizing:border-box}
+html{color-scheme:dark}
+[data-theme="light"] html{color-scheme:light}
+body{
+  margin:0; background:var(--bg-app); color:var(--text-1);
+  font-family:var(--font-ui); font-size:14px; line-height:1.5;
+  font-variant-numeric:lining-nums tabular-nums;
+  -webkit-font-smoothing:antialiased;
+}
+a{color:var(--brand)}
+:focus-visible{outline:2px solid var(--brand); outline-offset:2px; border-radius:4px}
+
+/* ─── ESQUELETO ─────────────────────────────────────────────── */
+.shell{display:grid; grid-template-columns:var(--nav-w) 1fr; min-height:100vh}
+
+.nav{
+  border-right:1px solid var(--line-soft); background:var(--bg-surface);
+  padding:20px 12px; position:sticky; top:0; height:100vh; display:flex; flex-direction:column; gap:4px;
+}
+.brand{display:flex; align-items:center; gap:9px; padding:0 8px 22px; }
+.brand-mark{
+  width:26px;height:26px;border-radius:8px;background:var(--brand);color:var(--brand-fg);
+  display:grid;place-items:center;font-weight:700;font-size:13px;flex:none;
+}
+.brand-name{font-family:var(--font-display); font-size:20px; font-weight:600; letter-spacing:.01em}
+
+.nav-item{
+  display:flex; align-items:center; gap:10px; padding:9px 10px; border-radius:var(--r-sm);
+  color:var(--text-2); text-decoration:none; font-weight:500; font-size:13.5px;
+}
+.nav-item:hover{background:var(--bg-hover); color:var(--text-1)}
+.nav-item[aria-current="page"]{background:var(--brand-dim); color:var(--brand); font-weight:600}
+.nav-num{width:19px;height:19px;flex:none;color:var(--text-3);font-size:11px;font-weight:700;
+  display:grid;place-items:center;border:1px solid var(--line);border-radius:6px}
+.nav-item[aria-current="page"] .nav-num{border-color:var(--brand); color:var(--brand)}
+.nav-badge{
+  margin-left:auto; font-size:11px; font-weight:700; letter-spacing:.04em;
+  background:color-mix(in srgb, var(--inferred) 16%, transparent); color:var(--inferred);
+  border-radius:999px; padding:1px 7px;
+}
+.nav-foot{margin-top:auto; display:flex; gap:8px; align-items:center; padding:10px 8px 0; border-top:1px solid var(--line-soft)}
+.nav-avatar{width:26px;height:26px;border-radius:50%;background:var(--bg-raised);
+  display:grid;place-items:center;font-size:12px;font-weight:600;color:var(--text-2)}
+
+.main{min-width:0}
+.head{
+  position:sticky; top:0; z-index:20; height:var(--head-h);
+  background:color-mix(in srgb, var(--bg-app) 88%, transparent); backdrop-filter:blur(8px);
+  border-bottom:1px solid var(--line-soft);
+  display:flex; align-items:center; gap:16px; padding:0 28px;
+}
+.head h1{font-family:var(--font-display); font-size:26px; font-weight:600; margin:0; line-height:1.15}
+.month{display:flex; align-items:center; gap:2px; margin-left:auto}
+.month b{font-weight:600; font-size:13.5px; padding:0 10px; min-width:96px; text-align:center}
+.page{padding:24px 28px 72px; max-width:1180px}
+.intro{color:var(--text-2); margin:0 0 20px; max-width:64ch}
+.intro b{color:var(--text-1); font-weight:600}
+
+/* ─── BOTÕES E CAMPOS ───────────────────────────────────────── */
+.btn{
+  font:600 13px/1 var(--font-ui); height:36px; padding:0 14px; border-radius:var(--r-sm);
+  border:1px solid transparent; background:var(--brand); color:var(--brand-fg);
+  display:inline-flex; align-items:center; gap:7px; cursor:pointer; white-space:nowrap;
+}
+.btn:hover{filter:brightness(1.08)}
+.btn-ghost{background:transparent; border-color:var(--line-strong); color:var(--text-1)}
+.btn-ghost:hover{background:var(--bg-hover); filter:none}
+.btn-risk{background:transparent; border-color:var(--expense); color:var(--expense)}
+.btn-sm{height:30px; padding:0 11px; font-size:12.5px}
+.btn-icon{height:28px;width:28px;padding:0;justify-content:center;background:transparent;
+  border-color:transparent;color:var(--text-3);font-size:13px}
+.btn-icon:hover{background:var(--bg-hover); color:var(--text-1); filter:none}
+
+.field{
+  height:36px; padding:0 10px; border-radius:var(--r-sm); background:var(--bg-surface);
+  border:1px solid var(--line-strong); color:var(--text-1); font:400 13.5px var(--font-ui);
+  font-variant-numeric:lining-nums tabular-nums;
+}
+.field:focus{border-color:var(--brand)}
+.field-inferido{border-color:var(--inferred)}
+.field-editado{border-color:var(--brand)}
+label.lab{display:block; font-size:12px; font-weight:500; color:var(--text-3); margin-bottom:5px}
+
+/* ─── CARDS ─────────────────────────────────────────────────── */
+.card{
+  background:var(--bg-surface); border:1px solid var(--line-soft);
+  border-radius:var(--r-md); padding:20px; box-shadow:var(--shadow);
+}
+.card > h2{font-size:17px; font-weight:600; margin:0 0 3px}
+.card-sub{color:var(--text-3); font-size:12px; margin:0 0 16px}
+.row{display:grid; gap:16px}
+.row-2{grid-template-columns:1fr 1fr}
+.row-3{grid-template-columns:repeat(3,1fr)}
+
+/* ─── KPIs ──────────────────────────────────────────────────── */
+.kpis{display:grid; gap:16px; grid-template-columns:1.4fr 1fr 1fr; margin-bottom:20px}
+.kpi{background:var(--bg-surface); border:1px solid var(--line-soft); border-radius:var(--r-md); padding:18px 20px}
+.kpi-hero{background:var(--bg-raised); border-color:var(--line)}
+.kpi-lab{font-size:12px; font-weight:500; color:var(--text-3); margin-bottom:6px}
+.kpi-val{font-size:24px; font-weight:600; letter-spacing:-.01em; line-height:1.1}
+.kpi-hero .kpi-val{font-family:var(--font-display); font-size:40px; font-weight:600; line-height:1.05}
+.kpi-sub{font-size:12px; color:var(--text-3); margin-top:7px}
+.kpi-sub b{color:var(--text-2); font-weight:600}
+.pos{color:var(--income)} .neg{color:var(--expense)} .brandc{color:var(--brand)}
+
+/* ─── TABELA ────────────────────────────────────────────────── */
+.tbl{width:100%; border-collapse:collapse}
+.tbl th{
+  position:sticky; top:var(--head-h); z-index:5; background:var(--bg-surface);
+  height:36px; text-align:left; font-size:12px; font-weight:500; color:var(--text-3);
+  border-bottom:1px solid var(--line); padding:0 12px; white-space:nowrap;
+}
+.tbl td{height:44px; padding:0 12px; border-bottom:1px solid var(--line-soft); vertical-align:middle}
+.tbl tbody tr:hover{background:var(--bg-hover)}
+.num{text-align:right; font-weight:600; white-space:nowrap}
+th.num{font-weight:500}
+.col-act{width:88px; text-align:right}
+.tbl tbody tr .acts{opacity:0; display:inline-flex; gap:2px}
+.tbl tbody tr:hover .acts, .tbl tbody tr:focus-within .acts{opacity:1}
+.tfoot{
+  position:sticky; bottom:0; background:var(--bg-surface); border-top:1px solid var(--line);
+  display:flex; justify-content:flex-end; gap:12px; align-items:center;
+  padding:12px 12px 0; margin-top:-1px; font-size:13px; color:var(--text-3);
+}
+.tfoot strong{font-size:16px; color:var(--text-1)}
+.desc-sub{display:block; font-size:11.5px; color:var(--text-3)}
+
+/* Linha pendente: fundo + barra na borda + ◇ no texto. Três canais. */
+tr.pendente td{background:color-mix(in srgb, var(--inferred) 8%, transparent)}
+tr.pendente td:first-child{box-shadow:inset 3px 0 0 var(--inferred)}
+
+/* ─── TAGS E MARCAS ─────────────────────────────────────────── */
+.tag{
+  display:inline-block; font-size:11px; font-weight:600; letter-spacing:.04em;
+  padding:2px 7px; border-radius:6px; background:var(--bg-raised); color:var(--text-2);
+}
+.tag-proj{background:transparent; border:1px dashed var(--inferred); color:var(--inferred)}
+.mark{color:var(--inferred); font-size:11.5px; font-weight:600; white-space:nowrap}
+.mark::before{content:'◇'; margin-right:4px}
+.chip{
+  display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:500;
+  padding:5px 11px; border-radius:999px; background:var(--bg-raised); color:var(--text-2);
+  border:1px solid var(--line-soft);
+}
+.chip-warn{background:color-mix(in srgb, var(--inferred) 12%, transparent); color:var(--inferred); border-color:transparent}
+.chip-ok{background:color-mix(in srgb, var(--income) 12%, transparent); color:var(--income); border-color:transparent}
+
+/* ─── DROP ZONE ─────────────────────────────────────────────── */
+.drop{
+  border:2px dashed var(--line-strong); border-radius:var(--r-lg); padding:44px 24px;
+  text-align:center; background:var(--bg-surface);
+}
+.drop.on{border-color:var(--brand); background:var(--brand-dim)}
+.drop-t{font-family:var(--font-display); font-size:28px; font-weight:600; margin:0 0 6px}
+.drop-x{color:var(--text-3); margin:0 0 18px}
+
+/* ─── BARRAS (breakdown, orçamento) ─────────────────────────── */
+.bars{display:flex; flex-direction:column; gap:7px}
+.bar-row{display:grid; grid-template-columns:1fr auto; gap:10px; align-items:center}
+.bar-track{position:relative; height:28px; border-radius:6px; background:var(--bg-raised); overflow:hidden}
+.bar-fill{position:absolute; inset:0 auto 0 0; border-radius:6px}
+.bar-lab{position:relative; z-index:1; display:flex; align-items:center; height:28px; padding:0 9px;
+  font-size:12.5px; font-weight:500; color:var(--text-1)}
+.bar-val{font-size:13px; font-weight:600; min-width:92px; text-align:right}
+
+.empty{text-align:center; padding:40px 20px; color:var(--text-3)}
+.empty-t{font-family:var(--font-display); font-size:22px; color:var(--text-1); margin:0 0 6px}
+
+.note{
+  border-left:3px solid var(--line); padding:2px 0 2px 12px; color:var(--text-3);
+  font-size:12.5px; margin:16px 0 0;
+}
+.mockbar{
+  position:fixed; right:14px; bottom:14px; z-index:99; display:flex; gap:8px;
+  background:var(--bg-raised); border:1px solid var(--line); border-radius:999px; padding:6px;
+  box-shadow:var(--shadow);
+}
+
+/* ─── CELULAR ───────────────────────────────────────────────── */
+@media (max-width:768px){
+  .shell{grid-template-columns:1fr}
+  .nav{
+    position:fixed; inset:auto 0 0 0; height:auto; width:100%; flex-direction:row;
+    border-right:0; border-top:1px solid var(--line); padding:6px 4px 10px; gap:0; z-index:40;
+  }
+  .brand,.nav-foot{display:none}
+  .nav-item{flex:1; flex-direction:column; gap:3px; font-size:10.5px; padding:7px 2px; text-align:center}
+  .nav-item[aria-current="page"]{background:transparent}
+  .nav-badge{position:absolute; top:2px; margin:0; transform:translateX(14px)}
+  .head{padding:0 16px; gap:10px}
+  .head h1{font-size:20px}
+  .month b{min-width:66px; font-size:12.5px; padding:0 4px}
+  .page{padding:18px 16px 96px}
+  .kpis,.row-2,.row-3{grid-template-columns:1fr}
+  .kpi-hero{grid-column:1/-1}
+  .hide-sm{display:none}
+  .tbl th{top:var(--head-h)}
+}
+
+/* Rosca + barra ordenada: lado a lado no desktop, empilhado no celular.
+   A barra é a leitura que sobrevive ao corte — ela tem o nome escrito. */
+.pizza{display:grid; grid-template-columns:150px 1fr; gap:20px; align-items:center}
+.bar-lab{white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+@media (max-width:768px){
+  .pizza{grid-template-columns:1fr; justify-items:center}
+  .pizza > svg{width:132px; height:132px}
+  .bars{width:100%}
+  .bar-val{min-width:78px}
+}

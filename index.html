@@ -166,11 +166,11 @@
       </div>
 
       <div class="topbar-actions">
-        <!-- Troca de tema: a paleta A existe nos dois, e a escolha fica no
-             localStorage (`fluxo_tema`), junto das outras preferências. -->
-        <button class="btn-icon" id="btn-tema" title="Alternar tema claro/escuro" aria-label="Alternar tema claro/escuro">
-          <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2m-3.05-7.95-1.41 1.41M6.46 17.54l-1.41 1.41m14.9 0-1.41-1.41M6.46 6.46 5.05 5.05"/></svg>
-        </button>
+        <!-- O botão de tema saiu na rodada 1 da v2: a direção escolhida
+             (hibrido.html) tem um tema só — papel claro — e o botão ficaria
+             ligado num `data-theme` que nenhuma regra de CSS lê mais. O
+             listener em js/app.js usa `?.` e sobrevive sem o botão; some
+             junto com o resto do roteamento na rodada 2. -->
         <span class="user-name" id="user-name">—</span>
         <div class="user-avatar" id="user-avatar">?</div>
       </div>
