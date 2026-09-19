@@ -5,10 +5,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Radar Financeiro</title>
 
+  <!-- Chart.js e PDF.js vêm de CDN com SRI: a CSP autoriza o HOST, mas não
+       verifica o CONTEÚDO. Os dois rodam no mesmo documento em que
+       js/firebase-init.js publica window._FB — a instância AUTENTICADA do
+       Firestore. Arquivo alterado no CDN teria acesso total a users/{uid}.
+       TROCAR A VERSÃO EXIGE REGERAR O HASH (ver CLAUDE.md, restrição 4). -->
   <!-- Chart.js -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" integrity="sha384-e6nUZLBkQ86NJ6TVVKAeSaK8jWa3NhkYWZFomE39AvDbQWeie9PlQqM3pmYW5d1g" crossorigin="anonymous"></script>
   <!-- PDF.js -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" integrity="sha384-/1qUCSGwTur9vjf/z9lmu/eCUYbpOTgSjmpbMQZ1/CtX2v/WcAIKqRv+U1DUCG6e" crossorigin="anonymous"></script>
 
   <!-- Firebase -->
   <script type="module" src="js/firebase-init.js"></script>

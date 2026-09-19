@@ -1,0 +1,36 @@
+# O que NÃO sobe para a Vercel.
+#
+# O deploy é estático e publica o repositório inteiro: sem este arquivo, cada
+# .md de documentação fica baixável no domínio do app. O caso que obrigou a
+# criá-lo é o relatório de auditoria em docs/security-audit/ — ele nomeia cada
+# fraqueza com arquivo e linha, e estava indo para o ar junto com o app.
+#
+# É uma LISTA DE EXCLUSÃO, não de inclusão, de propósito: uma lista de inclusão
+# (`*` mais exceções) excluiria `vercel.json` por esquecimento, e com ele iriam
+# embora a CSP e todos os cabeçalhos de segurança — sem erro nenhum, só um
+# deploy mais frouxo que ninguém notaria.
+#
+# O que continua subindo: index.html, js/, css/ e vercel.json.
+
+# Documentação e prompts — nada disso é servido ao usuário
+*.md
+docs/
+
+# Ferramenta de diagnóstico de PDF. Fica no repositório para quando um parser
+# de banco novo precisar de calibração; não há razão para estar no ar.
+ferramentas/
+
+# Testes e a fonte da verdade visual: material de desenvolvimento
+test/
+redesign-v2/
+
+# Configuração de outros serviços. O Firestore é publicado pelo GitHub Actions,
+# não pela Vercel — estes arquivos não têm o que fazer no deploy estático.
+firestore.rules
+firebase.json
+
+# Configuração local do editor
+.claude/
+
+# Arquivos de configuração do git não precisam ir para o ar
+.gitignore

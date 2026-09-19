@@ -30,6 +30,7 @@ import {
   state, fmt, esc, monthLabel, offsetMonth, toast,
   getInvestCatIds, renderInsights, resolveCategoryId, SEM_CATEGORIA_FILTRO,
   abas, painelAba, ligarAbas, focarAba, pegarAbaPedida,
+  csvCelula, csvNumero,
 } from './utils.js';
 import { allExpensesOfMonth, incomesOfMonth, deleteTx, deleteIncome } from './db.js';
 import { buildMovimentos, buildSerie, acharMinimo, contextoDoMinimo } from './saldos.js';
@@ -592,15 +593,17 @@ function _renderLinhas(d) {
 function _exportarCSV(d) {
   const linhas = _aplicarFiltros(_linhas(d));
   const cabec = ['data', 'descricao', 'categoria', 'origem', 'tipo', 'valor'];
-  const celula = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
+  // `csvCelula` / `csvNumero` vêm de utils.js: a regra é a mesma para todo CSV
+  // que o app venha a exportar, e assim o teste a alcança sem carregar a tela.
   const corpo = linhas.map(l => {
     const cat = l.categoryId ? state.categories.find(c => c.id === l.categoryId) : null;
     return [
       l.data || '', l.desc || '', cat?.name || '', l.origem,
       l.entrada ? 'receita' : l.investimento ? 'investimento' : 'despesa',
+    ].map(csvCelula).concat(
       // Ponto decimal e sinal: planilha lê número, não texto formatado.
-      (l.entrada ? 1 : -1) * (l.valor || 0),
-    ].map(celula).join(';');
+      csvNumero((l.entrada ? 1 : -1) * (l.valor || 0)),
+    ).join(';');
   });
 
   const csv = '﻿' + [cabec.join(';'), ...corpo].join('\r\n');

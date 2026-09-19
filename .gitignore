@@ -29,3 +29,15 @@ npm-debug.log*
 
 # Node (caso instale alguma dependência futura)
 node_modules/
+
+# Scripts de arrumação pontual: rodam uma vez contra a base e não fazem parte
+# do app. Quatro deles chegaram a ser versionados por engano (tmp-arrumar-base,
+# tmp-limpar-fatura, tmp-metas, tmp-regras) e saíram na limpeza de 19/09/2026 —
+# continuam no histórico do git, que é onde esse tipo de coisa deve morar.
+/tmp-*.js
+/scripts/
+
+# Sobras do gerador do relatório de auditoria (o PDF em si é versionado)
+docs/security-audit/.fatias/
+docs/security-audit/.chrome-perfil*/
+docs/security-audit/relatorio.html

@@ -17,6 +17,9 @@ App de **controle financeiro pessoal** (nome exibido: "Radar", `index.html:6` = 
 2. **Nenhum bundler / build step.** Os módulos são importados por caminho relativo fixo (`./gastos.js`). Qualquer coisa que exija transpilação ou passo de build está fora.
 3. **Nenhuma dependência nova sem justificar** por que não dá para resolver com o que já existe. O padrão é resolver com o código atual.
 4. **PDF.js e Chart.js vêm de CDN** via `<script>` global em `index.html:9-11` (Chart.js 4.4.0 em `cdn.jsdelivr.net`, PDF.js 3.11.174 em `cdnjs.cloudflare.com`), usados como globais `Chart` e `pdfjsLib`. Esses hosts **já estão refletidos no `script-src` da CSP** em `vercel.json:24` — trocar de CDN ou de biblioteca exige editar a CSP junto.
+   - **As três tags têm SRI** (`integrity="sha384-…"` + `crossorigin="anonymous"`): duas em `index.html` e uma em `ferramentas/dump-fatura.html`, que é servida publicamente e carrega o mesmo PDF.js. **TROCAR A VERSÃO EXIGE REGERAR O HASH nas três** — sem isso o navegador bloqueia o script e o app abre sem gráfico nenhum. O comando está no comentário acima das tags; em resumo, `curl -s <url> | openssl dgst -sha384 -binary | openssl base64 -A`.
+   - Autorizar o host **não verifica o conteúdo**, e é por isso que o SRI existe além da CSP: os dois scripts rodam no mesmo documento em que `js/firebase-init.js` publica `window._FB`, a instância **autenticada** do Firestore.
+   - **O worker do PDF.js NÃO é coberto por SRI** e não tem como ser: quem o carrega é a própria biblioteca, por URL (`js/pdf-import.js`, `GlobalWorkerOptions.workerSrc`), e não existe `integrity` para worker. Está escrito lá, com o hash de hoje registrado no comentário.
 5. `js/utils.js` **não pode importar** nenhum outro módulo do projeto (dependência circular — ver comentário em `js/utils.js:1-4`).
 6. `js/app.js` **não importa** os módulos de aba estaticamente — só por `import()` dinâmico (mesmo motivo).
 
@@ -1014,8 +1017,9 @@ Mês — foi revogado.
 
 ## Redesign em andamento
 
-O redesign **v2** está em curso. Ler, nesta ordem, antes de propor qualquer
-mudança de interface:
+O redesign **v2 acabou** (oito rodadas mais a rodada 9). O que sobrou aqui não
+é plano, é a base de decisão: ler, nesta ordem, antes de propor qualquer
+mudança de interface.
 
 | arquivo | o que fixa |
 |---|---|
@@ -1033,9 +1037,9 @@ que mudou e o que ficou pendente, está em `FECHO-REDESIGN-v2.md`.
 
 **Rodada 9 (depois do fecho)** — quatro frentes pedidas pela usuária:
 **A densidade · B abas dentro da tela · C a tela se ajustar à resolução ·
-D o modo escuro de volta. AS QUATRO ESTÃO FEITAS.** O plano original está em
-`PROMPT-rodada-9-densidade-abas-escuro.md` e o registro do que cada frente
-mudou, no fim de `FECHO-REDESIGN-v2.md`.
+D o modo escuro de volta. AS QUATRO ESTÃO FEITAS.** O registro do que cada
+frente mudou está no fim de `FECHO-REDESIGN-v2.md`; o plano original saiu do
+disco na limpeza (ver adiante) e vive no histórico do git.
 
 ### Decisões da usuária que mudam o plano original
 
@@ -1056,9 +1060,43 @@ mudou, no fim de `FECHO-REDESIGN-v2.md`.
   Conferir; no celular **Ajustes já saiu da barra de baixo e subiu para a
   topbar** (`.nav-topo`, escondido acima de 900px).
 
-`ROTEIRO-REDESIGN.md` e os `PROMPT-rodada-N.md` são o registro do redesign **v1**
-(rodadas A1–A8), já substituído. Valem como histórico do *porquê* de cada
-decisão antiga, não como plano.
+### O andaime do redesign saiu do disco (limpeza de 19/09/2026)
+
+Com as oito rodadas da v2 e as quatro frentes da rodada 9 fechadas, **57
+arquivos de andaime foram removidos**: a pasta `redesign/` inteira (os mockups
+da v1), 16 dos 18 arquivos de `redesign-v2/`, os três `MOCKUP-rodada-*.html`,
+os catorze `PROMPT-rodada-*` e `PROMPT-retomada-*`, `ROTEIRO-REDESIGN.md`,
+`PLANO-IMPLEMENTACAO.md`, `CHANGELOG-review.md`, `DESIGN-SYSTEM-v2.md` e os
+quatro `tmp-*.js` de arrumação pontual.
+
+**Nada disso se perdeu:** está tudo nos commits, e
+`git show <commit>:PROMPT-rodada-4.md` devolve o arquivo inteiro. O que se
+ganhou foi parar de ler 60 arquivos para achar os dez que valem — e o
+`ROTEIRO-REDESIGN.md`, com 63 KB, era o maior deles.
+
+**Onde procurar o porquê de uma decisão antiga:** `git log --diff-filter=D
+--name-only` lista o que saiu e em que commit; o `FECHO-REDESIGN-v2.md`
+resume o que cada rodada mudou. O plano da rodada 9 e os prompts de cada
+rodada só existem no histórico a partir daqui.
+
+**Sobreviveram de `redesign-v2/` só dois arquivos, e por serem ferramenta
+viva, não registro:** `direcoes/hibrido.html`, a fonte da verdade visual, e
+`direcoes/contraste-hibrido.mjs`, que se roda a cada mexida em token de cor.
+
+### O repositório não é o que vai para o ar
+
+**`.vercelignore` existe desde a limpeza.** O deploy da Vercel é estático e
+publicava o repositório inteiro — cada `.md`, cada mockup e, o caso que
+obrigou a criar o arquivo, o relatório de auditoria de `docs/security-audit/`,
+que nomeia cada fraqueza com arquivo e linha.
+
+Sobem hoje: **`index.html`, `js/`, `css/` e `vercel.json`** — e nada mais.
+
+É uma **lista de exclusão, não de inclusão**, de propósito: uma lista de
+inclusão (`*` mais exceções) deixaria `vercel.json` de fora por esquecimento, e
+com ele iriam embora a CSP e todos os cabeçalhos de segurança — sem erro
+nenhum, só um deploy mais frouxo que ninguém notaria. **Arquivo novo que
+precise ser servido tem de ser conferido contra este arquivo.**
 
 ## Contexto pendente
 
@@ -1075,3 +1113,66 @@ agir**, porque parte já foi fechada:
 - **Aberto e não verificável pelo código:** `firestore.rules` existe no
   repositório, mas se está **publicado** no console do Firebase só dá para
   confirmar fora do repositório. Tratar como aberto até confirmação.
+
+### Auditoria de segurança de 19/09/2026
+
+Relatório em `docs/security-audit/relatorio-auditoria-seguranca.pdf`, achados em
+dado em `docs/security-audit/dados-auditoria.mjs`, issues em
+`docs/security-audit/issues-github.mjs`. Seis achados, **nenhum crítico e nenhum
+XSS** — as 61 ocorrências de `innerHTML` foram varridas e a disciplina de
+`esc()` se sustentou em todas. Para regerar o PDF depois de mexer nos achados:
+`node docs/security-audit/gerar-relatorio.mjs`, e o visual se confere com
+`node docs/security-audit/rasterizar.mjs`.
+
+**Fechados na rodada de correções (19/09/2026):**
+
+- **A2 — injeção de fórmula no CSV.** `csvCelula()` e `csvNumero()` vivem em
+  `js/utils.js`, não dentro de `_exportarCSV`: a regra vale para todo CSV que o
+  app venha a exportar, e `utils.js` é o módulo que um teste em Node alcança sem
+  arrastar Chart.js nem o Firestore. **A coluna de valor é separada de
+  propósito** — o `-` da despesa casa com o regex de fórmula, e prefixá-lo com
+  apóstrofo transformaria todo gasto em texto, matando a soma da coluna. Fixado
+  por `test/csv.test.mjs`.
+- **A3 — CDN sem SRI.** Ver a restrição 4 de arquitetura, acima: é lá que a
+  regra mora, porque é lá que se tropeça nela ao trocar de versão.
+- **`img-src` (metade de A4).** Virou `'self' data: blob:`, sem host externo.
+  O relatório supunha o avatar do Google; **o app não carrega imagem externa
+  nenhuma** — nenhum `<img>`, nenhum favicon, nenhum `url()` de CSS fora das
+  fontes. Todos os ícones são SVG inline. Acrescentar imagem de fora daqui em
+  diante exige acrescentar o host à diretiva.
+- **O caminho de publicação das regras (metade de A1).** `firebase.json` e
+  `.firebaserc` na raiz, e `.github/workflows/firestore-rules.yml` testa as
+  regras contra o emulador e as publica a cada merge na `main` — **testa antes
+  de publicar**, e a suíte de `test/` roda junto. O comentário de
+  `firestore.rules` não manda mais rodar um comando que falha. O token do
+  Firebase é secret do repositório (`FIREBASE_TOKEN`), nunca arquivo.
+- **`firestore.rules` deixou de depender de leitura humana.** A suíte está em
+  `test/rules/rules.test.mjs`, sobre `@firebase/rules-unit-testing` e o emulador
+  do Firestore. **É a única dependência do projeto, e vive em `test/rules/` com
+  `package.json` próprio** — a raiz continua sem `package.json`, porque é a raiz
+  que a Vercel publica. Roda com `npm test --prefix test/rules`, e **precisa de
+  Java** (o emulador roda em JVM); sem Java na máquina, quem roda é o CI.
+
+**Continuam abertos:**
+
+- **A1, a metade que não se verifica pelo código.** Se o que está publicado no
+  console confere com o arquivo não dá para saber daqui. Fecha sozinho na
+  primeira publicação pelo workflow, que sobrescreve o que estiver lá.
+- **A4, `style-src` com `'unsafe-inline'`.** É uma rodada, não um item de lista:
+  **medidos 100 atributos `style="…"`** — 92 nos módulos, 8 no `index.html`.
+  28 são um `margin:0` repetido, que vira classe; o resto tem valor calculado no
+  render (barra de progresso, fatia da rosca, cor da categoria) e precisa de
+  variável CSS escrita depois do `innerHTML`. **Tirar `'unsafe-inline'` antes
+  disso quebra a interface em silêncio** — o navegador ignora o atributo sem
+  lançar exceção. Registrado com o número medido na issue 6.
+- **A5, conferência de console.** Domínios autorizados do Firebase Auth,
+  restrição da chave por referenciador no Google Cloud, e a decisão sobre App
+  Check (adotar ou dispensar, **com o porquê escrito**). Nada disso tem linha de
+  código: a chave em `js/firebase-init.js` é a chave Web do Firebase, **pública
+  por desenho** — "escondê-la" não é correção e não deve ser tentado.
+
+**A6 não pede ação, e isso é decisão, não esquecimento.** A recusa de apagar
+linha de extrato, a whitelist `WIPABLE_COLLECTIONS` e a validação do restore
+vivem só no cliente — mas o alvo é o dado do próprio usuário e não há travessia
+de fronteira de dono. É invariante de consistência, não de segurança. Só vira
+assunto se um dia houver conta compartilhada.

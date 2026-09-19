@@ -798,3 +798,37 @@ export function ultimoCartao() {
 export function lembrarCartao(nome) {
   try { localStorage.setItem(CARTAO_KEY, normCartao(nome)); } catch { /* modo privado */ }
 }
+
+// ═══════════════════════════════════════════════════════════════════════
+// CSV — ESCAPE DE CÉLULA
+// Moram aqui pela mesma razão dos helpers da revisão de importação logo
+// acima: é o módulo comum que não fecha ciclo de import, e assim o teste em
+// `test/csv.test.mjs` alcança a regra sem arrastar Chart.js nem o Firestore.
+// ═══════════════════════════════════════════════════════════════════════
+
+/** Excel, Calc e Sheets interpretam como FÓRMULA toda célula que comece por
+ *  um destes. As aspas do CSV não protegem disso — é o primeiro caractere que
+ *  a planilha olha, dentro das aspas ou fora delas. */
+const CSV_FORMULA = /^[=+\-@\t\r]/;
+
+const _aspas = (s) => `"${s.replace(/"/g, '""')}"`;
+
+/** O apóstrofo desarma a fórmula sem mudar o que se lê na planilha. A descrição
+ *  de um lançamento NÃO vem só do teclado: vem do parse de fatura em PDF e de
+ *  extrato CSV/OFX/PDF, ou seja, de arquivo emitido por terceiro. Um nome de
+ *  estabelecimento como `=HYPERLINK("https://…"&A1;"Erro")` atravessa o app
+ *  intacto — a gravação não filtra, e `esc()` só atua na saída HTML — e viraria
+ *  fórmula viva na planilha de quem exporta o mês. */
+export function csvCelula(v) {
+  const s = String(v ?? '');
+  return _aspas(CSV_FORMULA.test(s) ? "'" + s : s);
+}
+
+/** A coluna de valor sai com ponto decimal e sinal DE PROPÓSITO, para a
+ *  planilha ler número e não texto. Ela não pode passar por `csvCelula`: o `-`
+ *  da despesa casa com `CSV_FORMULA`, e o apóstrofo transformaria todo gasto
+ *  em texto — a soma da coluna deixaria de existir. Aqui a origem é sempre
+ *  aritmética do próprio app, nunca texto de arquivo de terceiro. */
+export function csvNumero(n) {
+  return _aspas(String(n));
+}

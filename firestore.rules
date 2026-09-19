@@ -7,8 +7,17 @@ rules_version = '2';
 // o próprio ramo. Sem esta regra, o padrão de projeto novo do Firebase é
 // "allow read, write: if true" por 30 dias (banco aberto) ou negar tudo.
 //
-// Publicar com:  firebase deploy --only firestore:rules
-// (ou colar em Console → Firestore → Regras)
+// PUBLICAÇÃO — o caminho existe agora, e é automático:
+//   • `.github/workflows/firestore-rules.yml` publica a cada merge na `main`.
+//   • Na mão, da RAIZ do repositório:  firebase deploy --only firestore:rules
+//     (funciona desde que `firebase.json` existe apontando para este arquivo —
+//     antes dele o comando falhava, e a publicação só podia ser manual, colada
+//     no console. Era isso que fazia deste comentário uma mentira.)
+//
+// A Vercel publica só arquivos estáticos e NUNCA toca nas regras. Editar este
+// arquivo sem publicar não muda nada no banco.
+//
+// Fixado por `test/rules/rules.test.mjs`, contra o emulador.
 // ─────────────────────────────────────────────────────────────────────────────
 
 service cloud.firestore {

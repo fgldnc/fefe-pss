@@ -1,0 +1,5 @@
+# Sobras das ferramentas, não do relatório.
+.chrome-perfil/
+.chrome-perfil-raster/
+.fatias/
+relatorio.html

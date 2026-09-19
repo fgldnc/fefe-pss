@@ -31,6 +31,15 @@ import { saveTx, saveDoc, getAll } from './db.js';
 import { parseMoney, autoClassify, detectDuplicates } from './parsers/base-parser.js';
 import { extractColumnStreams } from './parsers/pdf-layout.js';
 
+// O worker do PDF.js NÃO É COBERTO POR SRI, e não há como cobrir: quem o
+// carrega é a própria biblioteca, por URL, e não existe `integrity` para
+// worker. As três tags <script> do app ganharam hash (index.html,
+// ferramentas/dump-fatura.html) — este arquivo continua verificado só pelo
+// host, que a CSP autoriza (`worker-src 'self' blob:` + o script-src do CDN).
+// Está escrito aqui para não ser descoberto de novo daqui a seis meses.
+// O hash de hoje, se um dia se quiser travar por outro caminho:
+//   sha384-SnzOobpRMLXZ52iJvZm/C0fYw0OQemTXzTjIsdsfMcrCtCEe9qgzxTd3RSklO5x2
+// Trocar a versão do PDF.js exige regerar ELE e os das duas páginas.
 if (typeof pdfjsLib !== 'undefined') {
   pdfjsLib.GlobalWorkerOptions.workerSrc =
     'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';

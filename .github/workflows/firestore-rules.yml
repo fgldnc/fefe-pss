@@ -1,0 +1,75 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# firestore.rules é o ÚNICO controle de acesso do projeto: não há servidor
+# próprio, o cliente roda na máquina do usuário e fala direto com o Firestore.
+# A Vercel publica só arquivos estáticos e NUNCA toca nas regras — antes deste
+# workflow, publicar era colar no console na mão, e nada garantia que o que
+# estava publicado fosse o que está no repositório.
+#
+# TESTA SEMPRE, PUBLICA SÓ NA `main`. Nesta ordem de propósito: regra que não
+# passa na suíte não chega ao banco.
+# ─────────────────────────────────────────────────────────────────────────────
+name: Regras do Firestore
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    paths:
+      - 'firestore.rules'
+      - 'firebase.json'
+      - 'test/rules/**'
+      - '.github/workflows/firestore-rules.yml'
+
+jobs:
+  testar:
+    name: Testar as regras contra o emulador
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: test/rules/package-lock.json
+
+      # O emulador do Firestore roda em Java. Sem isto ele nem sobe.
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Instalar as dependências de teste
+        run: npm ci --prefix test/rules
+
+      - name: Rodar a suíte das regras
+        run: npm test --prefix test/rules
+
+  testar-app:
+    name: Testes do app (Node puro, sem dependência)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: node --test test/*.test.mjs
+
+  publicar:
+    name: Publicar as regras
+    needs: [testar, testar-app]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # O token vem de secret do repositório — NUNCA do arquivo.
+      # Gerar com:  firebase login:ci
+      # Guardar em: Settings → Secrets and variables → Actions → FIREBASE_TOKEN
+      - name: firebase deploy --only firestore:rules
+        env:
+          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+        run: npx --yes firebase-tools@13 deploy --only firestore:rules --project fefe-df577 --non-interactive
