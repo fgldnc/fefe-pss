@@ -38,13 +38,16 @@ const DESTINOS = {
   mes: [
     { secao: 'mes', mod: () => import('./mes.js').then(m => m.renderMes) },
   ],
+  // Pedido da usuária depois da rodada 4: parcelamento saiu de Adiante e
+  // virou destino próprio. Adiante é o caixa do MÊS; um parcelamento
+  // atravessa meses e é assunto do cartão.
+  cartao: [
+    { secao: 'cartao', mod: () => import('./cartao.js').then(m => m.renderCartao) },
+  ],
+  // Rodada 4: a aba Fluxo de Caixa virou UMA tela com os quatro blocos que
+  // são sobre caixa. `saldos.js` virou só cálculo.
   adiante: [
-    { secao: 'calendario', mod: () => import('./saldos.js').then(m => m.renderCalendario) },
-    { secao: 'timeline',   mod: () => import('./timeline.js').then(m => m.renderTimeline) },
-    // Os dois cards do dashboard antigo que não falam do mês corrente
-    // (parcelas dos próximos 3 meses, evolução de 6). A rodada 4 decide onde
-    // eles ficam dentro de Adiante; até lá, ficam no fim, inteiros.
-    { secao: 'previsoes',  mod: () => import('./previsoes.js').then(m => m.renderPrevisoes) },
+    { secao: 'adiante', mod: () => import('./adiante.js').then(m => m.renderAdiante) },
   ],
   guardado: [
     { secao: 'metas',      mod: () => import('./metas.js').then(m => m.renderMetas) },
@@ -69,7 +72,10 @@ const DESTINOS = {
 const APELIDOS = {
   dashboard: 'mes', gastos: 'mes', receitas: 'mes',
   extratos: 'importar',
-  calendario: 'adiante', timeline: 'adiante', previsoes: 'adiante',
+  calendario: 'adiante',
+  // A Timeline morreu na rodada 4 e o que sobrou dela — contratos em aberto —
+  // está hoje em Cartão, não em Adiante.
+  timeline: 'cartao',
   metas: 'guardado', patrimonio: 'guardado',
   orcamento: 'ajustes', configuracoes: 'ajustes', relatorios: 'ajustes',
 };
@@ -82,6 +88,7 @@ const APELIDOS = {
 const ANCORAS = {
   dashboard: 'mes-heroi', gastos: 'mes-tabela', receitas: 'mes-tabela',
   orcamento: 'orcamento-bloco',
+  calendario: 'adiante-curva', timeline: 'cartao-contratos',
 };
 
 /** Destino de `name`, seja ele um destino ou um id de aba antigo. */

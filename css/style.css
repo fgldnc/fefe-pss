@@ -292,6 +292,9 @@ body {
 .nav-icon { flex-shrink: 0; }
 .nav-link:hover { background: var(--folha); color: var(--ink); }
 .nav-link.active { background: var(--marca-tinta); color: var(--marca); font-weight: 600; }
+/* Ajustes na topbar existe SÓ no celular (< 900px), onde ele sai da barra de
+   baixo para caberem os 5 destinos. No desktop ele está na barra lateral. */
+.nav-topo { display: none; width: auto; }
 
 /* Âmbar, não a marca: o contador é pendência ("o app não conseguiu
    classificar"), e pendência é âmbar em toda a interface. Some quando é zero. */
@@ -728,151 +731,9 @@ body {
   .pizza-skeleton-ring { border-width: 23px; }
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   FLUXO DE CAIXA (rodada 4)
-   Prefixo .fx-* de propósito: Dashboard e Patrimônio compartilham
-   .kpi-grid/.kpi-card, e esta aba tem outra proporção (três cards,
-   o do meio herói). Reaproveitar as classes moveria as outras duas
-   telas junto.
-════════════════════════════════════════════════════════════════ */
-.fx-kpis { display: grid; grid-template-columns: 1fr 1.35fr 1fr; gap: 0.9rem; margin-bottom: 1rem; }
-.fx-kpi {
-  background: var(--bg-card); border-radius: var(--radius-md);
-  padding: 1rem 1.1rem; box-shadow: var(--shadow-card);
-}
-/* Só o herói muda de fundo: é o único dos três que induz decisão. */
-.fx-kpi.fx-hero { background: var(--bg-card-raised); }
-.fx-kpi-label {
-  font-size: 0.74rem; color: var(--text-secondary); font-weight: 500;
-  letter-spacing: 0.02em; margin-bottom: 0.45rem;
-}
-.fx-kpi-val {
-  font-family: var(--font-mono); font-variant-numeric: tabular-nums;
-  font-size: 1.5rem; font-weight: 500; line-height: 1.15;
-}
-.fx-kpi.fx-hero .fx-kpi-val { font-size: 1.85rem; }
-/* Vermelho aqui é fato aritmético sobre dado existente (saldo negativo), não a
-   "aritmética de dado faltando" que a rodada 3 proibiu no Dashboard. */
-.fx-kpi-val.neg { color: var(--danger); }
-.fx-kpi-sub { font-size: 0.75rem; color: var(--text-muted); margin-top: 0.4rem; line-height: 1.45; }
-.fx-kpi-sub .fx-dia { color: var(--accent-bright); font-weight: 600; font-family: var(--font-mono); }
-/* .mark-inferido global é nowrap (rótulo curto de célula). Na sublinha do KPI a
-   marca carrega uma frase inteira, então quebra — escopado, sem tocar na regra
-   global que os modais de importação usam. */
-.fx-kpi-sub .mark-inferido { white-space: normal; display: inline; }
-
-.fx-card {
-  background: var(--bg-card); border-radius: var(--radius-md);
-  padding: 1.1rem 1.2rem; box-shadow: var(--shadow-card); margin-bottom: 1rem;
-}
-.fx-card-head {
-  display: flex; justify-content: space-between; align-items: baseline;
-  gap: 1rem; margin-bottom: 0.9rem; flex-wrap: wrap;
-}
-.fx-card-title { font-size: 0.92rem; font-weight: 600; }
-.fx-legend { display: flex; gap: 0.9rem; font-size: 0.72rem; color: var(--text-muted); flex-wrap: wrap; }
-.fx-legend i {
-  display: inline-block; width: 14px; height: 2px; vertical-align: middle;
-  margin-right: 0.35rem; background: var(--accent-primary);
-}
-.fx-legend i.proj { background: transparent; border-top: 2px dashed var(--accent-primary); }
-.fx-legend i.zero { background: var(--danger); }
-.fx-chart-box { position: relative; height: 230px; }
-
-.fx-table-head {
-  display: flex; justify-content: space-between; align-items: center;
-  gap: 1rem; margin-bottom: 0.75rem; flex-wrap: wrap;
-}
-.fx-ref { font-size: 0.74rem; color: var(--text-muted); }
-.fx-ref b { color: var(--text-secondary); font-family: var(--font-mono); font-weight: 500; }
-.fx-ref .mark-inferido { white-space: normal; display: inline; }
-
-.fx-table { width: 100%; border-collapse: collapse; font-size: 0.84rem; }
-.fx-table thead th {
-  text-align: left; font-size: 0.7rem; letter-spacing: 0.06em; text-transform: uppercase;
-  color: var(--text-muted); font-weight: 600; padding: 0.5rem 0.7rem;
-  border-bottom: 1px solid var(--border-md);
-}
-.fx-table th.num, .fx-table td.num { text-align: right; }
-.fx-table tbody td { padding: 0.55rem 0.7rem; border-bottom: 1px solid var(--border-soft); }
-.fx-table td.num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
-/* Hoje é ênfase neutra — fundo elevado e uma barra forte na borda
-   esquerda da linha. Nunca cor: cor nesta tabela já é dinheiro. */
-.fx-table tbody tr.fx-hoje { background: var(--bg-card-raised); box-shadow: inset 3px 0 0 var(--border-strong); }
-.fx-table tbody tr.fx-hoje td:first-child { color: var(--text-primary); font-weight: 700; }
-.fx-table tbody tr.fx-minimo td { background: var(--danger-dim); }
-.fx-td-dia { color: var(--text-secondary); font-weight: 500; width: 52px; font-family: var(--font-mono); }
-.fx-td-desc { color: var(--text-secondary); }
-.fx-v-in { color: var(--success); }
-.fx-v-out { color: var(--text-primary); }
-.fx-v-nil { color: var(--text-muted); }
-.fx-v-saldo { font-weight: 600; }
-.fx-v-saldo.neg { color: var(--danger); }
-.fx-tag {
-  display: inline-block; font-size: 0.63rem; padding: 0.08rem 0.34rem; border-radius: 4px;
-  vertical-align: middle; margin-left: 0.35rem; font-weight: 600; letter-spacing: 0.02em;
-}
-.fx-tag-min { background: var(--danger-dim); color: var(--danger); }
-/* Separador, não linha de dado: sem borda para não parecer um lançamento. */
-.fx-table tr.fx-sep td {
-  background: transparent; border-bottom: none; padding: 0.55rem 0.7rem 0.3rem;
-  font-size: 0.7rem; color: var(--text-muted); letter-spacing: 0.05em; text-transform: uppercase;
-}
-.fx-table tfoot td {
-  padding: 0.6rem 0.7rem; border-top: 1px solid var(--border-md);
-  font-weight: 600; font-size: 0.82rem;
-}
-.fx-table tfoot td.num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
-/* O parêntese "(fora do saldo)" é o que impede a soma errada: investimento não
-   entra na coluna Saldo e precisa dizer isso onde o número aparece. */
-.fx-rodape {
-  display: flex; gap: 1.4rem; flex-wrap: wrap; margin-top: 0.85rem;
-  font-size: 0.76rem; color: var(--text-muted);
-}
-.fx-rodape b { color: var(--text-secondary); font-family: var(--font-mono); font-weight: 500; }
-
-/* Saldo inicial editável no cabeçalho da aba: é onde o número é olhado. */
-.fx-abertura { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; font-size: 0.8rem; }
-.fx-abertura label { color: var(--text-secondary); }
-.fx-abertura input {
-  width: 130px; background: var(--bg-card-raised); border: 1px solid var(--border-md);
-  border-radius: var(--radius-sm); color: var(--text-primary); padding: 0.35rem 0.5rem;
-  font-family: var(--font-mono); font-size: 0.82rem; text-align: right;
-}
-.fx-abertura input:focus { outline: none; border-color: var(--border-strong); }
-.fx-abertura .fx-hint { color: var(--text-muted); font-size: 0.72rem; }
-
-.fx-empty { text-align: center; padding: 1.8rem 1rem; }
-.fx-empty-t { font-weight: 600; font-size: 0.9rem; margin-bottom: 0.3rem; }
-.fx-empty-t.erro { color: var(--danger); }
-.fx-empty-x { font-size: 0.78rem; color: var(--text-muted); line-height: 1.5; max-width: 42ch; margin: 0 auto; }
-.fx-empty .btn { margin-top: 0.85rem; }
-
-@media (max-width: 900px) {
-  .fx-kpis { grid-template-columns: 1fr 1fr; }
-  .fx-kpi.fx-hero { grid-column: 1 / -1; }
-}
-@media (max-width: 480px) {
-  .fx-kpis { grid-template-columns: 1fr; }
-  /* Herói primeiro: em coluna única, a ordem é a hierarquia. */
-  .fx-kpi.fx-hero { order: -1; }
-  .fx-kpi-val { font-size: 1.35rem; }
-  .fx-kpi.fx-hero .fx-kpi-val { font-size: 1.6rem; }
-  .fx-chart-box { height: 190px; }
-  .fx-card { padding: 0.9rem 0.75rem; }
-  /* A descrição some antes de qualquer valor monetário: valor truncado é erro
-     de leitura, descrição ausente é só menos contexto. */
-  .fx-table .col-desc { display: none; }
-  .fx-table thead th, .fx-table tbody td, .fx-table tfoot td { padding: 0.5rem 0.35rem; font-size: 0.78rem; }
-  .fx-td-dia { width: 34px; }
-  /* Sem a coluna Movimento, as tags migram para junto do valor do saldo. */
-  .fx-tag { display: block; margin: 0.1rem 0 0; text-align: right; }
-}
-@media (max-width: 360px) {
-  .fx-table thead th, .fx-table tbody td, .fx-table tfoot td { padding: 0.45rem 0.25rem; font-size: 0.72rem; }
-  .fx-td-dia { width: 26px; }
-  .fx-kpi { padding: 0.85rem 0.9rem; }
-}
+/* As classes .fx-* saíram na rodada 4 da v2: a aba "Fluxo de Caixa" virou o
+   destino Adiante (js/adiante.js), com o vocabulário .adiante-* mais abaixo,
+   sobre .folha. Nada mais no projeto as usava. */
 
 /* ═══════════════════════════════════════════════════════════════
    A PÁGINA ROLA
@@ -1170,6 +1031,68 @@ body { overflow-x: hidden; overflow-y: auto; }
 #mes-orcamento .orcamento-input-row { padding-left: 0; padding-right: 0; }
 #mes-orcamento .orc-fechamento { padding: 0; margin-top: 10px; }
 
+/* ═══════════════════════════════════════════════════════════════
+   ADIANTE (rodada 4)
+════════════════════════════════════════════════════════════════ */
+
+/* Os dois ajustes lado a lado: são o par que manda na tela inteira. */
+.adiante-campos { display: flex; gap: 28px; flex-wrap: wrap; }
+.adiante-campo { display: flex; flex-direction: column; gap: 6px; min-width: 220px; }
+.adiante-campo > span { font-size: 12.5px; font-weight: 600; color: var(--ink-2); }
+.adiante-campo > i { font-style: normal; font-size: 11.5px; color: var(--ink-3); max-width: 42ch; }
+.adiante-campo .form-input { max-width: 180px; }
+
+/* 1fr 1.35fr 1fr: o do meio é o único que induz decisão, e o tamanho é o que
+   diz isso. Fundo elevado no lugar de cor — cor aqui já significa dinheiro. */
+.adiante-kpis { display: grid; grid-template-columns: 1fr 1.35fr 1fr; gap: var(--goteira); margin-bottom: var(--goteira); }
+.adiante-kpi { display: flex; flex-direction: column; }
+.adiante-kpi-hero { background: var(--folha-2); }
+.adiante-kpi-val { font-size: 30px; font-weight: 600; letter-spacing: -0.02em; margin-top: 6px; }
+.adiante-kpi-hero .adiante-kpi-val { font-size: 38px; }
+/* Vermelho só para saldo negativo — fato aritmético sobre dado existente, não
+   a "aritmética de dado faltando". Os parênteses são o segundo canal. */
+.adiante-kpi-val.menos { color: var(--saiu); }
+.adiante-kpi-sub { font-size: 12.5px; color: var(--ink-3); margin: 8px 0 0; }
+
+.adiante-chart { position: relative; height: 240px; }
+.adiante-chart canvas { position: absolute; inset: 0; }
+
+/* Mesma regra da tabela de Mês: NADA de `overflow` no contêiner, senão o
+   <thead> sticky gruda nele e some com a página. */
+.tabela-folha table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+.tabela-folha td { overflow-wrap: break-word; }
+.tabela-folha thead th {
+  position: sticky; top: var(--topbar-h); z-index: 1;
+  background: var(--folha); padding: 14px 0 10px; border-bottom: 0;
+  box-shadow: inset 0 -1px 0 var(--borda-forte);
+  text-align: left; font: 600 10.5px var(--fonte);
+  text-transform: uppercase; letter-spacing: 0.13em; color: var(--ink-3);
+}
+.tabela-folha th.v { text-align: right; }
+.tabela-folha td { height: var(--linha); padding: 0; border-bottom: 1px solid var(--borda); vertical-align: middle; }
+.tabela-folha td + td, .tabela-folha th + th { padding-left: 16px; }
+.tabela-folha tbody tr:last-child td { border-bottom: 0; }
+.tabela-folha .v { text-align: right; font-weight: 600; white-space: nowrap; }
+.adiante-nil { color: var(--ink-3); font-weight: 400; }
+.adiante-td-dia { color: var(--ink-3); font-size: 12.5px; }
+.tabela-folha tfoot td {
+  border-top: 2px solid var(--ink); border-bottom: 0; font-weight: 600; height: 44px;
+}
+/* Estado de linha é ênfase NEUTRA: fundo elevado + barra na borda esquerda.
+   Cor nesta tabela já significa dinheiro. */
+.tabela-folha tr.adiante-hoje td { background: var(--folha-2); }
+.tabela-folha tr.adiante-hoje td:first-child { box-shadow: inset 3px 0 0 var(--borda-forte); padding-left: 11px; }
+.tabela-folha tr.adiante-minimo td { background: var(--saiu-tinta); }
+.tabela-folha tr.adiante-sep td {
+  height: 30px; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.12em;
+  color: var(--ink-3); border-bottom: 1px dashed var(--borda-forte);
+}
+
+@media (max-width: 900px) {
+  .adiante-kpis { grid-template-columns: 1fr; }
+  .tabela-folha td + td, .tabela-folha th + th { padding-left: 8px; }
+}
+
 /* Abaixo de 1120px as duas colunas não cabem sem espremer número. */
 @media (max-width: 1120px) {
   .faixa { grid-template-columns: 1fr; }
@@ -1193,6 +1116,11 @@ body { overflow-x: hidden; overflow-y: auto; }
     background: var(--folha); border-top: 1px solid var(--borda); z-index: 40;
   }
   .sidebar-header, .nav-group-label, .sidebar-footer { display: none; }
+  /* Com Cartão são 5 destinos; o sexto item espremeria todos abaixo do alvo
+     de toque. Ajustes sobe para a topbar — é o que se abre uma vez. */
+  .nav-group-fim { display: none; }
+  .nav-topo { display: inline-flex; padding: 6px; margin: 0; }
+  .nav-topo.active { background: transparent; color: var(--marca); }
   .sidebar-nav { flex-direction: row; overflow: visible; flex: 1; }
   .nav-link {
     flex: 1; flex-direction: column; gap: 3px; position: relative;
@@ -1202,8 +1130,10 @@ body { overflow-x: hidden; overflow-y: auto; }
   .nav-group-fim > .nav-link:first-child { margin-top: 0; }
   /* Fora do fluxo: com `margin-left:auto` o selo empurraria o rótulo. */
   .nav-badge { position: absolute; margin: 0; top: 2px; left: 50%; transform: translateX(6px); }
-  /* A barra é fixa e cobriria o fim da última tabela. */
-  .main-content > .tab-content:last-of-type { padding-bottom: 96px; }
+  /* A barra é fixa e cobriria o fim da última tabela. Vale para toda seção:
+     só uma fica visível por vez, e era `:last-of-type` — o que deixava todos
+     os outros destinos com a última linha atrás da barra. */
+  .main-content > .tab-content { padding-bottom: 96px; }
 }
 
 @media (max-width: 900px) {
@@ -1215,4 +1145,32 @@ body { overflow-x: hidden; overflow-y: auto; }
   .heroi h2 { font-size: 38px; }
   .folha { padding: 18px 16px; }
   .esconde-sm { display: none; }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   CARTÃO (destino pedido pela usuária depois da rodada 4)
+════════════════════════════════════════════════════════════════ */
+
+/* As três tabelas usam `.tabela-folha` — a mesma de Adiante, renomeada de
+   `.adiante-tabela-rolagem` quando deixou de ser de uma tela só. Larguras
+   AQUI, não em `style=`: em atributo a media query não consegue encolher a
+   coluna, e no celular a descrição fica com 4 linhas por lançamento. */
+#cartao-contratos th:nth-child(2) { width: 130px; }
+#cartao-previstas th:nth-child(2),
+#cartao-pagas     th:nth-child(2) { width: 90px; }
+#cartao-contratos th:nth-child(3),
+#cartao-previstas th:nth-child(3),
+#cartao-pagas     th:nth-child(3) { width: 120px; }
+#cartao-contratos th:nth-child(4),
+#cartao-previstas th:nth-child(4),
+#cartao-pagas     th:nth-child(4) { width: 104px; }
+@media (max-width: 900px) {
+  /* A coluna "Parcela" some (`.esconde-sm` no th E no td) e as outras duas
+     encolhem: o que precisa de espaço é a descrição da compra. */
+  #cartao-contratos th:nth-child(3),
+  #cartao-previstas th:nth-child(3),
+  #cartao-pagas     th:nth-child(3) { width: 92px; }
+  #cartao-contratos th:nth-child(4),
+  #cartao-previstas th:nth-child(4),
+  #cartao-pagas     th:nth-child(4) { width: 78px; }
 }

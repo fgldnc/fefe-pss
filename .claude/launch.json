@@ -4,14 +4,38 @@
     {
       "name": "radar",
       "runtimeExecutable": "npx",
-      "runtimeArgs": ["-y", "serve", "-l", "4321", "."],
+      "runtimeArgs": [
+        "-y",
+        "serve",
+        "-l",
+        "4321",
+        "."
+      ],
       "port": 4321
     },
     {
       "name": "radar-redesign-v2",
       "runtimeExecutable": "npx",
-      "runtimeArgs": ["-y", "serve", "-l", "4322", "."],
+      "runtimeArgs": [
+        "-y",
+        "serve",
+        "-l",
+        "4322",
+        "."
+      ],
       "port": 4322
+    },
+    {
+      "name": "radar-cartao",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "-y",
+        "serve",
+        "-l",
+        "4323",
+        "."
+      ],
+      "port": 4323
     }
   ]
 }

@@ -75,6 +75,10 @@
           <svg class="nav-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
           Mês
         </a>
+        <a class="nav-link" data-tab="cartao">
+          <svg class="nav-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+          Cartão
+        </a>
         <a class="nav-link" data-tab="adiante">
           <svg class="nav-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 17l5-6 4 4 5-8"/><polyline points="17 7 21 7 21 11"/><path d="M3 21h18"/></svg>
           Adiante
@@ -141,6 +145,13 @@
              ligado num `data-theme` que nenhuma regra de CSS lê mais. O
              listener em js/app.js usa `?.` e sobrevive sem o botão; some
              junto com o resto do roteamento na rodada 2. -->
+        <!-- Ajustes no TOPO, e só no celular: com Cartão são 5 destinos na
+             barra de baixo, e o sexto item deixaria cada alvo com menos de
+             60px. O desenho original já pedia isto; Ajustes ficou na barra
+             enquanto eram 4. A regra que o esconde no desktop está no CSS. -->
+        <a class="nav-link nav-topo" data-tab="ajustes" title="Ajustes" aria-label="Ajustes">
+          <svg class="nav-icon" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2m-3.05-7.95-1.41 1.41M6.46 17.54l-1.41 1.41m14.9 0-1.41-1.41M6.46 6.46 5.05 5.05"/></svg>
+        </a>
         <span class="user-name" id="user-name">—</span>
         <div class="user-avatar" id="user-avatar">?</div>
       </div>
@@ -168,8 +179,17 @@
         <div id="orcamento-editor" class="orcamento-editor"></div>
       </div>
     </section>
-    <!-- ════ CALENDÁRIO ══════════════════════════════════════ -->
-    <section id="tab-calendario" class="tab-content hidden"></section>
+    <!-- ════ ADIANTE ══════════════════════════════════════════
+         Montada inteira por js/adiante.js: os dois ajustes do mês, os 3 KPIs,
+         a curva diária, a tabela dos dias com movimento, os contratos em
+         aberto e as parcelas previstas. Seção vazia de propósito. -->
+    <section id="tab-adiante" class="tab-content hidden"></section>
+    <!-- ════ CARTÃO ═══════════════════════════════════════════
+         Montada inteira por js/cartao.js: resumo, contratos em aberto,
+         parcelas previstas e parcelas já pagas. Seção vazia de propósito.
+         Os dois primeiros blocos vieram de Adiante; o das parcelas pagas
+         não existia em tela nenhuma antes. -->
+    <section id="tab-cartao" class="tab-content hidden"></section>
     <!-- ════ METAS ════════════════════════════════════════════ -->
     <section id="tab-metas" class="tab-content fit hidden">
       <p class="page-intro">Alvos com prazo. <b>Use “+ Aporte” para registrar quanto guardou</b>; se a meta estiver ligada a um ativo do Patrimônio, o aporte lá credita aqui sozinho.</p>
@@ -297,12 +317,6 @@
          o innerHTML desta seção). O markup que existia aqui era cópia morta:
          nunca chegava à tela e divergia do que o módulo monta. -->
     <section id="tab-configuracoes" class="tab-content hidden"></section>
-    <!-- ════ TIMELINE ════════════════════════════════════════ -->
-    <section id="tab-timeline" class="tab-content hidden"></section>
-    <!-- ════ PREVISÕES ════════════════════════════════════════
-         Os dois cards do dashboard antigo que falam do FUTURO, não do mês
-         corrente. Montados por js/previsoes.js, dentro de Adiante. -->
-    <section id="tab-previsoes" class="tab-content hidden"></section>
     <!-- ════ RELATÓRIOS ══════════════════════════════════════ -->
     <section id="tab-relatorios" class="tab-content hidden"></section>
 

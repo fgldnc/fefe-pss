@@ -30,15 +30,15 @@ App de **controle financeiro pessoal** (nome exibido: "Radar", `index.html:6` = 
 | `extratos.js` | Aba Extratos: importação de extrato bancário (CSV/OFX/PDF), histórico de lotes, modal de revisão/preview editável com marcação de duplicata e de campo inferido, `_recomputeAtencaoExtrato()`. |
 | `db.js` | Toda leitura/escrita do Firestore, `loadAllData()`, derivados de mês, backup/restore JSON, `wipeCollection`. |
 | `utils.js` | `state` global, `esc`, `fmt`, helpers de mês, `toast`, skeletons, `resolveCategoryId` e o motor de insights do dashboard. |
-| `mes.js` | **A tela "Mês"** (rodada 3): herói, distribuição (rosca + lista), resultado do mês, miniatura do fluxo e a tabela única (gasto + fatura + extrato + receita, com coluna origem) e o CSV dela. |
-| `previsoes.js` | O que sobrou de `dashboard.js`: parcelas dos próximos 3 meses e evolução de 6 meses. Vive dentro de Adiante. |
+| `mes.js` | **A tela "Mês"** (rodadas 3–4): herói, distribuição (rosca + lista), resultado do mês, miniatura do fluxo, tabela única (gasto + fatura + extrato + receita, com coluna origem) + CSV, e a evolução de 6 meses no fim. |
 | `gastos.js` | **Formulário e gravação** de lançamento: modal, validação, projeção de parcelas, aporte no ativo vinculado, confirmar parcela prevista. Não desenha tela. |
 | `receitas.js` | **Formulário e gravação** de receita: modal, gravação preservando procedência, copiar do mês anterior. Não desenha tela. |
 | `orcamento.js` | Editor de limites por categoria. **Mora em Ajustes** desde a rodada 3. |
 | `metas.js` | CRUD de metas financeiras e seus aportes. |
 | `patrimonio.js` | CRUD de ativos, aportes e vínculo ativo→meta (`linkedGoalId`). |
-| `saldos.js` | Aba "Fluxo de Caixa": 3 KPIs (abertura, menor saldo, projeção), curva do saldo diário (Chart.js) e tabela só dos dias com movimento. Exporta `renderCalendario` (ponto de entrada de `TAB_MODULES`) e as funções puras `buildMovimentos`/`buildSerie`/`acharMinimo`/`contextoDoMinimo`, testadas em `test/saldos.test.mjs`. |
-| `timeline.js` | Linha do tempo de eventos financeiros com filtro por tipo. |
+| `adiante.js` | **A tela "Adiante"** (rodada 4): saldo inicial + dia de vencimento, 3 KPIs, curva diária, tabela dos dias com movimento. |
+| `cartao.js` | **A tela "Cartão"**: resumo, contratos em aberto, parcelas previstas e parcelas já pagas. Os dois do meio vieram de `adiante.js`; o das pagas é novo. |
+| `saldos.js` | **Só cálculo**, sem DOM e sem `state`: `buildMovimentos`/`buildSerie`/`acharMinimo`/`contextoDoMinimo`, fixadas por `test/saldos.test.mjs`. |
 | `relatorios.js` | Relatórios exportáveis em CSV e JSON. |
 | `configuracoes.js` | Categorias, regras de classificação, estatísticas, backup/restore, preferências, conta. |
 | `pdf-import.js` | Importação de **fatura de cartão** em PDF: extração, parse por banco, preview editável, projeção de parcelas. |
@@ -83,36 +83,60 @@ O cabeçalho da tabela de preview do extrato está definido **em dois lugares**:
 no `index.html` e na variante montada por `_showReview()` quando o lote tem
 receitas. Mexeu num, mexa no outro.
 
-## Vocabulário visual do Fluxo de Caixa (rodada 4)
+## Vocabulário visual de Adiante (rodada 4 da v2)
 
-Classes `.fx-*` em `css/style.css`, no fim do arquivo. **Prefixo próprio de
-propósito:** Dashboard e Patrimônio compartilham `.kpi-grid`/`.kpi-card`, e o
-roteiro marca Patrimônio como "não mexer" — reaproveitar as classes moveria as
-outras duas telas junto.
+Classes `.adiante-*` no fim de `css/style.css`, sobre `.folha`. As antigas
+`.fx-*` **foram removidas** junto com a aba "Fluxo de Caixa"; não voltem.
 
-- `.fx-kpis` é `1fr 1.35fr 1fr`; `.fx-kpi.fx-hero` é o do meio, em
-  `--bg-card-raised`, porque é o único que induz decisão.
-- **Âmbar nesta aba significa só `.mark-inferido`** (vencimento de fatura não
-  definido, projeção com parcela não conferida). Saldo baixo é fato, não
-  pendência: a faixa `saldo < 100` foi removida.
+- `.adiante-kpis` é `1fr 1.35fr 1fr`; o do meio (`.adiante-kpi-hero`) fica em
+  `--folha-2` porque é o único que induz decisão. Elevação, não cor: cor nesta
+  tela já significa dinheiro.
+- **Âmbar aqui significa só `.marca-d`** — "o app deduziu isto": parcela
+  projetada dentro da projeção, vencimento de fatura não definido. Saldo baixo
+  é fato, não pendência.
 - **Vermelho só para saldo negativo**, que é fato aritmético sobre dado
-  existente — não é a "aritmética de dado faltando" que a rodada 3 proibiu no
-  Dashboard.
-- Sem `--gold` (o token não existe mais, virou `--warning`) e sem emoji. Estado
-  de linha (`.fx-hoje`) é ênfase neutra — fundo elevado mais barra na borda
-  esquerda. Já foi ciano; ciano é azul, e a paleta A não tem azul em papel
-  nenhum. Magenta segue proibido ali: é acento de série categórica.
-- `.tag-projetada` é reusada de `css/components.css:105` — não crie outra.
+  existente. Acompanhado sempre de parênteses: `(5.238,18)` — o segundo canal.
+- **Estado de linha é ênfase neutra.** `.adiante-hoje` = fundo elevado + barra
+  na borda esquerda. `.adiante-minimo` é a exceção que usa `--saiu-tinta`,
+  porque o mínimo é o assunto da tela.
+- `.tag-projetada` é reusada de `css/components.css` — não crie outra.
+- A curva do saldo é Chart.js e **lê as cores de `getComputedStyle`**
+  (`coresGrafico()`): `--marca` para a linha, `--saiu` para o ponto do mínimo e
+  para a linha do zero. HEX literal aqui é regressão conhecida deste arquivo.
 
-**Chart.js é canvas e não resolve `var(--…)`:** as cores da curva estão em HEX
-literal no topo de `js/saldos.js` (`HEX_LINHA`, `HEX_VERM`…; `HEX_AZUL` foi
-renomeada porque a linha deixou de ser azul), espelhando os
-tokens do `:root`. Já houve regressão por passar `var(--accent-primary)`.
+### A tela "Adiante" (rodada 4)
+
+Quatro blocos em `js/adiante.js`: **ajustes do mês · 3 KPIs · curva diária ·
+tabela dos dias com movimento**. Contratos em aberto e parcelas previstas
+estiveram aqui na rodada 4 e foram para `js/cartao.js`.
+
+- **`saldos.js` virou só cálculo.** Sem DOM, sem `state`, sem Chart.js: as
+  quatro funções puras que `test/saldos.test.mjs` fixa. Nenhuma conta delas é
+  repetida em `adiante.js`.
+- **O dia de vencimento da fatura veio de Configurações** e fica ao lado do
+  saldo inicial. Ele decide se o cartão do mês vira UMA linha no vencimento ou
+  dez linhas nos dias das compras — o lugar de mexer nele é onde a consequência
+  aparece. Continua limitado a 1–28 e gravado em `settings/fluxo`.
+- **`timeline.js` e `previsoes.js` morreram.** O que sobrou dos dois —
+  contratos em aberto e parcelas previstas — passou por Adiante na rodada 4 e
+  **hoje está em `js/cartao.js`**: Adiante é o caixa do mês, parcelamento
+  atravessa meses. A **evolução de 6 meses desceu para o fim de Mês**, como manda o `ARQUITETURA-v2.md` ("o
+  gráfico de evolução (C5) desce para o fim de Mês"). É retrospectiva: fica
+  depois da tabela, porque responde "e nos meses anteriores?".
+- As duas regras antigas continuam valendo: **saldo ≠ fluxo acumulado** (sem
+  abertura declarada, sem KPI de mínimo e de projeção, e a coluna vira
+  "Acumulado") e **investimento não entra no saldo** (sai para o rodapé, com o
+  parêntese "fora do saldo").
+- A tabela de Adiante segue a mesma regra da de Mês: **nenhum `overflow` no
+  contêiner**, `table-layout: fixed`, larguras no CSS, `<thead>` sticky em
+  `top: var(--topbar-h)`. E as colunas Entradas/Saídas somem abaixo de 900px —
+  `esconde-sm` no `<th>` **e no `<td>`**, senão o corpo fica com mais células
+  que o cabeçalho e as colunas desalinham (foi medido).
 
 ## Convenções observadas no código
 
 - **`state` global exportado de `utils.js`** (`js/utils.js:7`). Todos os módulos importam e mutam o mesmo objeto: `user`, `currentMonth`, `categories`, `transactions`, `incomes`, `budgets`, `assets`, `goals`, `extratoTransactions`, `importRules`, `fluxoConfig`. Não há encapsulamento nem notificação de mudança.
-- **`getInvestCatIds()` (`js/utils.js`) é a regra única de "categoria é de investimento"**, consumida por `dashboard.js`, `orcamento.js` e `saldos.js`. Compara `id` e `name` **separadamente**: concatenar casa "investiment" atravessando a fronteira dos dois campos. Investimento sai do total de despesas em toda tela que fala de gasto — duas leituras diferentes viram dois totais para o mesmo mês. **Não existe mais nenhuma cópia local dessa regra:** `gastos.js`, `extratos.js` e `relatorios.js` chamam `getInvestCatIds()`. `relatorios.js` também parou de somar investimento dentro de "despesa" — a evolução mensal tem coluna `investido` própria, como o gráfico do Dashboard.
+- **`getInvestCatIds()` (`js/utils.js`) é a regra única de "categoria é de investimento"**, consumida por `mes.js`, `orcamento.js` e `adiante.js`. Compara `id` e `name` **separadamente**: concatenar casa "investiment" atravessando a fronteira dos dois campos. Investimento sai do total de despesas em toda tela que fala de gasto — duas leituras diferentes viram dois totais para o mesmo mês. **Não existe mais nenhuma cópia local dessa regra:** `gastos.js`, `extratos.js` e `relatorios.js` chamam `getInvestCatIds()`. `relatorios.js` também parou de somar investimento dentro de "despesa" — a evolução mensal tem coluna `investido` própria, como o gráfico de evolução em Mês.
 - **`esc()` obrigatório em toda interpolação de `innerHTML`** (`js/utils.js:44`). Escapa `& < > " ' /`. Todo dado vindo do Firestore ou de arquivo importado passa por `esc()` antes de entrar no HTML.
 - **`toast(msg, type)`** (`js/utils.js:76`) é o canal padrão de feedback — tipos `success | error | warning | info`. `alert()` só sobrevive no erro de login (`js/auth.js:23`); `confirm()` nativo é usado nas exclusões, deliberadamente.
 - **Cada módulo de aba exporta uma função `render*`** sem argumentos (`renderDashboard`, `renderGastos`, `renderMetas`, …), registrada em `TAB_MODULES` (`js/app.js:19-31`). É o único ponto de entrada da aba.
@@ -138,11 +162,12 @@ Cada item abaixo é uma regra de negócio real codificada como literal, sem cons
 
 **Orçamento e dashboard**
 - `js/orcamento.js:37` — faixas de status do orçamento: `≥ 100%` over, `≥ 80%` warn, resto ok.
-- `js/dashboard.js:65` — variação `< 0,5%` é exibida como "= mês anterior".
-- `js/dashboard.js:212` — gráfico de evolução usa **6** meses.
-- `js/dashboard.js:246` — eixo Y muda para formato "k" quando o máximo é `≥ 1000`.
-- `js/dashboard.js:258` — card de próximas parcelas cobre os **3** meses seguintes.
-- `js/dashboard.js:272` — lista no máx. **10** parcelas.
+- `js/mes.js` (`_resultado`) — variação `< 0,5%` é exibida como "= mês anterior".
+- `js/mes.js` (`_serie6m`) — gráfico de evolução usa **6** meses.
+- `js/mes.js` (`_renderEvolucao`) — eixo Y muda para formato "k" quando o máximo é `≥ 1000`.
+- `js/cartao.js` (`_previstas`) — parcelas previstas cobrem os **3** meses seguintes.
+- `js/cartao.js` (`MAX_PREVISTAS`) — lista no máx. **10** parcelas previstas.
+- `js/cartao.js` (`MAX_PAGAS`) — a tabela de parcelas já pagas mostra no máx. **24**; o rodapé diz "24 de N", a omissão nunca é silenciosa.
 
 **Importação de fatura — `js/pdf-import.js`**
 - `competenciaDaFatura(items, vencimento, offset)` — competência = **mês do vencimento declarado na fatura** + offset (`localStorage.fluxo_billing_offset`, default `-1`). Fatura que vence em agosto é a fatura de julho. Sem vencimento no PDF, a âncora é a compra **mais recente** (o mês em que a fatura fechou), e a tela declara qual das duas deduções usou. *Já foi `items[0].date + offset` — a primeira linha na ordem de leitura do PDF, que numa fatura de julho é de junho: a fatura inteira caía dois meses atrás e o usuário não a encontrava. Testado em `test/pdf-import.test.mjs`.*
@@ -174,7 +199,7 @@ Cada item abaixo é uma regra de negócio real codificada como literal, sem cons
 - `js/db.js:12-25` — `DEFAULT_CATEGORIES`: as 12 categorias padrão e suas cores, semeadas no primeiro login.
 - `js/utils.js:24-29` — `_SLUG_TO_NAME`: mapa slug-do-parser → nome de categoria, base do `resolveCategoryId`.
 
-**Fluxo de caixa — `js/saldos.js` e `js/db.js`**
+**Fluxo de caixa — `js/saldos.js` (cálculo), `js/adiante.js` (tela) e `js/db.js`**
 - `settings/fluxo` (documento único, `users/{uid}/settings/fluxo`) guarda
   `saldoInicial` (mapa `"YYYY-MM"` → número) e `faturaVencimentoDia`. **Ausente
   nunca é zero:** zero é abertura legítima, ausente esconde os KPIs de mínimo e
@@ -199,7 +224,7 @@ Cada item abaixo é uma regra de negócio real codificada como literal, sem cons
 - `js/db.js:154` — gasto de extrato: `date.slice(0,7) === month`.
 - `js/db.js:197-200` — receita: `month`, senão `competenceMonth`, senão `date.slice(0,7)`.
 
-## Regras de interface que valem em toda tela (redesign v2 — rodadas 1 e 2)
+## Regras de interface que valem em toda tela (redesign v2 — rodadas 1 a 4)
 
 O redesign v1 (`/redesign`, paleta A "Galo", 7 rodadas A1–A7) foi **substituído**
 pelo redesign v2. A fonte da verdade visual é
@@ -208,7 +233,7 @@ antes de escrever qualquer linha de CSS.** O plano das 8 rodadas está em
 `PROMPT-implementar-v2.md`; a arquitetura de 5 destinos, em `ARQUITETURA-v2.md`.
 
 Aplicado até aqui: **rodada 1 (fundação)** — a pele —, **rodada 2
-(navegação)** — o roteamento — e **rodada 3 (Mês)** — a primeira tela reescrita.
+(navegação)** — o roteamento —, **rodada 3 (Mês)** e **rodada 4 (Adiante)**.
 As `<section class="tab-content">` das abas que ainda não foram refeitas
 continuam no `index.html` e os `render*` continuam escrevendo nelas por id: o
 que mudou foi quem as mostra e quando.
@@ -246,7 +271,7 @@ que mudou foi quem as mostra e quando.
   WCAG 1.4.11.
 - **Chart.js pinta em canvas e não resolve `var(--…)`.** As cores vêm de
   `getComputedStyle` na hora de montar o gráfico — `coresGrafico()` em
-  `js/saldos.js`, `token()` em `js/dashboard.js`, `_token()` em
+  `js/adiante.js`, `_token()` em `js/mes.js`, `_token()` em
   `js/patrimonio.js`. HEX literal no código é regressão conhecida.
 - **Segundo canal em tudo** (WCAG 1.4.1): sinal `+` / `−` (U+2212) na coluna de
   valor, parênteses no KPI negativo, `◇` + texto + barra na borda esquerda da
@@ -266,8 +291,8 @@ que mudou foi quem as mostra e quando.
 
 - **`DESTINOS` em `js/app.js` é o mapa da navegação.** Um destino é uma LISTA de
   seções do `index.html`, mostradas juntas e renderizadas na ordem do array:
-  `importar` = extratos · `mes` = dashboard, gastos, receitas, orcamento ·
-  `adiante` = calendario, timeline · `guardado` = metas, patrimonio ·
+  `importar` = extratos · `mes` = a tela de Mês · `cartao` = a tela de Cartão ·
+  `adiante` = a tela de Adiante · `guardado` = metas, patrimonio ·
   `ajustes` = configuracoes, relatorios. **Empilhar é o estado intermediário**:
   as rodadas 3 a 8 fundem cada destino numa tela só, e a lista encolhe junto.
   Os `render*` são chamados **em série** — a ordem é a de leitura da tela, e
@@ -280,14 +305,17 @@ que mudou foi quem as mostra e quando.
 - **CONFERIR ainda não está na navegação.** O destino existe no plano
   (ARQUITETURA-v2.md) mas quem o preenche é `js/conferir.js`, da rodada 7.
   Item de navegação que leva a tela vazia é pior que navegação que cresce.
+- **`APELIDOS.timeline` aponta para `cartao`**, não para `adiante`: o que
+  sobrou da Timeline — contratos em aberto — mora lá agora.
 - **Saíram**: a command palette (Ctrl+K), o onboarding de 4 passos (um dos
   passos era morto — `obData.bank` era escrito e nunca lido), o botão de tema,
   a gaveta lateral do celular e o hamburguer. O salário e a primeira meta que o
   onboarding coletava entram pelos botões normais.
 - **Celular (< 900px): a barra lateral vira barra fixa no rodapé.** Somem a
   marca, os rótulos de grupo e o rodapé de conta; "Sair da conta" continua em
-  Ajustes, onde já estava. Ajustes fica na barra enquanto forem 4 destinos;
-  com Conferir serão 5 e ele sobe para o topo.
+  Ajustes, onde já estava. Com Cartão são **5 destinos na barra**, e **Ajustes
+  subiu para a topbar** (`.nav-topo` no `index.html`, `display:none` acima de
+  900px): um sexto item deixaria cada alvo de toque estreito demais.
 - **`.main-content` não pode ter `overflow-x`.** Qualquer `overflow` diferente
   de `visible` ali faz dele um contêiner de rolagem que nunca rola, e tudo que
   é `position: sticky` dentro — a topbar, o `<thead>` — gruda NELE e some com a
@@ -348,10 +376,11 @@ e não são remontados — por isso ali listener no elemento é seguro, ao contr
 do que vale na tela.
 
 **`dashboard.js` não existe mais.** Quatro dos seis blocos foram absorvidos por
-`mes.js`; os dois que falam do futuro (parcelas dos próximos 3 meses, evolução
-de 6) viraram `js/previsoes.js`, dentro de Adiante. As cores do Chart.js ali
-passaram a vir de `getComputedStyle` (eram `rgba(255,255,255,…)` e hex do tema
-escuro), a fonte virou Outfit e a grade, `--borda`.
+`mes.js`. Os dois que falam do futuro passaram pela rodada 4: parcelas dos
+próximos 3 meses foram para `adiante.js`, e a evolução de 6 meses voltou para o
+fim de `mes.js`. As cores do Chart.js nos dois passaram a vir de
+`getComputedStyle` (eram `rgba(255,255,255,…)` e hex do tema escuro), a fonte
+virou Outfit e a grade, `--borda`.
 
 **O `<thead>` gruda agora — e só porque a tabela não está embrulhada.**
 `position: sticky` num `<th>` resolve contra o scrollport mais próximo:
@@ -361,6 +390,36 @@ quebravam, e um `overflow-x: auto` no contêiner novo quebrou de novo (medido:
 rolagem: `table-layout: fixed` + larguras de coluna no CSS (não em `style=`,
 para a media query poder encolher) + `overflow-wrap: break-word`. O `top` do
 sticky é `var(--topbar-h)`, não 0 — com 0 ele grudaria ATRÁS da topbar.
+
+### A tela "Cartão" (pedida pela usuária depois da rodada 4)
+
+Quatro blocos em `js/cartao.js`, cada um com id próprio (`cartao-resumo`,
+`cartao-contratos`, `cartao-previstas`, `cartao-pagas` — as âncoras de
+`data-goto`): **resumo · contratos em aberto · parcelas previstas · parcelas
+já pagas**.
+
+- **Por que existe:** Adiante é sobre o CAIXA do mês. Um parcelamento atravessa
+  meses e é assunto do cartão; a usuária disse que não fazia sentido estar lá.
+  `_contratos()` e `_parcelas()` saíram de `js/adiante.js` inteiras — mesma
+  lógica, mesma chave de agrupamento.
+- **"Parcelas já pagas" é o bloco novo.** Até aqui a parcela paga só aparecia
+  diluída na tabela de Mês, sem dizer de que contrato era nem em que ponto dele
+  estava. Aqui ela é "3/10", com o mês. Da mais recente para a mais antiga.
+- **Paga = já aconteceu E não é projeção** (`!isProjected` e competência ≤ mês
+  atual). Projeção do mês corrente não é dinheiro que saiu: ela está no
+  contrato, não na lista de pagas. **"Restante" do contrato** segue somando só
+  o que ainda não foi pago — parcela paga não é dívida.
+- **Contrato de parcelamento continua sem id.** Descrição normalizada + total
+  de parcelas + valor em centavos, com o mesmo risco de colisão de
+  `_acharParcela`. Inventar id é mudança de modelo de dado, não de tela.
+- **Bloco vazio some** (silêncio é o sinal de que não há nada), mas a tela
+  inteira vazia diz o que é — senão parece quebrada.
+- **As larguras de coluna estão no CSS, por id de bloco**, não em `style=`: em
+  atributo a media query não consegue encolher a coluna e no celular a
+  descrição da compra fica com quatro linhas. Foi medido a 375px.
+- A classe de tabela `.adiante-tabela-rolagem` virou **`.tabela-folha`** quando
+  deixou de ser de uma tela só. Vale a mesma regra: nenhum `overflow` no
+  contêiner, `table-layout: fixed`, `<thead>` sticky em `top: var(--topbar-h)`.
 
 ### Onde o orçamento mora (decisão da usuária, rodada 3)
 
@@ -378,7 +437,7 @@ Mês — foi revogado.
   passado não existe no dado e desenhá-la seria inventar número. Para ela
   existir é preciso gravar snapshot mensal — mudança de modelo, não de tela.
 - **Contrato de parcelamento não tem id.** Cada parcela é uma transação
-  independente. O card "Contratos em aberto" (`js/timeline.js`) agrupa por
+  independente. O card "Contratos em aberto" (`js/adiante.js`) agrupa por
   descrição normalizada + total de parcelas + valor em centavos, e assume o
   mesmo risco de colisão que `_acharParcela` em `pdf-import.js`.
 - **O contador da sidebar usa a mesma regra da tela de revisão** (`semCat` em
@@ -403,7 +462,8 @@ mudança de interface:
 | `INVENTARIO-FUNCOES.md` | as 64 capacidades com arquivo:linha, e o que pode sumir. |
 | `PESQUISA-UX.md` | a evidência. O que está `[NÃO CONFIRMADO]` lá segue não confirmado. |
 
-Rodadas: **1 fundação (feita)** · **2 navegação (feita)** · **3 Mês (feita)** · 4 Adiante ·
+Rodadas: **1 fundação (feita)** · **2 navegação (feita)** · **3 Mês (feita)** ·
+**4 Adiante (feita)** ·
 5 Guardado · 6 Importar · 7 Conferir · 8 Ajustes. Uma por vez, cada uma
 terminando com o app funcionando.
 
@@ -417,6 +477,15 @@ terminando com o app funcionando.
   explícitas**, e não uma drop zone que adivinha sozinha o que é o arquivo.
 - **Orçamento mora em Ajustes**, não em Mês (aplicado na rodada 3). O plano
   original listava "orçamento × real" como sexto bloco de Mês; foi revogado.
+- **Cartão virou destino próprio** (dito na rodada 4, **implementado**).
+  As parcelas — as previstas E as já pagas — saem de Adiante e vão para uma
+  tela só de cartão. Adiante é sobre o caixa do mês; parcelamento é sobre o
+  cartão, e a usuária disse que não faz sentido estar lá. O que sai de
+  `js/adiante.js` foram `_contratos()` e `_parcelas()`; a tela nova ganhou a
+  lista das parcelas **já pagas**, que não existia em lugar nenhum. A barra tem
+  hoje 5 destinos (Importar · Mês · Cartão · Adiante · Guardado) e serão 6 com
+  Conferir; no celular **Ajustes já saiu da barra de baixo e subiu para a
+  topbar** (`.nav-topo`, escondido acima de 900px).
 
 `ROTEIRO-REDESIGN.md` e os `PROMPT-rodada-N.md` são o registro do redesign **v1**
 (rodadas A1–A8), já substituído. Valem como histórico do *porquê* de cada

@@ -6,7 +6,7 @@
  * redesign-v2/direcoes/hibrido.html:
  *
  *   herói · distribuição · resultado do mês · miniatura do fluxo ·
- *   tabela única
+ *   tabela única · evolução de 6 meses
  *
  * O orçamento NÃO está aqui: por decisão da usuária no meio da rodada 3, ele
  * mora em Ajustes. Definir teto é configuração, não leitura do mês.
@@ -54,7 +54,7 @@ const num = (v) => new Intl.NumberFormat('pt-BR',
 const MENOS = '−';
 
 // ═══════════════════════════════════════════════════════════════════════
-// DADOS — uma passada só, consumida pelos cinco blocos
+// DADOS — uma passada só, consumida por todos os blocos
 // ═══════════════════════════════════════════════════════════════════════
 
 function _dados() {
@@ -605,6 +605,93 @@ function _exportarCSV(d) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════
+// 6. EVOLUÇÃO — 6 MESES
+// Desceu para o fim de Mês na rodada 4 (ARQUITETURA-v2.md: "o gráfico de
+// evolução (C5) desce para o fim de Mês"). É retrospectiva: fica DEPOIS da
+// tabela, porque responde "e nos meses anteriores?", não "o que houve agora".
+// ═══════════════════════════════════════════════════════════════════════
+
+let _chartEvolucao = null;
+
+/** Série de 6 meses. Mesma base dos números da tela. */
+function _serie6m(investIds) {
+  const meses = [];
+  for (let i = 5; i >= 0; i--) meses.push(offsetMonth(state.currentMonth, -i));
+  return {
+    labels:    meses.map(m => monthLabel(m).slice(0, 3)),
+    receitas:  meses.map(m => incomesOfMonth(m).reduce((s, i) => s + (i.amount || 0), 0)),
+    despesas:  meses.map(m => allExpensesOfMonth(m).filter(t => !investIds.includes(t.categoryId)).reduce((s, t) => s + (t.amount || 0), 0)),
+    investido: meses.map(m => allExpensesOfMonth(m).filter(t =>  investIds.includes(t.categoryId)).reduce((s, t) => s + (t.amount || 0), 0)),
+  };
+}
+
+function _evolucao() {
+  return `
+    <div class="folha" id="mes-evolucao">
+      <p class="rot">Evolução — 6 meses</p>
+      <p class="rot-sub">Receita, despesa e investimento mês a mês. Investimento é barra própria:
+        ele não é gasto.</p>
+      <div class="evolucao-box"><canvas id="chart-evolucao"></canvas></div>
+    </div>`;
+}
+
+// Chart.js pinta em canvas e NÃO resolve var(--…): a cor vem do token no
+// momento de montar o gráfico. HEX literal aqui é regressão conhecida.
+function _token(nome, fallback) {
+  const v = getComputedStyle(document.documentElement).getPropertyValue(nome).trim();
+  return v || fallback;
+}
+/** A mesma cor do traço, translúcida, para o corpo da barra. */
+function _suave(nome, alpha) {
+  const hex = _token(nome, '#7E8999').replace('#', '');
+  const n = parseInt(hex.length === 3 ? hex.split('').map(c => c + c).join('') : hex, 16);
+  return `rgba(${n >> 16 & 255}, ${n >> 8 & 255}, ${n & 255}, ${alpha})`;
+}
+
+function _renderEvolucao(d) {
+  const canvas = document.getElementById('chart-evolucao');
+  if (!canvas || typeof Chart === 'undefined') return;
+  const { labels, receitas, despesas, investido } = _serie6m(d.investIds);
+  const maxVal = Math.max(...receitas, ...despesas, ...investido, 1);
+
+  if (_chartEvolucao) _chartEvolucao.destroy();
+
+  const tinta = _token('--ink-3', '#616B79');
+  const grade = _token('--borda', '#E2E8F1');
+  const fonte = 'Outfit';
+
+  _chartEvolucao = new Chart(canvas, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        { label: 'Receitas',  data: receitas,  backgroundColor: _suave('--entrou', 0.22), borderColor: _token('--entrou', '#0E7C4C'), borderWidth: 1.5, borderRadius: 3 },
+        { label: 'Despesas',  data: despesas,  backgroundColor: _suave('--saiu', 0.20),   borderColor: _token('--saiu', '#BE3729'),   borderWidth: 1.5, borderRadius: 3 },
+        // Investimento não é gasto: cor de série, não a de saída.
+        { label: 'Investido', data: investido, backgroundColor: _suave('--s5', 0.18),     borderColor: _token('--s5', '#6B4BC9'),     borderWidth: 1.5, borderRadius: 3 },
+      ],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'top', align: 'end', labels: { color: tinta, font: { family: fonte, size: 10 }, boxWidth: 8, boxHeight: 8, padding: 10 } },
+        tooltip: { callbacks: { label: ctx => `${ctx.dataset.label}: ${fmt(ctx.raw)}` } },
+      },
+      scales: {
+        x: { ticks: { color: tinta, font: { family: fonte, size: 9 }, maxRotation: 0, autoSkip: false }, grid: { display: false } },
+        y: {
+          ticks: {
+            color: tinta, font: { family: fonte, size: 9 },
+            callback: v => (maxVal >= 1000 ? `R$${(v / 1000).toFixed(1)}k` : `R$${v}`),
+          },
+          grid: { color: grade },
+        },
+      },
+    },
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════════
 // RENDER
 // ═══════════════════════════════════════════════════════════════════════
 
@@ -619,7 +706,8 @@ export function renderMes() {
       ele diz quanto ainda dá para gastar; a tabela embaixo diz por onde foi.</p>
     <div class="faixa">${_heroi(d)}${_distribuicao(d)}</div>
     <div class="faixa">${_resultado(d)}${_fluxo(d)}</div>
-    ${_tabela(d)}`;
+    ${_tabela(d)}
+    ${_evolucao()}`;
 
   // A dica do herói é o motor de insights de utils.js, com a MESMA base dos
   // números da tela (despesas sem investimento) — chip e total que discordam
@@ -628,6 +716,7 @@ export function renderMes() {
 
   _restaurarFiltros();
   _renderLinhas(d);
+  _renderEvolucao(d);
 
   if (!_init) {
     _ligarEventos();

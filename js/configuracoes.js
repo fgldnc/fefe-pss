@@ -14,7 +14,7 @@ export function renderConfiguracoes() {
   section.classList.add('fit');
 
   section.innerHTML = `
-    <p class="page-intro">Onde se ajusta o que as outras telas usam. <b>As duas que mais mudam resultado:</b> as regras, que classificam a importação sozinhas, e o dia de vencimento da fatura, em Preferências.</p>
+    <p class="page-intro">Onde se ajusta o que as outras telas usam. <b>A que mais muda resultado são as regras</b>, que classificam a importação sozinhas. O dia de vencimento da fatura saiu daqui — mora em Adiante, ao lado do saldo inicial.</p>
     <div class="config-tabs" id="config-tabs">
       <button class="config-tab active" data-section="categorias">Categorias</button>
       <button class="config-tab" data-section="regras">Regras</button>
@@ -121,14 +121,10 @@ export function renderConfiguracoes() {
             </select>
             <span class="form-hint">Define em qual mês de <b>competência</b> as faturas importadas entram.</span>
           </div>
-          <div class="form-row">
-            <label class="form-label" for="fatura-vencimento-dia">Dia de vencimento da fatura</label>
-            <input type="number" id="fatura-vencimento-dia" class="form-input" style="max-width:120px"
-                   min="1" max="28" step="1" placeholder="não definido" />
-            <span class="form-hint">Dia em que a fatura sai do <b>caixa</b> — é onde ela aparece no Fluxo de Caixa.
-              Não confundir com o offset acima, que é de <b>competência</b>. Aceita de 1 a 28; em branco, o Fluxo de
-              Caixa lança o cartão no dia da compra.</span>
-          </div>
+          <!-- O dia de vencimento da fatura saiu daqui na rodada 4: ele mora em
+               Adiante, ao lado do saldo inicial. É lá que a consequência dele
+               aparece — ele decide se o cartão do mês vira uma linha no
+               vencimento ou dez linhas nos dias das compras. -->
         </div>
       </div>
     </div>
@@ -335,37 +331,10 @@ function _initEvents() {
   const offsetSel = document.getElementById('billing-offset');
   if (offsetSel) offsetSel.value = savedOffset;
 
-  // Dia de vencimento da fatura — vizinho do offset na tela, mas de outra
-  // natureza: o offset decide o MÊS de competência, este decide o DIA em que o
-  // dinheiro sai do caixa. Vai para o Firestore (settings/fluxo), e não para o
-  // localStorage como o offset, porque o Fluxo de Caixa erra o "menor saldo" do
-  // mês inteiro se ler isto de um navegador e não de outro.
-  const vencInput = document.getElementById('fatura-vencimento-dia');
-  if (vencInput) {
-    const dia = state.fluxoConfig?.faturaVencimentoDia;
-    vencInput.value = dia ? String(dia) : '';
-    vencInput.addEventListener('change', async e => {
-      const bruto = e.target.value.trim();
-      const n = Math.trunc(Number(bruto));
-      // Campo vazio é "não definido" de propósito — deixa o Fluxo de Caixa cair
-      // no dia da compra, marcado como inferido. Não é erro, não vira toast de erro.
-      const valor = bruto === '' ? null : n;
-      if (valor !== null && !(Number.isFinite(n) && n >= 1 && n <= 28)) {
-        toast('O dia de vencimento precisa estar entre 1 e 28.', 'error');
-        e.target.value = state.fluxoConfig?.faturaVencimentoDia || '';
-        return;
-      }
-      try {
-        const { saveFluxoConfig } = await import('./db.js');
-        await saveFluxoConfig({ faturaVencimentoDia: valor });
-        e.target.value = valor === null ? '' : String(valor);
-        toast(valor === null ? 'Dia de vencimento removido.' : `Fatura vence no dia ${valor}.`, 'success');
-      } catch (err) {
-        console.error('Erro ao salvar dia de vencimento:', err);
-        toast('Não foi possível salvar o dia de vencimento.', 'error');
-      }
-    });
-  }
+  // O dia de vencimento da fatura era o vizinho do offset aqui. Foi para
+  // Adiante na rodada 4: eles pareciam irmãos e não são — o offset decide o
+  // MÊS de competência, o vencimento decide o DIA em que o dinheiro sai do
+  // caixa, e esse é um número de fluxo de caixa, não de importação.
 
   document.getElementById('btn-wipe-collection')?.addEventListener('click', async () => {
     const sel  = document.getElementById('wipe-collection-select');
