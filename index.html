@@ -236,6 +236,17 @@
           <option value="outro">Outro</option>
         </select>
       </div>
+      <!-- Só aparece com "Cartão de crédito": em Pix ou dinheiro não existe
+           cartão para nomear, e campo que não se aplica é campo que atrapalha.
+           A lista de cartões é derivada dos lançamentos (ver utils.js), e o
+           campo é livre — dá para digitar um cartão que ainda não existe. -->
+      <div class="form-row hidden" id="gasto-cartao-row">
+        <label class="form-label">Qual cartão</label>
+        <input id="gasto-cartao" class="form-input" list="gasto-cartoes" autocomplete="off"
+               placeholder="Nubank, Itaú, cartão da loja…" />
+        <datalist id="gasto-cartoes"></datalist>
+        <span class="form-hint">Opcional. Serve para separar a tela de Cartão quando você tem mais de um.</span>
+      </div>
       <div class="form-row-2">
         <div class="form-row"><label class="form-label">Parcela atual</label><input type="number" id="gasto-parcela-atual" class="form-input" placeholder="1" min="1" /></div>
         <div class="form-row"><label class="form-label">Total parcelas</label><input type="number" id="gasto-parcela-total" class="form-input" placeholder="1" min="1" /></div>

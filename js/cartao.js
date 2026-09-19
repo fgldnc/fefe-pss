@@ -32,12 +32,17 @@
 import {
   state, esc, monthLabel, offsetMonth,
   abas, painelAba, ligarAbas, focarAba, pegarAbaPedida,
+  cartoesConhecidos, normCartao,
 } from './utils.js';
 
 /** Aba aberta. Mora no módulo, não no DOM: a tela é remontada por innerHTML a
  *  cada navegação de mês, e aba que se fecha sozinha faz perder o lugar. */
 let _aba = 'aberto';
 let _init = false;
+
+/** Cartão em foco. '' = todos. Mora no módulo, como a aba e pelo mesmo
+ *  motivo: a tela é remontada por innerHTML e a escolha se perderia. */
+let _cartao = '';
 
 /** Número sem "R$" para coluna de valor — mesma regra das outras tabelas. */
 const num = (v) => new Intl.NumberFormat('pt-BR',
@@ -67,16 +72,30 @@ function _dados() {
   const mesAtual = state.currentMonth;
   const next3 = [offsetMonth(mesAtual, 1), offsetMonth(mesAtual, 2), offsetMonth(mesAtual, 3)];
 
-  const parcelas = state.transactions.filter(t => t.installmentTotal > 1);
+  // Os cartões saem dos PRÓPRIOS lançamentos de parcela, não do app inteiro:
+  // um cartão que nunca parcelou nada não tem o que mostrar nesta tela, e
+  // oferecer um filtro que só esvazia a tela é oferecer um caminho sem saída.
+  const todas    = state.transactions.filter(t => t.installmentTotal > 1);
+  const cartoes  = cartoesConhecidos(todas);
+  // Lançamento SEM cartão marcado (todo o histórico anterior a este recurso)
+  // aparece em "Todos" e em nenhum cartão específico. Escondê-lo de "Todos"
+  // faria a tela mentir para quem nunca preencheu o campo.
+  const parcelas = _cartao
+    ? todas.filter(t => normCartao(t.card).toLowerCase() === _cartao.toLowerCase())
+    : todas;
 
   // ── contratos, agrupados pela chave sem id (ver cabeçalho do arquivo) ──
   const grupos = new Map();
   for (const tx of parcelas) {
     const desc  = String(tx.description || '').trim().toLowerCase().replace(/\s+/g, ' ');
-    const chave = `${desc}|${tx.installmentTotal}|${Math.round((tx.amount || 0) * 100)}`;
+    // O cartão entra na chave: a mesma compra parcelada em dois cartões são
+    // dois contratos, e somá-los daria um 'restante' que não existe em conta
+    // nenhuma. Sem cartão marcado continua sendo um grupo só, como antes.
+    const cartao = normCartao(tx.card);
+    const chave = `${desc}|${tx.installmentTotal}|${Math.round((tx.amount || 0) * 100)}|${cartao.toLowerCase()}`;
     const g = grupos.get(chave) || {
       desc: tx.description || 'Compra parcelada',
-      total: tx.installmentTotal, valor: tx.amount || 0,
+      total: tx.installmentTotal, valor: tx.amount || 0, cartao,
       pagas: 0, restante: 0, ultimaCompetencia: '',
     };
     const c = compet(tx);
@@ -109,7 +128,36 @@ function _dados() {
     .filter(p => compet(p) === mesAtual)
     .reduce((s, p) => s + (p.amount || 0), 0);
 
-  return { mesAtual, next3, contratos, previstas, pagas, totalRestante, totalNext3, totalNoMes };
+  return { mesAtual, next3, contratos, previstas, pagas, totalRestante, totalNext3, totalNoMes, cartoes, temAlgum: todas.length > 0 };
+}
+
+/**
+ * A fileira de cartões. SÓ APARECE COM DOIS OU MAIS: com um cartão só ela é um
+ * botão que não muda nada, e silêncio é o sinal de que não há o que escolher —
+ * a mesma regra do selo de Conferir e do contador zerado da aba.
+ *
+ * "Todos" vem primeiro e é o padrão: quem abre a tela quer o compromisso
+ * inteiro, e só depois quer separar. Cada botão diz quantos contratos em
+ * aberto tem — sem isso não se sabe qual olhar sem clicar nos dois.
+ */
+function _fileiraCartoes(d) {
+  if (d.cartoes.length < 2) return '';
+
+  const contaDe = (nome) => state.transactions.filter(t =>
+    t.installmentTotal > 1 &&
+    (!nome || normCartao(t.card).toLowerCase() === nome.toLowerCase())).length;
+
+  const botao = (valor, rot) => `
+    <button type="button" class="cartao-op${_cartao.toLowerCase() === valor.toLowerCase() ? ' escolhida' : ''}"
+            role="radio" aria-checked="${_cartao.toLowerCase() === valor.toLowerCase()}"
+            data-cartao="${esc(valor)}">${esc(rot)}
+      <span class="aba-conta">${contaDe(valor)}</span></button>`;
+
+  return `
+    <div class="cartao-fileira" role="radiogroup" aria-label="Qual cartão">
+      <span class="cartao-fileira-rot">Cartão</span>
+      ${botao('', 'Todos')}${d.cartoes.map(c => botao(c, c)).join('')}
+    </div>`;
 }
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -137,6 +185,12 @@ function _contratos(d) {
   // Silêncio quando não há nada: bloco vazio é ruído.
   if (!d.contratos.length) return '';
 
+  // A coluna do cartão só existe quando ela distingue alguma coisa: com um
+  // cartão só, ou já filtrado num deles, ela repetiria a mesma palavra em toda
+  // linha. Mesma regra do selo do tipo da meta em Guardado.
+  const mostraCartao = d.cartoes.length > 1 && !_cartao;
+
+
   // Sem `.rot` aqui: a aba aberta já diz "Em aberto", e repetir o nome 20px
   // abaixo dele é a mesma palavra duas vezes — a regra que já tirou o selo do
   // tipo da meta em Guardado. Sobra a linha de apoio.
@@ -148,14 +202,16 @@ function _contratos(d) {
         <table>
           <thead><tr>
             <th>Compra</th>
-            <th class="esconde-sm">Parcelas</th>
-            <th class="v">Restante</th>
-            <th>Termina em</th>
+            ${mostraCartao ? '<th class="esconde-sm col-cartao">Cartão</th>' : ''}
+            <th class="esconde-sm col-parc">Parcelas</th>
+            <th class="v col-val">Restante</th>
+            <th class="col-mes">Termina em</th>
           </tr></thead>
           <tbody>
             ${d.contratos.map(g => `
               <tr>
                 <td>${esc(g.desc)}</td>
+                ${mostraCartao ? `<td class="esconde-sm">${g.cartao ? esc(g.cartao) : '<span class="marca-d">sem cartão</span>'}</td>` : ''}
                 <td class="esconde-sm">${g.pagas} de ${g.total} pagas</td>
                 <td class="v">${num(g.restante)}</td>
                 <td>${esc(_mesCurto(g.ultimaCompetencia))}</td>
@@ -181,6 +237,12 @@ function _contratos(d) {
 function _pagas(d) {
   if (!d.pagas.length) return '';
 
+  // A coluna do cartão só existe quando ela distingue alguma coisa: com um
+  // cartão só, ou já filtrado num deles, ela repetiria a mesma palavra em toda
+  // linha. Mesma regra do selo do tipo da meta em Guardado.
+  const mostraCartao = d.cartoes.length > 1 && !_cartao;
+
+
   const total = d.pagas.reduce((s, p) => s + (p.amount || 0), 0);
 
   return `
@@ -196,14 +258,16 @@ function _pagas(d) {
         <table>
           <thead><tr>
             <th>Compra</th>
-            <th class="esconde-sm">Parcela</th>
-            <th class="v">Valor</th>
-            <th>Mês</th>
+            ${mostraCartao ? '<th class="esconde-sm col-cartao">Cartão</th>' : ''}
+            <th class="esconde-sm col-parc">Parcela</th>
+            <th class="v col-val">Valor</th>
+            <th class="col-mes">Mês</th>
           </tr></thead>
           <tbody>
             ${d.pagas.slice(0, MAX_PAGAS).map(p => `
               <tr>
                 <td>${esc(p.description)}</td>
+                ${mostraCartao ? `<td class="esconde-sm">${normCartao(p.card) ? esc(normCartao(p.card)) : '<span class="marca-d">sem cartão</span>'}</td>` : ''}
                 <td class="esconde-sm">${p.installmentCurrent}/${p.installmentTotal}</td>
                 <td class="v menos">${MENOS}${num(p.amount)}</td>
                 <td>${esc(_mesCurto(compet(p)))}</td>
@@ -231,6 +295,14 @@ export function renderCartao() {
   // Uma vez só: a `<section>` sobrevive ao innerHTML, os botões de aba não.
   if (!_init) {
     ligarAbas(sec, 'cartao', (id) => { _aba = id; renderCartao(); focarAba('cartao', id); });
+    // Um listener só, delegado na seção: a fileira de cartões é reinjetada por
+    // innerHTML a cada render, e listener preso ao botão morreria com ele.
+    sec.addEventListener('click', (e) => {
+      const b = e.target.closest('[data-cartao]');
+      if (!b || !sec.contains(b)) return;
+      _cartao = b.dataset.cartao;
+      renderCartao();
+    });
     _init = true;
   }
 
@@ -243,12 +315,18 @@ export function renderCartao() {
   // Sem nenhuma compra parcelada a tela inteira é silêncio — e aí ela precisa
   // dizer o que é, senão parece quebrada.
   if (!d.contratos.length && !d.pagas.length) {
+    // Vazio POR CAUSA DO FILTRO é outro vazio: a fileira tem de continuar na
+    // tela, senão escolher um cartão sem parcelas é um beco sem saída — some o
+    // conteúdo e some junto o botão de voltar para "Todos".
+    const porFiltro = _cartao && d.temAlgum;
     sec.innerHTML = `
       <p class="page-intro">As compras parceladas: o que ainda falta pagar e o que já saiu.</p>
+      ${porFiltro ? _fileiraCartoes({ ...d, cartoes: cartoesConhecidos(state.transactions.filter(t => t.installmentTotal > 1)) }) : ''}
       <div class="folha">
-        <p class="rot">Nenhuma compra parcelada</p>
-        <p class="rot-sub" style="margin:0">Quando um gasto for lançado em mais de uma parcela —
-          à mão ou vindo de uma fatura — o contrato aparece aqui.</p>
+        <p class="rot">${porFiltro ? 'Nada parcelado neste cartão' : 'Nenhuma compra parcelada'}</p>
+        <p class="rot-sub" style="margin:0">${porFiltro
+          ? `Não há compra parcelada em <b>${esc(_cartao)}</b>. Volte a “Todos” para ver os outros.`
+          : 'Quando um gasto for lançado em mais de uma parcela — à mão ou vindo de uma fatura — o contrato aparece aqui.'}</p>
       </div>`;
     return;
   }
@@ -265,6 +343,7 @@ export function renderCartao() {
   sec.innerHTML = `
     <p class="page-intro">As compras parceladas. <b>Olhe o “falta pagar”:</b> é o compromisso
       que já está assumido, independente do que você decidir gastar daqui para frente.</p>
+    ${_fileiraCartoes(d)}
     ${abas('cartao', [
       { id: 'aberto', nome: 'Em aberto', conta: d.contratos.length },
       { id: 'pagas',  nome: 'Já pagas',  conta: d.pagas.length },

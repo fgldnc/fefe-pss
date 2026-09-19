@@ -724,8 +724,15 @@ export function renderMes() {
       { id: 'tabela', nome: 'Tudo que entrou e saiu' },
     ], _aba, 'O que ver do mês')}
     ${painelAba('mes', _aba, naVisao
-      ? `<div class="faixa">${_heroi(d)}${_distribuicao(d)}</div>
-         <div class="faixa">${_resultado(d)}${_fluxo(d)}</div>
+      // A grade mudou de par depois da rodada 9 (pedido da usuária: "está tudo
+      // de tamanho diferente"). Agora cada linha junta DOIS BLOCOS DA MESMA
+      // NATUREZA, em colunas iguais: os dois números do mês em cima (o que
+      // saiu · o resultado), os dois desenhos embaixo (a rosca · a curva),
+      // e a retrospectiva de 6 meses no fim, sozinha e larga.
+      // Antes as linhas eram número+desenho, e a coluna estreita de um era a
+      // larga do outro.
+      ? `<div class="faixa faixa-par">${_heroi(d)}${_resultado(d)}</div>
+         <div class="faixa faixa-par">${_distribuicao(d)}${_fluxo(d)}</div>
          ${_evolucao()}`
       : _tabela(d))}`;
 

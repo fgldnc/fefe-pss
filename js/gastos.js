@@ -11,7 +11,9 @@
  * `openGastoModal(tx)`; o callback é chamado depois de cada gravação.
  */
 
-import { state, fmt, toast, esc, getInvestCatIds } from './utils.js';
+import {
+  state, fmt, toast, esc, getInvestCatIds, cartoesConhecidos, normCartao,
+} from './utils.js';
 import { saveTx, addAporteToAsset } from './db.js';
 
 /** Quem redesenha a tela depois de uma gravação. Trocado por `initGastos`. */
@@ -27,6 +29,21 @@ export function initGastos(aoMudar) {
   // remontado por innerHTML, então aqui listener no elemento é seguro.
   document.getElementById('btn-salvar-gasto')?.addEventListener('click', _salvarGasto);
   document.getElementById('gasto-categoria')?.addEventListener('change', _toggleAtivoRow);
+  document.getElementById('gasto-tipo')?.addEventListener('change', _toggleCartaoRow);
+}
+
+/** A linha do cartão só existe quando o pagamento é cartão de crédito. */
+function _toggleCartaoRow() {
+  const ehCartao = document.getElementById('gasto-tipo')?.value === 'cartao';
+  document.getElementById('gasto-cartao-row')?.classList.toggle('hidden', !ehCartao);
+}
+
+/** As opções do campo de cartão saem dos lançamentos que já existem — não há
+ *  cadastro de cartão, e não deve haver: o campo continua livre. */
+function _popularCartoes() {
+  const dl = document.getElementById('gasto-cartoes');
+  if (!dl) return;
+  dl.innerHTML = cartoesConhecidos().map(c => `<option value="${esc(c)}"></option>`).join('');
 }
 
 /** Preenche o <select> de categoria do modal. */
@@ -55,6 +72,10 @@ export function openGastoModal(tx) {
   _toggleAtivoRow();
   document.getElementById('gasto-ativo').value = tx?.assetId || '';
 
+  _popularCartoes();
+  document.getElementById('gasto-cartao').value = tx?.card || '';
+  _toggleCartaoRow();
+
   document.getElementById('modal-gasto').classList.remove('hidden');
 }
 
@@ -70,6 +91,9 @@ async function _salvarGasto() {
   const mes    = document.getElementById('gasto-mes').value || state.currentMonth;
   const notes  = document.getElementById('gasto-obs').value.trim();
   const assetId = document.getElementById('gasto-ativo')?.value || '';
+  // Cartão só vale para pagamento em cartão: guardar o texto que sobrou no
+  // campo depois de trocar o tipo para Pix seria gravar uma informação falsa.
+  const cartao = tipo === 'cartao' ? normCartao(document.getElementById('gasto-cartao')?.value) : '';
 
   if (!desc)           return toast('Preencha a descrição.', 'error');
   if (!amount || amount <= 0) return toast('Informe um valor válido.', 'error');
@@ -96,6 +120,7 @@ async function _salvarGasto() {
     competenceMonth:    mes,
     notes,
     assetId: assetId || null,
+    card: cartao,
     isProjected:  anterior ? !!anterior.isProjected : false,
     importedFrom: anterior?.importedFrom || 'manual',
   };

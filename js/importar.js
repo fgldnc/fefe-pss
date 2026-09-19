@@ -31,7 +31,10 @@
  * antes, não um a mais.
  */
 
-import { state, esc, fmt, toast, abas, painelAba, ligarAbas, focarAba } from './utils.js';
+import {
+  state, esc, fmt, toast, abas, painelAba, ligarAbas, focarAba,
+  datalistCartoes, normCartao, ultimoCartao, lembrarCartao,
+} from './utils.js';
 import { getAll } from './db.js';
 import {
   BANK_NAMES, lotesDeExtrato, excluirLoteExtrato, importarExtratoDeArquivo,
@@ -47,6 +50,11 @@ let _aba = 'fatura';
 /** Banco e formato escolhidos na aba do extrato — mesma razão do `_aba`. */
 let _banco   = '';
 let _formato = 'ofx';
+
+/** Cartão a que a fatura pertence. Começa no ultimo usado — quem tem dois
+ *  cartões importa quase sempre o mesmo, e digitar o nome inteiro a cada
+ *  fatura é atrito sem contrapartida. */
+let _cartao = ultimoCartao();
 
 /** Faturas já importadas. Vêm do Firestore (`importedInvoices`), que não está
  *  no `state`: o render desenha o que tem em mãos e a leitura repinta o bloco
@@ -140,6 +148,17 @@ function _zona(qual, titulo, hint, accept) {
 function _ajusteFatura() {
   const off = _offset();
   return `
+    <div class="imp-ajuste" id="importar-fatura-cartao">
+      <label class="imp-ajuste-rot" for="imp-cartao">De qual cartão é esta fatura</label>
+      <input id="imp-cartao" class="form-input sm" data-imp="cartao" list="imp-cartoes"
+             placeholder="Nubank, Itaú, cartão da loja…" value="${esc(_cartao)}"
+             autocomplete="off" />
+      ${datalistCartoes('imp-cartoes')}
+      <p class="nota" style="margin:8px 0 0">Vale para a fatura inteira. <b>Em branco também
+        funciona</b> — a fatura entra sem cartão marcado, como sempre foi. Serve para separar
+        as telas de Cartão quando você tem mais de um.</p>
+    </div>
+
     <div class="imp-ajuste" id="importar-fatura-ajuste">
       <label class="imp-ajuste-rot" for="imp-offset">Em que mês a fatura conta</label>
       <select id="imp-offset" class="form-input sm" data-imp="offset">
@@ -382,6 +401,13 @@ function _ligarTela(sec) {
     document.getElementById(`imp-file-${zona.dataset.qual}`)?.click();
   });
 
+  // O cartão é lido no `input`, não no `change`: quem arrasta o PDF direto
+  // depois de digitar nunca dispara o `change` do campo — o foco vai para a
+  // drop zone sem passar por "sair do campo" em alguns navegadores.
+  sec.addEventListener('input', (e) => {
+    if (e.target?.dataset?.imp === 'cartao') _cartao = e.target.value;
+  });
+
   sec.addEventListener('change', (e) => {
     if (e.target?.dataset?.imp === 'offset') {
       localStorage.setItem('fluxo_billing_offset', e.target.value);
@@ -440,7 +466,10 @@ function _receber(file, qual) {
       toast('A fatura precisa ser um PDF. Para OFX ou CSV, use a aba "Extrato bancário".', 'error');
       return;
     }
-    importarFaturaDeArquivo(file, renderImportar);
+    // O cartão vale para a FATURA INTEIRA, não por linha: uma fatura é de um
+    // cartão só, e perguntar linha a linha seria perguntar 40 vezes a mesma coisa.
+    lembrarCartao(_cartao);
+    importarFaturaDeArquivo(file, renderImportar, { card: normCartao(_cartao) });
     return;
   }
 

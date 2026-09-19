@@ -117,6 +117,14 @@ Quatro blocos em `js/adiante.js`: **ajustes do mês · 3 KPIs · curva diária �
 tabela dos dias com movimento**. Contratos em aberto e parcelas previstas
 estiveram aqui na rodada 4 e foram para `js/cartao.js`.
 
+- **O bloco de ajustes é ESTREITO** (`#adiante-ajustes { max-width: 660px }`),
+  pedido da usuária depois da rodada 9: é o único da tela que só se CONFIGURA,
+  e quem manda em Adiante são os dois blocos de baixo, que MOSTRAM o resultado
+  do que foi configurado nele. Um painel de configuração ocupando a largura
+  inteira acima deles invertia a hierarquia da tela. Os dois campos dentro dele
+  são colunas iguais: são o mesmo tipo de campo, e larguras diferentes liam
+  como um sendo mais importante que o outro.
+
 - **`saldos.js` virou só cálculo.** Sem DOM, sem `state`, sem Chart.js: as
   quatro funções puras que `test/saldos.test.mjs` fixa. Nenhuma conta delas é
   repetida em `adiante.js`.
@@ -382,6 +390,26 @@ sete são vazias de propósito e montadas pelo módulo da tela.
   a tela lê no começo do render e apaga. Depois do render já é tarde — o bloco
   não existe no DOM para rolar até ele. Sem isto, `data-goto="gastos"` chegava
   a Mês e rolava até uma tabela escondida.
+- **`.faixa-par` é a linha de DOIS BLOCOS IRMÃOS:** colunas iguais (`1fr 1fr`)
+  e alturas iguais (`align-items: stretch`). Contradiz de propósito o `start`
+  da `.faixa` comum — ali o par é número + desenho, e esticar deixava o herói
+  oco; aqui os dois blocos são da mesma natureza e a diferença de altura é que
+  lia como desalinho (*"está tudo de tamanho diferente"*). Quem estica ganha
+  `.apoio { margin-top: auto }`: a sobra vai para ANTES da régua de números e
+  assenta a última linha no pé da folha, alinhada com o pé do vizinho.
+  **Sobra empurrada para o fim do bloco parece bloco que acabou cedo; sobra que
+  assenta a última linha parece espaçamento.**
+- **`.btn-2` FUNCIONA SOZINHO** — está no seletor base junto de `.btn`, em
+  `css/components.css`. Era só modificador, e quatro botões de Ajustes escritos
+  com `class="btn-2"` apareciam como texto cru com um fio em volta.
+  Modificador que só funciona acompanhado é armadilha que se paga toda vez que
+  alguém escreve o markup de memória. **A aparência de `.btn-2` mora em
+  `components.css`, não em `style.css`:** ela carrega depois, e a regra base
+  zerava a borda.
+- **Largura de coluna de tabela é POR CLASSE, não por `nth-child`**, onde a
+  tabela tem coluna que entra e sai (`col-cartao`, `col-parc`, `col-val`,
+  `col-mes` em Cartão). Com posição, cada coluna passava a medir a largura da
+  vizinha quando a opcional aparecia.
 - **Vocabulário v2 disponível em `css/style.css`** (fim do arquivo): `.folha`,
   `.rot`, `.rot-sub`, `.linha-topo`, `.ir`, `.nota`, `.faixa`, `.heroi`,
   `.dica`, `.apoio`, `.mais`/`.menos`/`.alerta`, `.pilula`, `.dist`, `.cat`,
@@ -462,10 +490,26 @@ mais alta da tela e empurrava a evolução para fora de qualquer dobra.
 rolar; o `data-filtro-proj` continua funcionando porque o `<select>` já existe
 quando os filtros são aplicados.
 
-Cinco blocos em `js/mes.js`, na ordem de leitura do `hibrido.html`: **herói ·
-distribuição · resultado do mês · miniatura do fluxo · tabela única**. Cada um
-tem id próprio (`mes-heroi`, `mes-dist`, `mes-resultado`, `mes-fluxo`,
-`mes-tabela`) — são as âncoras de `data-goto`.
+Cinco blocos em `js/mes.js`: **herói · distribuição · resultado do mês ·
+miniatura do fluxo · tabela única**. Cada um tem id próprio (`mes-heroi`,
+`mes-dist`, `mes-resultado`, `mes-fluxo`, `mes-tabela`) — são as âncoras de
+`data-goto`.
+
+**A GRADE MUDOU DE PAR depois da rodada 9** (*"a página de mês ficou bem
+feinha, está tudo de tamanho diferente"*). Cada linha junta agora dois blocos
+**da mesma natureza**, em `.faixa-par` (colunas e alturas iguais):
+
+| linha | blocos |
+|---|---|
+| os dois números do mês | herói · resultado do mês |
+| os dois desenhos | distribuição · miniatura do fluxo |
+| a retrospectiva | evolução de 6 meses, sozinha e larga |
+
+Antes as linhas eram número + desenho (herói+distribuição, resultado+fluxo), e
+a coluna estreita de uma era a larga da outra — foi isso que leu como "tamanho
+diferente". A ordem de leitura do `hibrido.html` cedeu para o emparelhamento:
+ela continua sendo herói → distribuição → resultado → fluxo na LEITURA, só que
+em coluna, não em linha.
 
 - **Uma conta só por número.** `_dados()` faz uma passada e os cinco blocos
   consomem o resultado: `allExpensesOfMonth` + `incomesOfMonth` +
@@ -516,6 +560,47 @@ quebravam, e um `overflow-x: auto` no contêiner novo quebrou de novo (medido:
 rolagem: `table-layout: fixed` + larguras de coluna no CSS (não em `style=`,
 para a media query poder encolher) + `overflow-wrap: break-word`. O `top` do
 sticky é `var(--topbar-h)`, não 0 — com 0 ele grudaria ATRÁS da topbar.
+
+### Mais de um cartão (pedido da usuária, depois da rodada 9)
+
+> *"na hora de importar cartão e na aba de cartão, deve ter como escolher mais
+> de um cartão para visualizar caso a pessoa tenha 2. tem outras pessoas que
+> usam meu site e talvez eles tenham mais cartões."*
+
+- **O MODELO É UM CAMPO DE TEXTO `card` NA TRANSAÇÃO — e nada mais.** Sem
+  coleção nova, sem id de cartão. A mesma escolha que o contrato de
+  parcelamento já faz, e pela mesma razão: é o que permite o recurso nascer
+  **sem migração**.
+- **A lista de cartões é DERIVADA** dos lançamentos (`cartoesConhecidos()` em
+  `js/utils.js`), como as três listas de Conferir são derivadas do `state`. Um
+  cartão some sozinho quando o último lançamento dele sai. Não há cadastro de
+  cartão, e não deve haver: o campo é livre, com `<datalist>` das grafias já
+  usadas — `<select>` obrigaria a cadastrar antes de usar.
+- **`card` ausente é "não informado", nunca erro.** Todo o histórico anterior a
+  este recurso não tem o campo. Ele aparece em **"Todos"** e em nenhum cartão
+  específico; escondê-lo de "Todos" faria a tela mentir para quem nunca
+  preencheu o campo.
+- **Onde se informa:** (1) em Importar, na aba da fatura, um campo que vale
+  para a **fatura inteira** — uma fatura é de um cartão só, e perguntar linha a
+  linha seria perguntar 40 vezes a mesma coisa; o último usado fica em
+  `localStorage.fluxo_ultimo_cartao`. (2) no modal de lançamento, **só quando o
+  tipo é cartão de crédito** — em Pix não existe cartão para nomear, e trocar o
+  tipo para Pix apaga o cartão na gravação, para não guardar informação falsa.
+  As parcelas projetadas herdam o cartão da compra pelo spread do `tx`.
+- **O cartão entra na CHAVE do contrato** em `cartao.js`: a mesma compra
+  parcelada em dois cartões são dois contratos, e somá-los daria um "falta
+  pagar" que não existe em conta nenhuma.
+- **A fileira de cartões só aparece com DOIS OU MAIS** (`.cartao-fileira`), com
+  "Todos" primeiro e o contador neutro (`.aba-conta`) em cada um. **Não é um
+  terceiro jeito de fazer aba:** aba troca o ASSUNTO da tela, a fileira troca o
+  RECORTE do mesmo assunto — daí a pílula contornada, o desenho de
+  `.aj-tema-op` e `.imp-banco`.
+- **A coluna "Cartão" nas tabelas só existe quando distingue algo** (dois ou
+  mais cartões E sem filtro ativo): filtrada num deles, repetiria a mesma
+  palavra em toda linha. Mesma regra do selo do tipo da meta em Guardado.
+- **Filtro que esvazia a tela NÃO pode esconder a fileira**, senão escolher um
+  cartão sem parcelas vira beco sem saída — some o conteúdo e some junto o
+  botão de voltar para "Todos".
 
 ### A tela "Cartão" (pedida pela usuária depois da rodada 4)
 

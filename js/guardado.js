@@ -133,7 +133,7 @@ function _total(d) {
       </div>
       <p class="guardado-total-val">${num(d.total)}</p>
       ${barra}
-      <dl class="apoio" style="margin-top:18px">
+      <dl class="apoio">
         <div><dt>Investimento</dt><dd>${num(d.invest)}</dd></div>
         <div><dt>Caixa / conta</dt><dd>${num(d.caixa)}</dd></div>
         <div><dt>Bens pessoais</dt><dd>${num(d.bens)}</dd></div>
@@ -444,7 +444,10 @@ export function renderGuardado() {
       { id: 'onde',     nome: 'Onde está guardado', conta: d.ativos?.length },
     ], _aba, 'O que ver de Guardado')}
     ${painelAba('guardado', _aba, naVisao
-      ? `<div class="faixa">${_total(d)}${_aportesBloco()}</div>${_metas(d)}`
+      // `faixa-par`: colunas e alturas iguais. O total é um número curto e o
+      // gráfico é alto — lado a lado com tamanhos diferentes os dois liam como
+      // desalinhados, não como um par.
+      ? `<div class="faixa faixa-par">${_total(d)}${_aportesBloco()}</div>${_metas(d)}`
       : _ativos(d))}`;
 
   // O gráfico só é montado com o painel dele no DOM: Chart.js mede o canvas na

@@ -53,6 +53,11 @@ let _parsedMeta     = {
 };
 let _eventsBound    = false;
 
+/** Cartão a que esta fatura pertence, escolhido na tela de Importar. Vale
+ *  para a fatura INTEIRA — uma fatura é de um cartão só. String vazia é
+ *  "não informado", que continua sendo o caso normal de quem tem um cartão. */
+let _cartao = '';
+
 export function initPdfImport(onDone) {
   _onDoneCallback = onDone;
   _resetModal();
@@ -65,9 +70,12 @@ export function initPdfImport(onDone) {
  * o arquivo entra por fora e ele abre já no passo 2, tirando um clique do
  * ciclo. Nada do parsing muda: `_processPdf` é o mesmo de sempre.
  */
-export function importarFaturaDeArquivo(file, onDone) {
+export function importarFaturaDeArquivo(file, onDone, opcoes = {}) {
   document.getElementById('modal-pdf')?.classList.remove('hidden');
   initPdfImport(onDone);
+  // Depois do reset: `initPdfImport` zera o estado do módulo, e o cartão vem
+  // de fora — seria apagado se fosse escrito antes.
+  _cartao = String(opcoes.card || '').trim();
   return _processPdf(file);
 }
 
@@ -895,6 +903,11 @@ async function _confirmarImportacao() {
         dateYearSource:       item.dateYearSource || 'assumed-current',
         importedFrom: 'pdf',
         invoiceFingerprint: _parsedMeta.fingerprint,
+        // De qual cartão veio. Vazio é "não informado", e não erro: registro
+        // antigo não tem o campo e continua valendo. A projeção das parcelas
+        // herda daqui pelo spread, que é o certo — as parcelas seguintes são
+        // do mesmo cartão da compra.
+        card: _cartao,
       };
 
       const existente = item.installmentTotal > 1

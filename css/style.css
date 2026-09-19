@@ -993,6 +993,21 @@ body { overflow-x: hidden; overflow-y: auto; }
 .faixa { display: grid; grid-template-columns: 1.05fr 1.45fr; gap: var(--goteira); margin-bottom: var(--goteira); align-items: start; }
 .faixa > * { min-width: 0; }
 
+/* Linha de DOIS BLOCOS IRMÃOS: colunas iguais e alturas iguais.
+   `align-items: stretch` contradiz de propósito o `start` da `.faixa` comum —
+   ali o par é número + desenho, e esticar um deixava o herói oco; aqui os dois
+   são da mesma natureza e a diferença de altura é que lia como desalinho
+   ("está tudo de tamanho diferente"). O vazio que o `start` existe para evitar
+   não volta porque o vizinho tem altura parecida — foi medido. */
+.faixa-par { grid-template-columns: 1fr 1fr; align-items: stretch; }
+.faixa-par > .folha { display: flex; flex-direction: column; }
+/* Quando o vizinho é mais alto, a sobra vai para ANTES da régua de números, e
+   ela desce para o pé da folha — alinhada com o pé do gráfico ao lado. Sobra
+   empurrada para o fim do bloco parece bloco que acabou cedo; sobra usada para
+   assentar a última linha parece espaçamento. Medido: 111px em
+   `guardado-total`, que agora viram ar entre o número grande e os três apoios. */
+.faixa-par > .folha > .apoio { margin-top: auto; }
+
 /* ── herói: a frase do jornal dentro da faixa de marca ──────── */
 .heroi {
   background: linear-gradient(152deg, var(--marca-fundo) 0%, var(--marca-fundo-2) 100%);
@@ -1171,9 +1186,20 @@ body { overflow-x: hidden; overflow-y: auto; }
    ADIANTE (rodada 4)
 ════════════════════════════════════════════════════════════════ */
 
-/* Os dois ajustes lado a lado: são o par que manda na tela inteira. */
-.adiante-campos { display: flex; gap: 28px; flex-wrap: wrap; }
-.adiante-campo { display: flex; flex-direction: column; gap: 6px; min-width: 220px; }
+/* O bloco de ajustes é ESTREITO de propósito (pedido da usuária, depois da
+   rodada 9): é o único da tela que só se configura, e quem manda em Adiante
+   são os dois blocos de baixo, que MOSTRAM o resultado do que foi configurado
+   aqui. Um painel de configuração ocupando a largura inteira acima deles
+   invertia a hierarquia da tela. */
+#adiante-ajustes { max-width: 660px; }
+
+/* Os dois ajustes lado a lado, em colunas IGUAIS: são o mesmo tipo de campo e
+   larguras diferentes liam como um sendo mais importante que o outro. */
+.adiante-campos { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; }
+.adiante-campo { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+@media (max-width: 560px) {
+  .adiante-campos { grid-template-columns: 1fr; gap: 18px; }
+}
 .adiante-campo > span { font-size: 12.5px; font-weight: 600; color: var(--ink-2); }
 .adiante-campo > i { font-style: normal; font-size: 11.5px; color: var(--ink-3); max-width: 42ch; }
 .adiante-campo .form-input { max-width: 180px; }
@@ -1293,24 +1319,24 @@ body { overflow-x: hidden; overflow-y: auto; }
    `.adiante-tabela-rolagem` quando deixou de ser de uma tela só. Larguras
    AQUI, não em `style=`: em atributo a media query não consegue encolher a
    coluna, e no celular a descrição fica com 4 linhas por lançamento. */
-#cartao-contratos th:nth-child(2) { width: 130px; }
-#cartao-previstas th:nth-child(2),
-#cartao-pagas     th:nth-child(2) { width: 90px; }
-#cartao-contratos th:nth-child(3),
-#cartao-previstas th:nth-child(3),
-#cartao-pagas     th:nth-child(3) { width: 120px; }
-#cartao-contratos th:nth-child(4),
-#cartao-previstas th:nth-child(4),
-#cartao-pagas     th:nth-child(4) { width: 104px; }
+/* Larguras POR CLASSE, não por posição: a coluna Cartão entra e sai conforme
+   a pessoa tenha um cartão ou vários, e com nth-child cada coluna passava a
+   medir a largura da vizinha quando ela aparecia. */
+#cartao-contratos th.col-parc { width: 130px; }
+#cartao-pagas     th.col-parc { width: 90px; }
+#cartao-contratos th.col-cartao,
+#cartao-pagas     th.col-cartao { width: 120px; }
+#cartao-contratos th.col-val,
+#cartao-pagas     th.col-val { width: 120px; }
+#cartao-contratos th.col-mes,
+#cartao-pagas     th.col-mes { width: 104px; }
 @media (max-width: 900px) {
-  /* A coluna "Parcela" some (`.esconde-sm` no th E no td) e as outras duas
-     encolhem: o que precisa de espaço é a descrição da compra. */
-  #cartao-contratos th:nth-child(3),
-  #cartao-previstas th:nth-child(3),
-  #cartao-pagas     th:nth-child(3) { width: 92px; }
-  #cartao-contratos th:nth-child(4),
-  #cartao-previstas th:nth-child(4),
-  #cartao-pagas     th:nth-child(4) { width: 78px; }
+  /* As colunas "Parcela" e "Cartão" somem (`esconde-sm` no th E no td) e as
+     outras duas encolhem: o que precisa de espaço é a descrição da compra. */
+  #cartao-contratos th.col-val,
+  #cartao-pagas     th.col-val { width: 92px; }
+  #cartao-contratos th.col-mes,
+  #cartao-pagas     th.col-mes { width: 78px; }
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -1323,10 +1349,9 @@ body { overflow-x: hidden; overflow-y: auto; }
    contorno, e o contorno é `--borda-forte` (3:1) e não `--borda` (1,3:1),
    pela mesma razão que o campo de formulário usa.
 ════════════════════════════════════════════════════════════════ */
-.btn-2 {
-  background: var(--folha); border-color: var(--borda-forte); color: var(--ink);
-}
-.btn-2:hover { background: var(--folha-2); border-color: var(--ink-2); color: var(--ink); }
+/* A APARÊNCIA de .btn-2 mudou de arquivo: foi para css/components.css, logo
+   depois da caixa base. Aqui ela perdia — components.css carrega DEPOIS e a
+   regra base zera a borda. Ordem de arquivo é especificidade na prática. */
 
 /* ═══════════════════════════════════════════════════════════════
    GUARDADO (rodada 5) — metas + patrimônio numa folha só
@@ -1794,6 +1819,34 @@ body { overflow-x: hidden; overflow-y: auto; }
 .aba.ativa .aba-conta { background: var(--marca-tinta); color: var(--marca); }
 .aba-conta.alerta { background: var(--deduzido-tinta); color: var(--deduzido); }
 .aba.ativa .aba-conta.alerta { background: var(--deduzido-tinta); color: var(--deduzido); }
+
+/* ── A FILEIRA DE CARTÕES (Cartão) ─────────────────────────────
+   NÃO é uma terceira forma de aba, e por isso não usa `.aba`: aba troca o
+   ASSUNTO da tela ("em aberto" × "já pagas"), esta fileira troca o RECORTE do
+   mesmo assunto. Duas coisas diferentes na mesma tela precisam parecer
+   diferentes — daí a pílula contornada, o mesmo desenho do `.aj-tema-op` e do
+   `.imp-banco`, que também são "escolha um entre poucos".
+   Ela só é desenhada com dois cartões ou mais (ver `_fileiraCartoes`).
+   O contador reusa `.aba-conta`, neutro: número de contrato é informação,
+   não pendência. */
+.cartao-fileira { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+.cartao-fileira-rot {
+  font: 600 10.5px var(--fonte); text-transform: uppercase; letter-spacing: 0.16em;
+  color: var(--ink-3); margin-right: 4px;
+}
+.cartao-op {
+  font: 500 13px var(--fonte); cursor: pointer;
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 7px 13px; border-radius: 20px;
+  border: 1px solid var(--borda-forte); background: var(--folha); color: var(--ink-2);
+}
+.cartao-op:hover { background: var(--folha-2); color: var(--ink); }
+.cartao-op.escolhida {
+  border-color: var(--marca); box-shadow: inset 0 0 0 1px var(--marca);
+  background: var(--marca-tinta); color: var(--marca); font-weight: 600;
+}
+.cartao-op.escolhida .aba-conta { background: var(--folha); color: var(--marca); }
+.cartao-op:focus-visible { outline: 2px solid var(--marca); outline-offset: 2px; }
 
 /* Aba de TELA (não de bloco): ela é o cabeçalho do destino, e o ar
    abaixo dela é o que separa a navegação do conteúdo. */

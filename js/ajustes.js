@@ -227,7 +227,7 @@ function _backup() {
             <option value="assets">Patrimônio (ativos)</option>
             <option value="goals">Metas</option>
           </select>
-          <button class="btn-2 aj-btn-risco" id="btn-wipe-collection" data-aj="wipe">Apagar tudo desta coleção</button>
+          <button class="btn btn-2 aj-btn-risco" id="btn-wipe-collection" data-aj="wipe">Apagar tudo desta coleção</button>
         </div>
         <p class="nota" id="wipe-status" style="margin:10px 0 0"></p>
       </div>
@@ -264,7 +264,7 @@ function _conta() {
           <b>${esc(u.displayName || '—')}</b>
           <i>${esc(u.email || '—')}</i>
         </span>
-        <button class="btn-2 aj-btn-risco" data-aj="sair">Sair da conta</button>
+        <button class="btn btn-2 aj-btn-risco" data-aj="sair">Sair da conta</button>
       </div>
       <p class="rot" style="margin:20px 0 5px">Aparência</p>
       <p class="rot-sub">Claro, escuro, ou o que o seu sistema estiver usando.</p>
@@ -288,13 +288,13 @@ function _mudouDeCasa() {
           <p class="aj-bloco-rot">Em que mês a fatura conta</p>
           <p class="nota" style="margin:0 0 10px">Fica em <b>Importar</b>, na aba “Fatura de cartão”,
             ao lado de onde o arquivo entra.</p>
-          <button class="btn-2" data-goto="importar">Ir para Importar</button>
+          <button class="btn btn-2" data-goto="importar">Ir para Importar</button>
         </div>
         <div>
           <p class="aj-bloco-rot">Dia de vencimento da fatura</p>
           <p class="nota" style="margin:0 0 10px">Fica em <b>Adiante</b>, ao lado do saldo inicial — é
             ele que decide em que dia o cartão sai do caixa.</p>
-          <button class="btn-2" data-goto="adiante">Ir para Adiante</button>
+          <button class="btn btn-2" data-goto="adiante">Ir para Adiante</button>
         </div>
       </div>
     </div>`;

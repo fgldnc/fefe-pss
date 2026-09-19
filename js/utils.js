@@ -710,3 +710,57 @@ export function ligarTemaDoSistema() {
   if (mq.addEventListener) mq.addEventListener('change', ao);
   else if (mq.addListener) mq.addListener(ao);
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   CARTÃO (pedido da usuária: "deve ter como escolher mais de um
+   cartão para visualizar caso a pessoa tenha 2")
+
+   MODELO: um campo de texto `card` na própria transação, e nada mais.
+   Nem coleção nova, nem id — a mesma escolha que o contrato de
+   parcelamento já faz. A LISTA de cartões é DERIVADA do que existe
+   nos lançamentos, como as três listas de Conferir são derivadas do
+   `state`: é isso que permite o recurso nascer sem migração, e é isso
+   que faz um cartão sumir sozinho quando o último lançamento dele sai.
+
+   Registro antigo não tem `card`, e isso não é erro: é "cartão não
+   informado". Toda tela precisa tratar ausência como desconhecido, e
+   nenhuma pode esconder a linha por causa disso.
+════════════════════════════════════════════════════════════════ */
+
+/** Nome de cartão normalizado para comparação — a pessoa digita "Nubank" e
+ *  "nubank" em meses diferentes e é o mesmo cartão. */
+export const normCartao = (v) => String(v || '').trim().replace(/\s+/g, ' ');
+
+/**
+ * Os cartões que existem HOJE nos lançamentos, em ordem alfabética.
+ * Guarda a primeira grafia vista de cada um: quem decide como o nome se
+ * escreve é quem o digitou, não a ordem de leitura do array.
+ */
+export function cartoesConhecidos(txs = state.transactions) {
+  const vistos = new Map();
+  for (const t of txs) {
+    const nome = normCartao(t.card);
+    if (!nome) continue;
+    const chave = nome.toLowerCase();
+    if (!vistos.has(chave)) vistos.set(chave, nome);
+  }
+  return [...vistos.values()].sort((a, b) => a.localeCompare(b, 'pt-BR'));
+}
+
+/** O `<datalist>` que deixa digitar um cartão novo e escolher um já usado no
+ *  mesmo campo. Um `<select>` obrigaria a cadastrar o cartão antes de usá-lo. */
+export function datalistCartoes(id, txs = state.transactions) {
+  return `<datalist id="${esc(id)}">${
+    cartoesConhecidos(txs).map(c => `<option value="${esc(c)}"></option>`).join('')
+  }</datalist>`;
+}
+
+/** Último cartão usado numa importação de fatura. Conveniência de digitação,
+ *  não dado: fica no localStorage, com o resto das preferências `fluxo_`. */
+export const CARTAO_KEY = 'fluxo_ultimo_cartao';
+export function ultimoCartao() {
+  try { return normCartao(localStorage.getItem(CARTAO_KEY)); } catch { return ''; }
+}
+export function lembrarCartao(nome) {
+  try { localStorage.setItem(CARTAO_KEY, normCartao(nome)); } catch { /* modo privado */ }
+}
